@@ -22,3 +22,7 @@ export function parseSecondsInput(raw: string | null): number {
   const value = Number.parseInt(raw, 10)
   return Number.isNaN(value) ? 0 : value
 }
+
+export function clampInput(raw: string, max: number): string {
+  return parseSecondsInput(raw) > max ? max.toString() : raw
+}

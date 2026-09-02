@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clamp, formatUtcClock, pad2, parseSecondsInput, splitSeconds } from './timer'
+import { clamp, clampInput, formatUtcClock, pad2, parseSecondsInput, splitSeconds } from './timer'
 
 describe('pad2', () => {
   it('pads single digits with a leading zero', () => {
@@ -41,6 +41,23 @@ describe('clamp', () => {
     expect(clamp(120, 0, 99)).toBe(99)
     expect(clamp(-5, 0, 99)).toBe(0)
     expect(clamp(42, 0, 99)).toBe(42)
+  })
+})
+
+describe('clampInput', () => {
+  it('clamps numeric strings above the maximum', () => {
+    expect(clampInput('60', 59)).toBe('59')
+    expect(clampInput('99', 59)).toBe('59')
+  })
+
+  it('leaves in-range values unchanged', () => {
+    expect(clampInput('42', 59)).toBe('42')
+    expect(clampInput('0', 59)).toBe('0')
+  })
+
+  it('leaves empty and invalid input unchanged', () => {
+    expect(clampInput('', 59)).toBe('')
+    expect(clampInput('abc', 59)).toBe('abc')
   })
 })
 
