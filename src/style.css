@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+@theme {
+  --font-primary: "Inter", system-ui, sans-serif;
+}
