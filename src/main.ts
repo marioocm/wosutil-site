@@ -1,4 +1,4 @@
-import { clamp, formatUtcClock, pad2, parseSecondsInput, splitSeconds } from './timer'
+import { clamp, clampInput, formatUtcClock, pad2, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
 
@@ -46,6 +46,8 @@ function syncInputs(): void {
 
 function onInputsChange(): void {
   if (running) return
+  minutesInput.value = clampInput(minutesInput.value, MAX_MINUTES)
+  secondsInput.value = clampInput(secondsInput.value, MAX_SECONDS)
   configuredSeconds = readDurationSeconds()
   remainingMs = configuredSeconds * 1000
   finished = false
