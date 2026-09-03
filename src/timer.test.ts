@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clamp, clampInput, formatUtcClock, pad2, parseSecondsInput, splitSeconds } from './timer'
+import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 describe('pad2', () => {
   it('pads single digits with a leading zero', () => {
@@ -58,6 +58,26 @@ describe('clampInput', () => {
   it('leaves empty and invalid input unchanged', () => {
     expect(clampInput('', 59)).toBe('')
     expect(clampInput('abc', 59)).toBe('abc')
+  })
+})
+
+describe('padInput', () => {
+  it('pads single-digit input with a leading zero', () => {
+    expect(padInput('3')).toBe('03')
+    expect(padInput('2')).toBe('02')
+  })
+
+  it('pads zero to two digits', () => {
+    expect(padInput('0')).toBe('00')
+  })
+
+  it('leaves two-digit values unchanged', () => {
+    expect(padInput('42')).toBe('42')
+  })
+
+  it('leaves empty and non-numeric input unchanged', () => {
+    expect(padInput('')).toBe('')
+    expect(padInput('abc')).toBe('abc')
   })
 })
 
