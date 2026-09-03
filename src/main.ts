@@ -58,6 +58,13 @@ function padInputField(input: HTMLInputElement): void {
   input.value = padInput(input.value)
 }
 
+function normalizeInputs(): void {
+  const minutes = readMinutes()
+  const seconds = readSeconds()
+  minutesInput.value = minutes === 0 ? '00' : minutes.toString()
+  secondsInput.value = pad2(seconds)
+}
+
 function onPlay(): void {
   if (running) {
     running = false
@@ -71,6 +78,7 @@ function onPlay(): void {
     finished = false
     running = true
     endTime = Date.now() + remainingMs
+    normalizeInputs()
   }
   render()
 }
@@ -115,8 +123,6 @@ function render(): void {
 
 minutesInput.addEventListener('input', onInputsChange)
 secondsInput.addEventListener('input', onInputsChange)
-minutesInput.addEventListener('blur', () => padInputField(minutesInput))
-minutesInput.addEventListener('change', () => padInputField(minutesInput))
 secondsInput.addEventListener('blur', () => padInputField(secondsInput))
 secondsInput.addEventListener('change', () => padInputField(secondsInput))
 playButton.addEventListener('click', onPlay)

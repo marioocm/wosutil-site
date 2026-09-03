@@ -75,8 +75,11 @@ describe('padInput', () => {
     expect(padInput('42')).toBe('42')
   })
 
-  it('leaves empty and non-numeric input unchanged', () => {
-    expect(padInput('')).toBe('')
+  it('treats empty input as zero', () => {
+    expect(padInput('')).toBe('00')
+  })
+
+  it('leaves non-numeric input unchanged', () => {
     expect(padInput('abc')).toBe('abc')
   })
 })
