@@ -3,12 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="refresh" content="0; url=./countdown/" />
     <title>WoS Util · Page not found</title>
   </head>
   <body>
     <script>
-      window.location.replace('./countdown/')
+      ;(function () {
+        var marker = 'id="utc-clock"'
+        var segments = window.location.pathname.split('/').filter(Boolean)
+        var paths = []
+        for (var i = segments.length; i >= 0; i--) {
+          var base = segments.slice(0, i).join('/')
+          paths.push('/' + (base ? base + '/' : '') + 'countdown/')
+        }
+        var index = 0
+        function tryNext() {
+          if (index >= paths.length) return
+          var url = window.location.origin + paths[index++]
+          fetch(url, { cache: 'no-store' })
+            .then(function (response) {
+              return response.ok ? response.text() : ''
+            })
+            .then(function (html) {
+              if (html.indexOf(marker) !== -1) window.location.replace(url)
+              else tryNext()
+            })
+            .catch(tryNext)
+        }
+        tryNext()
+      })()
     </script>
   </body>
 </html>
