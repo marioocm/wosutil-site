@@ -44,6 +44,7 @@ Prefix branches by change type:
 - `fix/` — bug fixes
 - `docs/` — documentation only (AGENTS.md, README, comments)
 - `refactor/` — code changes that add no feature and fix no bug
+- `style/` — formatting, whitespace, and other non-functional changes
 - `test/` — tests only
 - `ci/` — CI/CD, GitHub Actions, build tooling
 
