@@ -1,4 +1,4 @@
-import { clamp, clampInput, formatUtcClock, pad2, parseSecondsInput, splitSeconds } from './timer'
+import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
 
@@ -52,6 +52,10 @@ function onInputsChange(): void {
   remainingMs = configuredSeconds * 1000
   finished = false
   render()
+}
+
+function padInputField(input: HTMLInputElement): void {
+  input.value = padInput(input.value)
 }
 
 function onPlay(): void {
@@ -111,6 +115,10 @@ function render(): void {
 
 minutesInput.addEventListener('input', onInputsChange)
 secondsInput.addEventListener('input', onInputsChange)
+minutesInput.addEventListener('blur', () => padInputField(minutesInput))
+minutesInput.addEventListener('change', () => padInputField(minutesInput))
+secondsInput.addEventListener('blur', () => padInputField(secondsInput))
+secondsInput.addEventListener('change', () => padInputField(secondsInput))
 playButton.addEventListener('click', onPlay)
 resetButton.addEventListener('click', onReset)
 clearButton.addEventListener('click', onClear)

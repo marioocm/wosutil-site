@@ -2,6 +2,11 @@ export function pad2(value: number): string {
   return value.toString().padStart(2, '0')
 }
 
+export function padInput(value: string): string {
+  if (value === '' || Number.isNaN(Number(value))) return value
+  return pad2(parseSecondsInput(value))
+}
+
 export function splitSeconds(totalSeconds: number): { minutes: number; seconds: number } {
   return {
     minutes: Math.floor(totalSeconds / 60),
