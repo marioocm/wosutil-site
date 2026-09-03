@@ -4,10 +4,11 @@
 Static website for WoS Util (Whiteout Survival utility): a countdown timer page. Open source (MIT), deployed to GitHub Pages. Stack: Vite + TypeScript + Tailwind CSS v4, package manager: pnpm.
 
 ## Structure
-- `index.html` → redirects to `/countdown/` (GitHub Pages root URL); `public/404.html` → same redirect for unknown URLs (served by GitHub Pages, copied from `public/` into `dist/`)
+- `index.html` → redirects to the countdown page (GitHub Pages root URL); `public/404.html` → same redirect for unknown URLs (served by GitHub Pages, copied from `public/` into `dist/`)
 - `countdown/index.html` → the countdown page (Vite multi-page build)
 - `src/main.ts` → entry point, DOM wiring, timer state machine
 - `src/timer.ts` → pure helpers: time splitting, clamping, input parsing, UTC clock (unit-tested with Vitest)
+- `src/redirect.ts` → root-relative countdown redirect: probes candidate paths so the redirect works from any URL (dev server, Pages subpath, forks). `index.html` imports it; `public/404.html` inlines a copy (can't be bundled). Unit-tested with Vitest.
 - `src/style.css` → Tailwind entry; `src/styles/theme.css` → design tokens (`@theme`)
 - `docs/DESIGN.md` → design system reference (Supabase-inspired palette, typography, components). **Read it before touching UI.**
 - `.github/workflows/ci.yml` → typecheck, tests, build on every push/PR
