@@ -14,7 +14,10 @@ import {
   sortCallers,
   validateCallerName,
   validatePetMarch,
+  MAX_MINUTES,
+  MAX_SECONDS,
 } from '../rally-callers'
+import { clampInput, padInput } from '../timer'
 import type { RallyCaller } from '../rally-callers'
 
 type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
@@ -22,6 +25,7 @@ type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
 const inputClass =
   'font-primary rounded-sm border border-hairline bg-canvas px-3 py-2 text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
 const numberInputClass = `${inputClass} w-20 text-center tabular-nums`
+const smallNumberInputClass = `${inputClass} w-16 shrink-0 px-2 py-1 text-center tabular-nums`
 const primaryButtonClass =
   'font-primary cursor-pointer rounded-sm bg-primary px-3 py-2 text-center text-button-md font-medium text-on-primary transition-colors hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-40'
 const secondaryButtonClass =
@@ -38,35 +42,85 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node
 }
 
-function renderMarchEditor(options: {
+function ignorePasswordManagers(target: HTMLElement): void {
+  // 1Password / LastPass / Bitwarden otherwise offer to save these plain
+  // text fields as logins or identities.
+  target.setAttribute('data-1p-ignore', 'true')
+  target.setAttribute('data-lpignore', 'true')
+  target.setAttribute('data-bwignore', 'true')
+}
+
+/**
+ * Shared MM:SS duration group (same look, limits and behavior as the
+ * countdown duration inputs): two numeric fields joined by a colon that never
+ * wraps onto separate lines. Values clamp live (MM 0-99, SS 0-59) and pad on
+ * blur, exactly like `src/main.ts` does for the countdown inputs.
+ */
+function buildDurationGroup(options: {
   initial: number | null
-  callerName: string
-  kind: 'base' | 'pet'
-  focusKey: string
-  onCommit: (mm: string, ss: string) => void
-  onCancel: () => void
-}): { fragment: DocumentFragment; mm: HTMLInputElement; ss: HTMLInputElement } {
-  const fragment = document.createDocumentFragment()
+  minutesLabel: string
+  secondsLabel: string
+  minutesName: string
+  secondsName: string
+  focusKey?: string
+  small?: boolean
+}): { group: HTMLElement; mm: HTMLInputElement; ss: HTMLInputElement } {
+  const group = el('div', 'flex shrink-0 items-center gap-2')
+  group.setAttribute('role', 'group')
+  group.setAttribute('aria-label', `${options.minutesLabel} / ${options.secondsLabel}`)
   const parts = marchPartsFromSec(options.initial)
   const mm = document.createElement('input')
   mm.type = 'number'
   mm.min = '0'
-  mm.max = '99'
+  mm.max = String(MAX_MINUTES)
   mm.inputMode = 'numeric'
   mm.value = parts.minutes
-  mm.name = `rally-${options.kind}-mm`
-  mm.setAttribute('aria-label', `Edit ${options.kind} march minutes for ${options.callerName}`)
-  mm.className = `${numberInputClass} w-16 px-2 py-1`
-  mm.dataset['editFocus'] = options.focusKey
+  mm.name = options.minutesName
+  mm.setAttribute('aria-label', options.minutesLabel)
+  mm.autocomplete = 'off'
+  mm.className = options.small ? smallNumberInputClass : numberInputClass
   const ss = document.createElement('input')
   ss.type = 'number'
   ss.min = '0'
-  ss.max = '59'
+  ss.max = String(MAX_SECONDS)
   ss.inputMode = 'numeric'
   ss.value = parts.seconds
-  ss.setAttribute('aria-label', `Edit ${options.kind} march seconds for ${options.callerName}`)
-  ss.className = `${numberInputClass} w-16 px-2 py-1`
-  ss.name = `rally-${options.kind}-ss`
+  ss.name = options.secondsName
+  ss.setAttribute('aria-label', options.secondsLabel)
+  ss.autocomplete = 'off'
+  ss.className = options.small ? smallNumberInputClass : numberInputClass
+  if (options.focusKey !== undefined) {
+    mm.dataset['editFocus'] = options.focusKey
+  }
+  mm.addEventListener('input', () => {
+    mm.value = clampInput(mm.value, MAX_MINUTES)
+  })
+  ss.addEventListener('input', () => {
+    ss.value = clampInput(ss.value, MAX_SECONDS)
+  })
+  mm.addEventListener('blur', () => {
+    mm.value = padInput(mm.value)
+  })
+  ss.addEventListener('blur', () => {
+    ss.value = padInput(ss.value)
+  })
+  const sep = el('span', 'shrink-0 text-body-md text-ink-mute', ':')
+  sep.setAttribute('aria-hidden', 'true')
+  group.append(mm, sep, ss)
+  return { group, mm, ss }
+}
+
+/** Enter commits, Escape cancels, leaving the group commits (deferred so a
+ *  Tab between MM and SS never commits early). With `dismissable: false` an
+ *  empty group stays open instead of committing. */
+function wireMarchEditor(options: {
+  mm: HTMLInputElement
+  ss: HTMLInputElement
+  dismissable: boolean
+  onCommit: (mm: string, ss: string) => void
+  onCancel: () => void
+}): void {
+  const { mm, ss } = options
   let cancelled = false
   const commit = (): void => {
     if (!cancelled) options.onCommit(mm.value, ss.value)
@@ -90,14 +144,11 @@ function renderMarchEditor(options: {
         const active = document.activeElement
         if (active === mm || active === ss) return
         if (!mm.isConnected || !ss.isConnected) return
+        if (!options.dismissable && marchSecFromParts(mm.value, ss.value) === null) return
         commit()
       }, 0)
     })
   }
-  const sep = el('span', 'text-ink-mute', ':')
-  sep.setAttribute('aria-hidden', 'true')
-  fragment.append(mm, sep, ss)
-  return { fragment, mm, ss }
 }
 
 export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) => void } {
@@ -108,61 +159,48 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
 
   persist()
 
-  const title = el('h2', 'text-heading-md font-medium tracking-tight', 'Rally Callers')
-  const hint = el(
-    'p',
-    'text-caption text-ink-mute',
-    'Add each caller with an optional march time. Click a name or time to edit it.',
-  )
-
   const form = document.createElement('form')
   form.className = 'flex flex-col gap-2'
   form.setAttribute('aria-label', 'Add rally caller')
+  form.autocomplete = 'off'
+  ignorePasswordManagers(form)
 
-  const formRow = el('div', 'flex flex-col gap-2 sm:flex-row')
+  const formRow = el('div', 'flex flex-col gap-2 sm:flex-row sm:items-center')
   const nameInput = document.createElement('input')
   nameInput.type = 'text'
-  nameInput.id = 'rally-name'
-  nameInput.placeholder = 'Rally caller name'
+  nameInput.id = 'rally-caller'
+  nameInput.name = 'rally-caller'
+  nameInput.placeholder = 'Rally caller'
   nameInput.autocomplete = 'off'
   nameInput.maxLength = 40
   nameInput.className = `${inputClass} min-w-0 flex-1`
+  ignorePasswordManagers(nameInput)
   const nameLabel = document.createElement('label')
-  nameLabel.htmlFor = 'rally-name'
+  nameLabel.htmlFor = 'rally-caller'
   nameLabel.className = 'sr-only'
-  nameLabel.textContent = 'Rally caller name'
+  nameLabel.textContent = 'Rally caller'
 
-  const mmInput = document.createElement('input')
-  mmInput.type = 'number'
-  mmInput.id = 'rally-mm'
-  mmInput.placeholder = 'MM'
-  mmInput.min = '0'
-  mmInput.max = '99'
-  mmInput.inputMode = 'numeric'
-  mmInput.setAttribute('aria-label', 'March minutes')
-  mmInput.className = numberInputClass
-
-  const ssInput = document.createElement('input')
-  ssInput.type = 'number'
-  ssInput.id = 'rally-ss'
-  ssInput.placeholder = 'SS'
-  ssInput.min = '0'
-  ssInput.max = '59'
-  ssInput.inputMode = 'numeric'
-  ssInput.setAttribute('aria-label', 'March seconds')
-  ssInput.className = numberInputClass
+  const formDuration = buildDurationGroup({
+    initial: null,
+    minutesLabel: 'March minutes',
+    secondsLabel: 'March seconds',
+    minutesName: 'rally-mm',
+    secondsName: 'rally-ss',
+  })
+  formDuration.mm.id = 'rally-mm'
+  formDuration.ss.id = 'rally-ss'
 
   const addButton = document.createElement('button')
   addButton.type = 'submit'
   addButton.id = 'rally-add'
   addButton.textContent = 'Add'
-  addButton.className = primaryButtonClass
+  addButton.className = `${primaryButtonClass} shrink-0`
 
   const formErrorEl = el('p', 'invisible text-caption text-accent-tomato')
   formErrorEl.id = 'rally-form-error'
   formErrorEl.setAttribute('role', 'alert')
 
-  formRow.append(nameInput, mmInput, ssInput, addButton)
+  formRow.append(nameInput, formDuration.group, addButton)
   form.append(nameLabel, formRow, formErrorEl)
 
   const list = document.createElement('ul')
@@ -178,7 +216,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
   rowErrorEl.id = 'rally-row-error'
   rowErrorEl.setAttribute('role', 'alert')
 
-  root.append(title, hint, form, rowErrorEl, list, empty)
+  root.append(form, rowErrorEl, list, empty)
 
   function persist(): void {
     saveCallers(localStorage, callers)
@@ -236,20 +274,21 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
 
   function renderRow(caller: RallyCaller): HTMLElement {
     const item = document.createElement('li')
-    item.className = 'flex flex-col gap-2 rounded-md border border-hairline bg-canvas px-3 py-2'
+    item.className =
+      'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2'
     item.dataset['callerId'] = caller.id
-
-    const topRow = el('div', 'flex items-center gap-2')
 
     if (editing?.id === caller.id && editing.field === 'name') {
       const input = document.createElement('input')
       input.type = 'text'
       input.value = caller.name
       input.maxLength = 40
+      input.name = 'rally-edit-caller'
+      input.autocomplete = 'off'
       input.className = `${inputClass} min-w-0 flex-1 py-1`
-      input.setAttribute('aria-label', `Edit name for ${caller.name}`)
-      input.name = 'rally-edit-name'
+      input.setAttribute('aria-label', `Edit caller ${caller.name}`)
       input.dataset['editFocus'] = `${caller.id}-name`
+      ignorePasswordManagers(input)
       let cancelled = false
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
@@ -263,67 +302,112 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       input.addEventListener('blur', () => {
         if (!cancelled && editing?.id === caller.id) commitNameEdit(caller.id, input.value)
       })
-      topRow.append(input)
+      item.append(input)
     } else {
       const nameButton = document.createElement('button')
       nameButton.type = 'button'
       nameButton.className =
         'min-w-0 flex-1 cursor-pointer truncate text-left text-body-md font-medium text-ink hover:underline focus-visible:outline-2 focus-visible:outline-primary-deep'
       nameButton.textContent = caller.name
-      nameButton.title = 'Click to edit name'
-      nameButton.setAttribute('aria-label', `Edit name for ${caller.name}`)
+      nameButton.title = 'Click to edit'
+      nameButton.setAttribute('aria-label', `Edit caller ${caller.name}`)
       nameButton.addEventListener('click', () => {
         editing = { id: caller.id, field: 'name' }
         rowError = null
         renderList(true)
       })
-      topRow.append(nameButton)
+      item.append(nameButton)
     }
 
-    const visibleKind = caller.petActive ? 'pet' : 'base'
-    const isEditingMarch =
-      editing?.id === caller.id && (editing.field === 'base' || editing.field === 'pet')
+    // Pets ON without a pet march keeps an open (empty) editor in place —
+    // the base time is never shown as fallback.
+    const wantsPetEditor =
+      caller.petActive && (caller.petMarchSec === null || editing?.field === 'pet')
+    const isEditingThis = editing?.id === caller.id ? editing.field : null
 
-    if (isEditingMarch) {
-      const kind = editing?.field === 'pet' ? 'pet' : 'base'
-      const initial = kind === 'pet' ? caller.petMarchSec : caller.baseMarchSec
-      const editor = renderMarchEditor({
-        initial,
-        callerName: caller.name,
-        kind,
-        focusKey: `${caller.id}-${kind}`,
-        onCommit: (mm, ss) => {
-          if (kind === 'pet') commitPetEdit(caller.id, mm, ss)
-          else commitBaseEdit(caller.id, mm, ss)
-        },
+    if (wantsPetEditor) {
+      const editor = buildDurationGroup({
+        initial: caller.petMarchSec,
+        minutesLabel: `Edit pet march minutes for ${caller.name}`,
+        secondsLabel: `Edit pet march seconds for ${caller.name}`,
+        minutesName: 'rally-pet-mm',
+        secondsName: 'rally-pet-ss',
+        focusKey: `${caller.id}-pet`,
+        small: true,
+      })
+      wireMarchEditor({
+        mm: editor.mm,
+        ss: editor.ss,
+        dismissable: false,
+        onCommit: (mm, ss) => commitPetEdit(caller.id, mm, ss),
         onCancel: cancelEditing,
       })
-      topRow.append(editor.fragment)
+      item.append(editor.group)
+    } else if (isEditingThis === 'base') {
+      const editor = buildDurationGroup({
+        initial: caller.baseMarchSec,
+        minutesLabel: `Edit march minutes for ${caller.name}`,
+        secondsLabel: `Edit march seconds for ${caller.name}`,
+        minutesName: 'rally-base-mm',
+        secondsName: 'rally-base-ss',
+        focusKey: `${caller.id}-base`,
+        small: true,
+      })
+      wireMarchEditor({
+        mm: editor.mm,
+        ss: editor.ss,
+        dismissable: true,
+        onCommit: (mm, ss) => commitBaseEdit(caller.id, mm, ss),
+        onCancel: cancelEditing,
+      })
+      item.append(editor.group)
     } else {
       const marchButton = document.createElement('button')
       marchButton.type = 'button'
       marchButton.className =
-        'cursor-pointer rounded-sm px-2 py-1 text-body-md tabular-nums text-ink hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
+        'shrink-0 cursor-pointer rounded-sm px-2 py-1 text-body-md tabular-nums text-ink hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
       marchButton.textContent = formatMarchSec(getEffectiveMarchSec(caller))
-      marchButton.title =
-        caller.petActive && caller.petMarchSec === null
-          ? 'Click to add pet march time'
-          : `Click to edit ${visibleKind} march time`
+      marchButton.title = 'Click to edit'
       marchButton.setAttribute(
         'aria-label',
-        `Edit ${visibleKind} march time for ${caller.name}`,
+        `Edit ${caller.petActive ? 'pet' : 'base'} march time for ${caller.name}`,
       )
       marchButton.addEventListener('click', () => {
         editing = { id: caller.id, field: caller.petActive ? 'pet' : 'base' }
         rowError = null
         renderList(true)
       })
-      topRow.append(marchButton)
+      item.append(marchButton)
+    }
+
+    const toggle = document.createElement('button')
+    toggle.type = 'button'
+    toggle.setAttribute('role', 'switch')
+    toggle.setAttribute('aria-checked', caller.petActive ? 'true' : 'false')
+    toggle.setAttribute('aria-label', `Pet skill for ${caller.name}`)
+    toggle.className = caller.petActive ? primaryButtonClass : secondaryButtonClass
+    toggle.classList.add('shrink-0', 'px-2', 'py-1', 'text-caption')
+    toggle.textContent = caller.petActive ? 'Pets ON' : 'Pets OFF'
+    toggle.addEventListener('click', () => {
+      togglePet(caller.id)
+    })
+    item.append(toggle)
+
+    if (caller.petActive) {
+      const remaining = el(
+        'span',
+        'shrink-0 text-micro tabular-nums text-ink-mute',
+        formatPetRemaining(getPetRemainingMs(caller, Date.now())),
+      )
+      remaining.title = 'Pet skill remaining'
+      remaining.setAttribute('role', 'timer')
+      remaining.dataset['petRemaining'] = caller.id
+      item.append(remaining)
     }
 
     const removeButton = document.createElement('button')
     removeButton.type = 'button'
-    removeButton.className = `${secondaryButtonClass} px-2 py-1 text-caption`
+    removeButton.className = `${secondaryButtonClass} shrink-0 px-2 py-1 text-caption`
     removeButton.textContent = 'Remove'
     removeButton.setAttribute('aria-label', `Remove ${caller.name}`)
     removeButton.addEventListener('click', () => {
@@ -333,38 +417,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       persist()
       renderList()
     })
-    topRow.append(removeButton)
-    item.append(topRow)
-
-    const petRow = el('div', 'flex flex-wrap items-center gap-2')
-    const toggle = document.createElement('button')
-    toggle.type = 'button'
-    toggle.setAttribute('role', 'switch')
-    toggle.setAttribute('aria-checked', caller.petActive ? 'true' : 'false')
-    toggle.setAttribute('aria-label', `Pet skill for ${caller.name}`)
-    toggle.className = caller.petActive ? primaryButtonClass : secondaryButtonClass
-    toggle.classList.add('px-2', 'py-1', 'text-caption')
-    toggle.textContent = caller.petActive ? 'Pets ON' : 'Pets OFF'
-    toggle.addEventListener('click', () => {
-      togglePet(caller.id)
-    })
-    petRow.append(toggle)
-
-    if (caller.petActive) {
-      const remaining = el(
-        'span',
-        'text-micro tabular-nums text-ink-mute',
-        formatPetRemaining(getPetRemainingMs(caller, Date.now())),
-      )
-      remaining.title = 'Pet skill remaining'
-      remaining.setAttribute('role', 'timer')
-      remaining.dataset['petRemaining'] = caller.id
-      petRow.append(remaining)
-      if (caller.petMarchSec === null && editing?.id !== caller.id) {
-        petRow.append(el('span', 'text-caption text-ink-mute', 'Add pet march above'))
-      }
-    }
-    item.append(petRow)
+    item.append(removeButton)
 
     return item
   }
@@ -412,6 +465,11 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     const caller = findCaller(id)
     if (!caller) return
     const next = marchSecFromParts(mmRaw, ssRaw)
+    if (next === null) {
+      // Empty pet march stays open (never falls back to displaying base).
+      renderList(true)
+      return
+    }
     const error = validatePetMarch(caller.baseMarchSec, next)
     if (error !== null) {
       rowError = error
@@ -469,15 +527,15 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       {
         id: createId(),
         name: nameInput.value.trim(),
-        baseMarchSec: marchSecFromParts(mmInput.value, ssInput.value),
+        baseMarchSec: marchSecFromParts(formDuration.mm.value, formDuration.ss.value),
         petActive: false,
         petMarchSec: null,
         petExpiresAt: null,
       },
     ]
     nameInput.value = ''
-    mmInput.value = ''
-    ssInput.value = ''
+    formDuration.mm.value = ''
+    formDuration.ss.value = ''
     formError = null
     persist()
     syncFormError()
