@@ -219,9 +219,9 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
 
     // Pets ON without a pet march keeps an open (empty) editor in place —
     // the base time is never shown as fallback.
-    const wantsPetEditor =
-      caller.petActive && (caller.petMarchSec === null || editing?.field === 'pet')
     const isEditingThis = editing?.id === caller.id ? editing.field : null
+    const wantsPetEditor =
+      caller.petActive && (caller.petMarchSec === null || isEditingThis === 'pet')
 
     if (wantsPetEditor) {
       const editor = buildDurationGroup({
