@@ -1,6 +1,11 @@
 import {
+  activatePet,
   createId,
+  deactivatePet,
   formatMarchSec,
+  formatPetRemaining,
+  getEffectiveMarchSec,
+  getPetRemainingMs,
   loadCallers,
   marchPartsFromSec,
   marchSecFromParts,
@@ -8,10 +13,11 @@ import {
   saveCallers,
   sortCallers,
   validateCallerName,
+  validatePetMarch,
 } from '../rally-callers'
 import type { RallyCaller } from '../rally-callers'
 
-type Editing = { id: string; field: 'name' | 'base' } | null
+type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
 
 const inputClass =
   'font-primary rounded-sm border border-hairline bg-canvas px-3 py-2 text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
@@ -30,6 +36,59 @@ function el<K extends keyof HTMLElementTagNameMap>(
   node.className = className
   if (text !== undefined) node.textContent = text
   return node
+}
+
+function renderMarchEditor(options: {
+  initial: number | null
+  callerName: string
+  kind: 'base' | 'pet'
+  focusKey: string
+  onCommit: (mm: string, ss: string) => void
+  onCancel: () => void
+}): { fragment: DocumentFragment; mm: HTMLInputElement; ss: HTMLInputElement } {
+  const fragment = document.createDocumentFragment()
+  const parts = marchPartsFromSec(options.initial)
+  const mm = document.createElement('input')
+  mm.type = 'number'
+  mm.min = '0'
+  mm.max = '99'
+  mm.inputMode = 'numeric'
+  mm.value = parts.minutes
+  mm.setAttribute('aria-label', `Edit ${options.kind} march minutes for ${options.callerName}`)
+  mm.className = `${numberInputClass} w-16 px-2 py-1`
+  mm.dataset['editFocus'] = options.focusKey
+  const ss = document.createElement('input')
+  ss.type = 'number'
+  ss.min = '0'
+  ss.max = '59'
+  ss.inputMode = 'numeric'
+  ss.value = parts.seconds
+  ss.setAttribute('aria-label', `Edit ${options.kind} march seconds for ${options.callerName}`)
+  ss.className = `${numberInputClass} w-16 px-2 py-1`
+  let cancelled = false
+  const commit = (): void => {
+    if (!cancelled) options.onCommit(mm.value, ss.value)
+  }
+  for (const field of [mm, ss]) {
+    field.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        commit()
+      } else if (event.key === 'Escape') {
+        cancelled = true
+        options.onCancel()
+      }
+    })
+    field.addEventListener('blur', () => {
+      if (!cancelled && document.activeElement !== mm && document.activeElement !== ss) {
+        commit()
+      }
+    })
+  }
+  const sep = el('span', 'text-ink-mute', ':')
+  sep.setAttribute('aria-hidden', 'true')
+  fragment.append(mm, sep, ss)
+  return { fragment, mm, ss }
 }
 
 export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) => void } {
@@ -116,6 +175,10 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     saveCallers(localStorage, callers)
   }
 
+  function findCaller(id: string): RallyCaller | undefined {
+    return callers.find((caller) => caller.id === id)
+  }
+
   function syncFormError(): void {
     if (formError === null) {
       formErrorEl.textContent = ''
@@ -137,6 +200,12 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     }
   }
 
+  function cancelEditing(): void {
+    editing = null
+    rowError = null
+    renderList()
+  }
+
   function renderList(focusEditing = false): void {
     syncRowError()
     list.textContent = ''
@@ -148,7 +217,9 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     }
 
     if (focusEditing && editing) {
-      const target = list.querySelector<HTMLElement>(`[data-edit-focus="${editing.id}-${editing.field}"]`)
+      const target = list.querySelector<HTMLElement>(
+        `[data-edit-focus="${editing.id}-${editing.field}"]`,
+      )
       target?.focus()
       if (target instanceof HTMLInputElement) target.select()
     }
@@ -156,9 +227,10 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
 
   function renderRow(caller: RallyCaller): HTMLElement {
     const item = document.createElement('li')
-    item.className =
-      'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2'
+    item.className = 'flex flex-col gap-2 rounded-md border border-hairline bg-canvas px-3 py-2'
     item.dataset['callerId'] = caller.id
+
+    const topRow = el('div', 'flex items-center gap-2')
 
     if (editing?.id === caller.id && editing.field === 'name') {
       const input = document.createElement('input')
@@ -175,15 +247,13 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
           commitNameEdit(caller.id, input.value)
         } else if (event.key === 'Escape') {
           cancelled = true
-          editing = null
-          rowError = null
-          renderList()
+          cancelEditing()
         }
       })
       input.addEventListener('blur', () => {
         if (!cancelled && editing?.id === caller.id) commitNameEdit(caller.id, input.value)
       })
-      item.append(input)
+      topRow.append(input)
     } else {
       const nameButton = document.createElement('button')
       nameButton.type = 'button'
@@ -197,69 +267,48 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
         rowError = null
         renderList(true)
       })
-      item.append(nameButton)
+      topRow.append(nameButton)
     }
 
-    if (editing?.id === caller.id && editing.field === 'base') {
-      const parts = marchPartsFromSec(caller.baseMarchSec)
-      const mm = document.createElement('input')
-      mm.type = 'number'
-      mm.min = '0'
-      mm.max = '99'
-      mm.inputMode = 'numeric'
-      mm.value = parts.minutes
-      mm.setAttribute('aria-label', `Edit march minutes for ${caller.name}`)
-      mm.className = `${numberInputClass} w-16 px-2 py-1`
-      mm.dataset['editFocus'] = `${caller.id}-base`
-      const ss = document.createElement('input')
-      ss.type = 'number'
-      ss.min = '0'
-      ss.max = '59'
-      ss.inputMode = 'numeric'
-      ss.value = parts.seconds
-      ss.setAttribute('aria-label', `Edit march seconds for ${caller.name}`)
-      ss.className = `${numberInputClass} w-16 px-2 py-1`
-      let cancelled = false
-      const commit = (): void => {
-        if (cancelled) return
-        commitBaseEdit(caller.id, mm.value, ss.value)
-      }
-      for (const field of [mm, ss]) {
-        field.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault()
-            commit()
-          } else if (event.key === 'Escape') {
-            cancelled = true
-            editing = null
-            rowError = null
-            renderList()
-          }
-        })
-        field.addEventListener('blur', () => {
-          // Commit once: only the focused-out field that still owns the edit.
-          if (!cancelled && editing?.id === caller.id && document.activeElement !== mm && document.activeElement !== ss) {
-            commit()
-          }
-        })
-      }
-      const sep = el('span', 'text-ink-mute', ':')
-      sep.setAttribute('aria-hidden', 'true')
-      item.append(mm, sep, ss)
+    const visibleKind = caller.petActive ? 'pet' : 'base'
+    const isEditingMarch =
+      editing?.id === caller.id && (editing.field === 'base' || editing.field === 'pet')
+
+    if (isEditingMarch) {
+      const kind = editing?.field === 'pet' ? 'pet' : 'base'
+      const initial = kind === 'pet' ? caller.petMarchSec : caller.baseMarchSec
+      const editor = renderMarchEditor({
+        initial,
+        callerName: caller.name,
+        kind,
+        focusKey: `${caller.id}-${kind}`,
+        onCommit: (mm, ss) => {
+          if (kind === 'pet') commitPetEdit(caller.id, mm, ss)
+          else commitBaseEdit(caller.id, mm, ss)
+        },
+        onCancel: cancelEditing,
+      })
+      topRow.append(editor.fragment)
     } else {
       const marchButton = document.createElement('button')
       marchButton.type = 'button'
       marchButton.className =
         'cursor-pointer rounded-sm px-2 py-1 text-body-md tabular-nums text-ink hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
-      marchButton.textContent = formatMarchSec(caller.baseMarchSec)
-      marchButton.title = 'Click to edit march time'
-      marchButton.setAttribute('aria-label', `Edit march time for ${caller.name}`)
+      marchButton.textContent = formatMarchSec(getEffectiveMarchSec(caller))
+      marchButton.title =
+        caller.petActive && caller.petMarchSec === null
+          ? 'Click to add pet march time'
+          : `Click to edit ${visibleKind} march time`
+      marchButton.setAttribute(
+        'aria-label',
+        `Edit ${visibleKind} march time for ${caller.name}`,
+      )
       marchButton.addEventListener('click', () => {
-        editing = { id: caller.id, field: 'base' }
+        editing = { id: caller.id, field: caller.petActive ? 'pet' : 'base' }
         rowError = null
         renderList(true)
       })
-      item.append(marchButton)
+      topRow.append(marchButton)
     }
 
     const removeButton = document.createElement('button')
@@ -274,12 +323,44 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       persist()
       renderList()
     })
-    item.append(removeButton)
+    topRow.append(removeButton)
+    item.append(topRow)
+
+    const petRow = el('div', 'flex flex-wrap items-center gap-2')
+    const toggle = document.createElement('button')
+    toggle.type = 'button'
+    toggle.setAttribute('role', 'switch')
+    toggle.setAttribute('aria-checked', caller.petActive ? 'true' : 'false')
+    toggle.setAttribute('aria-label', `Pet skill for ${caller.name}`)
+    toggle.className = caller.petActive ? primaryButtonClass : secondaryButtonClass
+    toggle.classList.add('px-2', 'py-1', 'text-caption')
+    toggle.textContent = caller.petActive ? 'Pets ON' : 'Pets OFF'
+    toggle.addEventListener('click', () => {
+      togglePet(caller.id)
+    })
+    petRow.append(toggle)
+
+    if (caller.petActive) {
+      const remaining = el(
+        'span',
+        'text-micro tabular-nums text-ink-mute',
+        formatPetRemaining(getPetRemainingMs(caller, Date.now())),
+      )
+      remaining.title = 'Pet skill remaining'
+      remaining.setAttribute('role', 'timer')
+      remaining.dataset['petRemaining'] = caller.id
+      petRow.append(remaining)
+      if (caller.petMarchSec === null && editing?.id !== caller.id) {
+        petRow.append(el('span', 'text-caption text-ink-mute', 'Add pet march above'))
+      }
+    }
+    item.append(petRow)
 
     return item
   }
 
   function commitNameEdit(id: string, raw: string): void {
+    if (editing?.id !== id) return
     const error = validateCallerName(callers, raw, id)
     if (error !== null) {
       rowError = error
@@ -296,14 +377,72 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
   }
 
   function commitBaseEdit(id: string, mmRaw: string, ssRaw: string): void {
+    if (editing?.id !== id) return
+    const caller = findCaller(id)
     const next = marchSecFromParts(mmRaw, ssRaw)
-    callers = callers.map((caller) =>
-      caller.id === id ? { ...caller, baseMarchSec: next } : caller,
+    if (caller?.petActive) {
+      const petError = validatePetMarch(next, caller.petMarchSec)
+      if (petError !== null) {
+        rowError = petError
+        renderList(true)
+        return
+      }
+    }
+    callers = callers.map((entry) =>
+      entry.id === id ? { ...entry, baseMarchSec: next } : entry,
     )
     editing = null
     rowError = null
     persist()
     renderList()
+  }
+
+  function commitPetEdit(id: string, mmRaw: string, ssRaw: string): void {
+    if (editing?.id !== id) return
+    const caller = findCaller(id)
+    if (!caller) return
+    const next = marchSecFromParts(mmRaw, ssRaw)
+    const error = validatePetMarch(caller.baseMarchSec, next)
+    if (error !== null) {
+      rowError = error
+      renderList(true)
+      return
+    }
+    callers = callers.map((entry) =>
+      entry.id === id ? { ...entry, petMarchSec: next } : entry,
+    )
+    editing = null
+    rowError = null
+    persist()
+    renderList()
+  }
+
+  function togglePet(id: string): void {
+    const caller = findCaller(id)
+    if (!caller) return
+    if (caller.petActive) {
+      callers = callers.map((entry) => (entry.id === id ? deactivatePet(entry) : entry))
+      if (editing?.id === id) editing = null
+      rowError = null
+      persist()
+      renderList()
+      return
+    }
+    const now = Date.now()
+    callers = callers.map((entry) => (entry.id === id ? activatePet(entry, now) : entry))
+    rowError = null
+    // Fresh activation without a pet march opens the pet editor immediately.
+    editing = caller.petMarchSec === null ? { id, field: 'pet' } : null
+    persist()
+    renderList(editing !== null)
+  }
+
+  function syncPetTimers(now: number): void {
+    for (const caller of callers) {
+      if (!caller.petActive) continue
+      const node = list.querySelector(`[data-pet-remaining="${caller.id}"]`)
+      if (node) node.textContent = formatPetRemaining(getPetRemainingMs(caller, now))
+    }
   }
 
   form.addEventListener('submit', (event) => {
@@ -358,8 +497,11 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
         callers = purged
         persist()
         // Don't steal focus from an in-progress edit on background expiry.
-        renderList(false)
+        const keepFocus = editing !== null
+        renderList(keepFocus)
+        return
       }
+      syncPetTimers(now)
     },
   }
 }
