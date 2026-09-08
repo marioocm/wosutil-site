@@ -113,9 +113,6 @@ function render(): void {
   if (finished) {
     statusElement.textContent = "Time's up"
     statusElement.classList.remove('invisible')
-  } else if (configuredSeconds === 0) {
-    statusElement.textContent = 'Set a duration and press play'
-    statusElement.classList.remove('invisible')
   } else {
     statusElement.classList.add('invisible')
   }
