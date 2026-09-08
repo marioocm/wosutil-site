@@ -3,6 +3,7 @@ export function pad2(value: number): string {
 }
 
 export function padInput(value: string): string {
+  if (value === '') return ''
   if (Number.isNaN(Number(value))) return value
   return pad2(parseSecondsInput(value))
 }
