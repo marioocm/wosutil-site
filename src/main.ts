@@ -1,3 +1,4 @@
+import { mountRallyCallers } from './components/rally-callers'
 import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
@@ -17,6 +18,8 @@ const secondsInput = getElement('seconds-input') as HTMLInputElement
 const playButton = getElement('play-button') as HTMLButtonElement
 const resetButton = getElement('reset-button') as HTMLButtonElement
 const clearButton = getElement('clear-button') as HTMLButtonElement
+const rallyPanel = getElement('rally-panel')
+const rallyCallers = mountRallyCallers(rallyPanel)
 
 const MAX_MINUTES = 99
 const MAX_SECONDS = 59
@@ -135,5 +138,6 @@ setInterval(() => {
       finished = true
     }
   }
+  rallyCallers.refresh(Date.now())
   render()
 }, TICK_MS)
