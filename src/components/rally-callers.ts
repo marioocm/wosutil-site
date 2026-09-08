@@ -54,6 +54,7 @@ function renderMarchEditor(options: {
   mm.max = '99'
   mm.inputMode = 'numeric'
   mm.value = parts.minutes
+  mm.name = `rally-${options.kind}-mm`
   mm.setAttribute('aria-label', `Edit ${options.kind} march minutes for ${options.callerName}`)
   mm.className = `${numberInputClass} w-16 px-2 py-1`
   mm.dataset['editFocus'] = options.focusKey
@@ -65,6 +66,7 @@ function renderMarchEditor(options: {
   ss.value = parts.seconds
   ss.setAttribute('aria-label', `Edit ${options.kind} march seconds for ${options.callerName}`)
   ss.className = `${numberInputClass} w-16 px-2 py-1`
+  ss.name = `rally-${options.kind}-ss`
   let cancelled = false
   const commit = (): void => {
     if (!cancelled) options.onCommit(mm.value, ss.value)
@@ -80,9 +82,16 @@ function renderMarchEditor(options: {
       }
     })
     field.addEventListener('blur', () => {
-      if (!cancelled && document.activeElement !== mm && document.activeElement !== ss) {
+      if (cancelled) return
+      // Defer so focus has settled: tabbing between MM and SS must not
+      // commit, and a re-render that already committed detaches this editor.
+      window.setTimeout(() => {
+        if (cancelled) return
+        const active = document.activeElement
+        if (active === mm || active === ss) return
+        if (!mm.isConnected || !ss.isConnected) return
         commit()
-      }
+      }, 0)
     })
   }
   const sep = el('span', 'text-ink-mute', ':')
@@ -239,6 +248,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       input.maxLength = 40
       input.className = `${inputClass} min-w-0 flex-1 py-1`
       input.setAttribute('aria-label', `Edit name for ${caller.name}`)
+      input.name = 'rally-edit-name'
       input.dataset['editFocus'] = `${caller.id}-name`
       let cancelled = false
       input.addEventListener('keydown', (event) => {
