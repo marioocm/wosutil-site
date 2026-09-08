@@ -7,25 +7,24 @@ import {
   getEffectiveMarchSec,
   getPetRemainingMs,
   loadCallers,
-  marchPartsFromSec,
   marchSecFromParts,
   purgeExpired,
   saveCallers,
   sortCallers,
   validateCallerName,
   validatePetMarch,
-  MAX_MINUTES,
-  MAX_SECONDS,
 } from '../rally-callers'
-import { clampInput, padInput } from '../timer'
 import type { RallyCaller } from '../rally-callers'
+import { buildDurationGroup, wireMarchEditor } from './duration-input'
 
 type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
 
 const inputClass =
   'font-primary rounded-sm border border-hairline bg-canvas px-3 py-2 text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
-const numberInputClass = `${inputClass} w-20 text-center tabular-nums`
-const smallNumberInputClass = `${inputClass} w-16 shrink-0 px-2 py-1 text-center tabular-nums`
+// Same box as the small duration inputs (px-2 py-1 + border): swapping the
+// name button for this input never changes the row height.
+const rowTextInputClass =
+  'font-primary min-w-0 flex-1 rounded-sm border border-hairline bg-canvas px-2 py-1 text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
 const primaryButtonClass =
   'font-primary cursor-pointer rounded-sm bg-primary px-3 py-2 text-center text-button-md font-medium text-on-primary transition-colors hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-40'
 const secondaryButtonClass =
@@ -48,109 +47,6 @@ function ignorePasswordManagers(target: HTMLElement): void {
   target.setAttribute('data-1p-ignore', 'true')
   target.setAttribute('data-lpignore', 'true')
   target.setAttribute('data-bwignore', 'true')
-}
-
-/**
- * Shared MM:SS duration group (same look, limits and behavior as the
- * countdown duration inputs): two numeric fields joined by a colon that never
- * wraps onto separate lines. Values clamp live (MM 0-99, SS 0-59) and pad on
- * blur, exactly like `src/main.ts` does for the countdown inputs.
- */
-function buildDurationGroup(options: {
-  initial: number | null
-  minutesLabel: string
-  secondsLabel: string
-  minutesName: string
-  secondsName: string
-  focusKey?: string
-  small?: boolean
-}): { group: HTMLElement; mm: HTMLInputElement; ss: HTMLInputElement } {
-  const group = el('div', 'flex shrink-0 items-center gap-2')
-  group.setAttribute('role', 'group')
-  group.setAttribute('aria-label', `${options.minutesLabel} / ${options.secondsLabel}`)
-  const parts = marchPartsFromSec(options.initial)
-  const mm = document.createElement('input')
-  mm.type = 'number'
-  mm.min = '0'
-  mm.max = String(MAX_MINUTES)
-  mm.inputMode = 'numeric'
-  mm.placeholder = 'MM'
-  mm.value = parts.minutes
-  mm.name = options.minutesName
-  mm.setAttribute('aria-label', options.minutesLabel)
-  mm.autocomplete = 'off'
-  mm.className = options.small ? smallNumberInputClass : numberInputClass
-  const ss = document.createElement('input')
-  ss.type = 'number'
-  ss.min = '0'
-  ss.max = String(MAX_SECONDS)
-  ss.inputMode = 'numeric'
-  ss.placeholder = 'SS'
-  ss.value = parts.seconds
-  ss.name = options.secondsName
-  ss.setAttribute('aria-label', options.secondsLabel)
-  ss.autocomplete = 'off'
-  ss.className = options.small ? smallNumberInputClass : numberInputClass
-  if (options.focusKey !== undefined) {
-    mm.dataset['editFocus'] = options.focusKey
-  }
-  mm.addEventListener('input', () => {
-    mm.value = clampInput(mm.value, MAX_MINUTES)
-  })
-  ss.addEventListener('input', () => {
-    ss.value = clampInput(ss.value, MAX_SECONDS)
-  })
-  mm.addEventListener('blur', () => {
-    mm.value = padInput(mm.value)
-  })
-  ss.addEventListener('blur', () => {
-    ss.value = padInput(ss.value)
-  })
-  const sep = el('span', 'shrink-0 text-body-md text-ink-mute', ':')
-  sep.setAttribute('aria-hidden', 'true')
-  group.append(mm, sep, ss)
-  return { group, mm, ss }
-}
-
-/** Enter commits, Escape cancels, leaving the group commits (deferred so a
- *  Tab between MM and SS never commits early). With `dismissable: false` an
- *  empty group stays open instead of committing. */
-function wireMarchEditor(options: {
-  mm: HTMLInputElement
-  ss: HTMLInputElement
-  dismissable: boolean
-  onCommit: (mm: string, ss: string) => void
-  onCancel: () => void
-}): void {
-  const { mm, ss } = options
-  let cancelled = false
-  const commit = (): void => {
-    if (!cancelled) options.onCommit(mm.value, ss.value)
-  }
-  for (const field of [mm, ss]) {
-    field.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault()
-        commit()
-      } else if (event.key === 'Escape') {
-        cancelled = true
-        options.onCancel()
-      }
-    })
-    field.addEventListener('blur', () => {
-      if (cancelled) return
-      // Defer so focus has settled: tabbing between MM and SS must not
-      // commit, and a re-render that already committed detaches this editor.
-      window.setTimeout(() => {
-        if (cancelled) return
-        const active = document.activeElement
-        if (active === mm || active === ss) return
-        if (!mm.isConnected || !ss.isConnected) return
-        if (!options.dismissable && marchSecFromParts(mm.value, ss.value) === null) return
-        commit()
-      }, 0)
-    })
-  }
 }
 
 export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) => void } {
@@ -287,7 +183,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       input.maxLength = 40
       input.name = 'rally-edit-caller'
       input.autocomplete = 'off'
-      input.className = `${inputClass} min-w-0 flex-1 py-1`
+      input.className = rowTextInputClass
       input.setAttribute('aria-label', `Edit caller ${caller.name}`)
       input.dataset['editFocus'] = `${caller.id}-name`
       ignorePasswordManagers(input)
@@ -367,7 +263,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       const marchButton = document.createElement('button')
       marchButton.type = 'button'
       marchButton.className =
-        'shrink-0 cursor-pointer rounded-sm px-2 py-1 text-body-md tabular-nums text-ink hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
+        'shrink-0 cursor-pointer rounded-sm border border-transparent px-2 py-1 text-body-md tabular-nums text-ink hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
       marchButton.textContent = formatMarchSec(getEffectiveMarchSec(caller))
       marchButton.title = 'Click to edit'
       marchButton.setAttribute(
