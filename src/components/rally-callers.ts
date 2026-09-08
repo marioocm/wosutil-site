@@ -74,6 +74,7 @@ function buildDurationGroup(options: {
   mm.min = '0'
   mm.max = String(MAX_MINUTES)
   mm.inputMode = 'numeric'
+  mm.placeholder = 'MM'
   mm.value = parts.minutes
   mm.name = options.minutesName
   mm.setAttribute('aria-label', options.minutesLabel)
@@ -84,6 +85,7 @@ function buildDurationGroup(options: {
   ss.min = '0'
   ss.max = String(MAX_SECONDS)
   ss.inputMode = 'numeric'
+  ss.placeholder = 'SS'
   ss.value = parts.seconds
   ss.name = options.secondsName
   ss.setAttribute('aria-label', options.secondsLabel)
@@ -407,8 +409,11 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
 
     const removeButton = document.createElement('button')
     removeButton.type = 'button'
-    removeButton.className = `${secondaryButtonClass} shrink-0 px-2 py-1 text-caption`
-    removeButton.textContent = 'Remove'
+    removeButton.className =
+      'shrink-0 cursor-pointer rounded-sm border border-hairline-strong bg-canvas p-1.5 text-accent-tomato transition-colors hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
+    removeButton.innerHTML =
+      '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>'
+    removeButton.title = 'Remove'
     removeButton.setAttribute('aria-label', `Remove ${caller.name}`)
     removeButton.addEventListener('click', () => {
       callers = callers.filter((entry) => entry.id !== caller.id)
