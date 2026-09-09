@@ -15,6 +15,13 @@ import {
   validatePetMarch,
 } from '../rally-callers'
 import type { RallyCaller } from '../rally-callers'
+import {
+  isSelectable,
+  loadSelection,
+  sanitizeSelection,
+  saveSelection,
+  toggleSelection,
+} from '../rally-selection'
 import { buildDurationGroup, wireMarchEditor } from './duration-input'
 
 type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
@@ -49,11 +56,18 @@ function ignorePasswordManagers(target: HTMLElement): void {
   target.setAttribute('data-bwignore', 'true')
 }
 
-export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) => void } {
+export function mountRallyCallers(root: HTMLElement): {
+  refresh: (now: number) => void
+  getCallers: () => RallyCaller[]
+  getSelection: () => Set<string>
+  onSelectionChange: (listener: () => void) => void
+} {
   let callers: RallyCaller[] = loadCallers(localStorage, Date.now())
+  let selection: Set<string> = sanitizeSelection(loadSelection(localStorage), callers)
   let formError: string | null = null
   let rowError: string | null = null
   let editing: Editing = null
+  const selectionListeners = new Set<() => void>()
 
   persist()
 
@@ -120,6 +134,40 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     saveCallers(localStorage, callers)
   }
 
+  function persistSelection(): void {
+    saveSelection(localStorage, selection)
+  }
+
+  function notifySelection(): void {
+    for (const listener of selectionListeners) listener()
+  }
+
+  function pruneSelection(): void {
+    const pruned = sanitizeSelection(selection, callers)
+    // Drop callers that lost their march time (not selectable anymore).
+    for (const id of [...pruned]) {
+      const caller = callers.find((entry) => entry.id === id)
+      if (caller && !isSelectable(caller)) pruned.delete(id)
+    }
+    if (pruned.size !== selection.size) {
+      selection = pruned
+      persistSelection()
+    }
+  }
+
+  function toggleSelect(id: string): void {
+    const caller = findCaller(id)
+    if (!caller || !isSelectable(caller)) return
+    // Never steal an in-progress edit: row clicks while editing do nothing.
+    if (editing?.id === id) return
+    const refocus = document.activeElement?.id === `rally-select-${id}`
+    selection = toggleSelection(selection, id)
+    persistSelection()
+    notifySelection()
+    renderList()
+    if (refocus) document.getElementById(`rally-select-${id}`)?.focus()
+  }
+
   function findCaller(id: string): RallyCaller | undefined {
     return callers.find((caller) => caller.id === id)
   }
@@ -172,9 +220,42 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
 
   function renderRow(caller: RallyCaller): HTMLElement {
     const item = document.createElement('li')
-    item.className =
-      'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2'
+    const selectable = isSelectable(caller)
+    const selected = selectable && selection.has(caller.id)
+    item.className = selected
+      ? 'flex items-center gap-2 rounded-md border border-primary-deep bg-primary/10 px-3 py-2 shadow-sm transition-all -translate-y-px cursor-pointer'
+      : 'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all hover:border-hairline-strong cursor-pointer'
     item.dataset['callerId'] = caller.id
+    if (selected) item.dataset['selected'] = 'true'
+    item.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('button,input,a,select,textarea,label')) return
+      toggleSelect(caller.id)
+    })
+
+    const selectButton = document.createElement('button')
+    selectButton.type = 'button'
+    selectButton.id = `rally-select-${caller.id}`
+    selectButton.className = selected
+      ? 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary-deep bg-primary text-on-primary focus-visible:outline-2 focus-visible:outline-primary-deep'
+      : 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-hairline-strong bg-canvas text-transparent transition-colors hover:border-primary-deep focus-visible:outline-2 focus-visible:outline-primary-deep'
+    selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false')
+    selectButton.setAttribute('aria-label', `Select ${caller.name}`)
+    if (!selectable) {
+      selectButton.disabled = true
+      selectButton.setAttribute('aria-disabled', 'true')
+      selectButton.title = 'Add a march time to select'
+      selectButton.classList.add('cursor-not-allowed', 'opacity-40')
+    } else {
+      selectButton.title = selected ? 'Deselect' : 'Select'
+    }
+    selectButton.innerHTML =
+      '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5l2.5 2.5 4.5-5.5"/></svg>'
+    selectButton.addEventListener('click', (event) => {
+      event.stopPropagation()
+      toggleSelect(caller.id)
+    })
+    item.append(selectButton)
 
     if (editing?.id === caller.id && editing.field === 'name') {
       const input = document.createElement('input')
@@ -205,7 +286,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       const nameButton = document.createElement('button')
       nameButton.type = 'button'
       nameButton.className =
-        'min-w-0 flex-1 cursor-pointer truncate text-left text-body-md font-medium text-ink hover:underline focus-visible:outline-2 focus-visible:outline-primary-deep'
+        'min-w-0 w-auto max-w-[10rem] shrink cursor-pointer truncate text-left text-body-md font-medium text-ink hover:underline focus-visible:outline-2 focus-visible:outline-primary-deep'
       nameButton.textContent = caller.name
       nameButton.title = 'Click to edit'
       nameButton.setAttribute('aria-label', `Edit caller ${caller.name}`)
@@ -215,6 +296,11 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
         renderList(true)
       })
       item.append(nameButton)
+      // Flexible gap: clicking here toggles selection (handled by the li).
+      const spacer = document.createElement('span')
+      spacer.className = 'min-h-6 min-w-4 flex-1'
+      spacer.setAttribute('aria-hidden', 'true')
+      item.append(spacer)
     }
 
     // Pets ON without a pet march keeps an open (empty) editor in place —
@@ -313,9 +399,14 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     removeButton.setAttribute('aria-label', `Remove ${caller.name}`)
     removeButton.addEventListener('click', () => {
       callers = callers.filter((entry) => entry.id !== caller.id)
+      if (selection.has(caller.id)) {
+        selection = toggleSelection(selection, caller.id)
+        persistSelection()
+      }
       if (editing?.id === caller.id) editing = null
       rowError = null
       persist()
+      notifySelection()
       renderList()
     })
     item.append(removeButton)
@@ -337,6 +428,7 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     editing = null
     rowError = null
     persist()
+    notifySelection()
     renderList()
   }
 
@@ -358,6 +450,8 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     editing = null
     rowError = null
     persist()
+    pruneSelection()
+    notifySelection()
     renderList()
   }
 
@@ -383,6 +477,8 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     editing = null
     rowError = null
     persist()
+    pruneSelection()
+    notifySelection()
     renderList()
   }
 
@@ -394,6 +490,8 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       if (editing?.id === id) editing = null
       rowError = null
       persist()
+      pruneSelection()
+      notifySelection()
       renderList()
       return
     }
@@ -403,6 +501,8 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
     // Fresh activation without a pet march opens the pet editor immediately.
     editing = caller.petMarchSec === null ? { id, field: 'pet' } : null
     persist()
+    pruneSelection()
+    notifySelection()
     renderList(editing !== null)
   }
 
@@ -455,6 +555,15 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
   renderList()
 
   return {
+    getCallers(): RallyCaller[] {
+      return [...callers]
+    },
+    getSelection(): Set<string> {
+      return new Set(selection)
+    },
+    onSelectionChange(listener: () => void): void {
+      selectionListeners.add(listener)
+    },
     refresh(now: number): void {
       const purged = purgeExpired(callers, now)
       const changed = purged.some(
@@ -465,6 +574,8 @@ export function mountRallyCallers(root: HTMLElement): { refresh: (now: number) =
       if (changed) {
         callers = purged
         persist()
+        pruneSelection()
+        notifySelection()
         // Don't steal focus from an in-progress edit on background expiry.
         const keepFocus = editing !== null
         renderList(keepFocus)
