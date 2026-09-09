@@ -182,7 +182,6 @@ setInterval(() => {
     }
   }
   rallyCallers.refresh(Date.now())
-  rallyCallers.setRaceState(running, endTime)
-  rallyQueue.tick(Math.ceil(remainingMs / 1000), running)
+  rallyQueue.tick(Math.ceil(remainingMs / 1000), running, endTime)
   render()
 }, TICK_MS)
