@@ -1,4 +1,7 @@
 import { mountRallyCallers } from './components/rally-callers'
+import { mountRallyQueue } from './components/rally-queue'
+import { getDefaultDurationSec, getSelectedCallers } from './rally-selection'
+import type { RallyCaller } from './rally-callers'
 import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
@@ -20,6 +23,7 @@ const resetButton = getElement('reset-button') as HTMLButtonElement
 const clearButton = getElement('clear-button') as HTMLButtonElement
 const rallyPanel = getElement('rally-panel')
 const rallyCallers = mountRallyCallers(rallyPanel)
+const rallyQueue = mountRallyQueue(getElement('rally-queue'))
 
 const MAX_MINUTES = 99
 const MAX_SECONDS = 59
@@ -47,6 +51,27 @@ function syncInputs(): void {
   secondsInput.value = configuredSeconds === 0 ? '' : (configuredSeconds % 60).toString()
 }
 
+function currentSelection(): RallyCaller[] {
+  return getSelectedCallers(rallyCallers.getCallers(), rallyCallers.getSelection())
+}
+
+function maybeAutoDuration(selected: RallyCaller[]): void {
+  if (running || configuredSeconds !== 0) return
+  const next = getDefaultDurationSec(selected)
+  if (next === null) return
+  configuredSeconds = next
+  remainingMs = next * 1000
+  finished = false
+  syncInputs()
+}
+
+function syncQueueSelection(): void {
+  const selected = currentSelection()
+  rallyQueue.setSelected(selected)
+  maybeAutoDuration(selected)
+  render()
+}
+
 function onInputsChange(): void {
   if (running) return
   minutesInput.value = clampInput(minutesInput.value, MAX_MINUTES)
@@ -54,6 +79,7 @@ function onInputsChange(): void {
   configuredSeconds = readDurationSeconds()
   remainingMs = configuredSeconds * 1000
   finished = false
+  rallyQueue.restore()
   render()
 }
 
@@ -73,11 +99,13 @@ function onPlay(): void {
     running = false
     remainingMs = Math.max(0, endTime - Date.now())
   } else {
+    const fresh = remainingMs <= 0 || finished
     if (remainingMs <= 0) {
       configuredSeconds = readDurationSeconds()
       remainingMs = configuredSeconds * 1000
     }
     if (remainingMs <= 0) return
+    if (fresh) rallyQueue.restore()
     finished = false
     running = true
     endTime = Date.now() + remainingMs
@@ -90,6 +118,7 @@ function onReset(): void {
   running = false
   remainingMs = configuredSeconds * 1000
   finished = false
+  rallyQueue.restore()
   render()
 }
 
@@ -100,6 +129,7 @@ function onClear(): void {
   remainingMs = 0
   endTime = 0
   syncInputs()
+  rallyQueue.restore()
   render()
 }
 
@@ -128,7 +158,20 @@ secondsInput.addEventListener('change', () => padInputField(secondsInput))
 playButton.addEventListener('click', onPlay)
 resetButton.addEventListener('click', onReset)
 clearButton.addEventListener('click', onClear)
+rallyCallers.onSelectionChange(syncQueueSelection)
+rallyQueue.onUseMax3(() => {
+  if (running) return
+  const next = getDefaultDurationSec(currentSelection())
+  if (next === null) return
+  configuredSeconds = next
+  remainingMs = next * 1000
+  finished = false
+  syncInputs()
+  rallyQueue.restore()
+  render()
+})
 
+syncQueueSelection()
 render()
 setInterval(() => {
   if (running) {
@@ -139,5 +182,6 @@ setInterval(() => {
     }
   }
   rallyCallers.refresh(Date.now())
+  rallyQueue.tick(Math.ceil(remainingMs / 1000), running)
   render()
 }, TICK_MS)
