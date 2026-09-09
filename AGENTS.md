@@ -18,6 +18,7 @@ Static website for WoS Util (Whiteout Survival utility): a countdown timer page.
 - Vite multi-page build: root `index.html` (redirect) + `countdown/index.html`, declared in `vite.config.ts` (`build.rollupOptions.input`).
 - `base: './'` in `vite.config.ts` → relative asset paths, works on the Pages subpath and on forks.
 - Tailwind v4 CSS-first config: tokens in `src/styles/theme.css` (`@theme`). No `tailwind.config.js`.
+- Named spacing tokens (`--spacing-md: 12px`, …) collide with size utilities: `max-w-md` resolves to 12px, not 28rem. Always use arbitrary values for max-widths (e.g. `max-w-[34rem]`).
 - Design is light-only ("Theme: light" in `docs/DESIGN.md`); dark surfaces (`canvas-night`, `on-dark`) exist as tokens for contrast sections, no dark mode toggle yet.
 - Font: Circular is proprietary → substituted with Inter (Google Fonts) via `--font-primary` override in `src/style.css`.
 - The timer is duration-based (MM:SS display): the user enters minutes/seconds (`minutes-input`, `seconds-input` in `countdown/index.html`) and presses Play. State machine in `src/main.ts`: `configuredSeconds`, `remainingMs`, `running`, `finished`, `endTime`.
