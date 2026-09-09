@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildQueue,
+  formatCallTargetUtc,
+  getBufferDurationSec,
   getDefaultDurationSec,
   getFlashingIds,
   getMaxMarchSec,
@@ -112,6 +114,16 @@ describe('max march + buffer', () => {
     expect(getDefaultDurationSec([])).toBeNull()
     expect(getMaxMarchSec([makeCaller({ baseMarchSec: null })])).toBeNull()
   })
+
+  it('supports custom buffers (66 + 20 -> 86)', () => {
+    const list = [
+      makeCaller({ id: '1', name: 'Mario', baseMarchSec: 66 }),
+      makeCaller({ id: '2', name: 'Pedro', baseMarchSec: 38 }),
+    ]
+    expect(getBufferDurationSec(list, 20)).toBe(86)
+    expect(getBufferDurationSec(list, 3)).toBe(69)
+    expect(getBufferDurationSec([], 20)).toBeNull()
+  })
 })
 
 describe('buildQueue', () => {
@@ -131,6 +143,19 @@ describe('buildQueue', () => {
       makeCaller({ id: '2', name: 'SinMarch', baseMarchSec: null }),
     ]
     expect(buildQueue(list).map((entry) => entry.id)).toEqual(['1'])
+  })
+})
+
+describe('formatCallTargetUtc', () => {
+  it('formats endTime minus march as HH:MM:SS UTC', () => {
+    // Now 12:00:00, 40s remaining, march 25 → call at 12:00:15.
+    const now = Date.UTC(2026, 8, 9, 12, 0, 0)
+    expect(formatCallTargetUtc(now + 40_000, 25)).toBe('12:00:15 UTC')
+  })
+
+  it('rolls over midnight correctly', () => {
+    const now = Date.UTC(2026, 8, 9, 23, 59, 50)
+    expect(formatCallTargetUtc(now + 40_000, 25)).toBe('00:00:05 UTC')
   })
 })
 
