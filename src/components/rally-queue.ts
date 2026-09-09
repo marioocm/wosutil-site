@@ -2,11 +2,13 @@ import { formatMarchSec } from '../rally-callers'
 import type { RallyCaller } from '../rally-callers'
 import {
   buildQueue,
-  getDefaultDurationSec,
+  getBufferDurationSec,
   getFlashingIds,
   getNewlyConsumedIds,
 } from '../rally-selection'
 import type { QueueEntry } from '../rally-selection'
+
+export const QUEUE_BUFFERS = [3, 20] as const
 
 const secondaryButtonClass =
   'font-primary cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft disabled:cursor-not-allowed disabled:opacity-40'
@@ -26,25 +28,30 @@ export function mountRallyQueue(root: HTMLElement): {
   setSelected: (callers: RallyCaller[]) => void
   tick: (displaySeconds: number, running: boolean) => void
   restore: () => void
-  onUseMax3: (listener: () => void) => void
+  onApplyBuffer: (listener: (bufferSec: number) => void) => void
 } {
   let selected: RallyCaller[] = []
   let consumed = new Set<string>()
   let lastKey = ''
-  const max3Listeners = new Set<() => void>()
+  const bufferListeners = new Set<(bufferSec: number) => void>()
 
   const header = el('div', 'flex items-center justify-between gap-2')
   const title = el('h2', 'text-body-md font-medium text-ink', 'Up next')
-  const max3Button = document.createElement('button')
-  max3Button.type = 'button'
-  max3Button.id = 'rally-max3'
-  max3Button.textContent = 'Set Max +3s'
-  max3Button.className = `${secondaryButtonClass} shrink-0 px-2 py-1 text-caption`
-  max3Button.addEventListener('click', () => {
-    for (const listener of max3Listeners) listener()
+  const bufferGroup = el('div', 'flex shrink-0 items-center gap-2')
+  const bufferButtons = QUEUE_BUFFERS.map((bufferSec) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.id = `rally-max${bufferSec}`
+    button.textContent = `Set Max +${bufferSec}s`
+    button.className = `${secondaryButtonClass} shrink-0 px-2 py-1 text-caption`
+    button.addEventListener('click', () => {
+      for (const listener of bufferListeners) listener(bufferSec)
+    })
+    bufferGroup.append(button)
+    return { bufferSec, button }
   })
 
-  header.append(title, max3Button)
+  header.append(title, bufferGroup)
 
   const list = document.createElement('ul')
   list.id = 'rally-queue-list'
@@ -67,10 +74,12 @@ export function mountRallyQueue(root: HTMLElement): {
 
   function render(): void {
     const rows = pending()
-    const defaultSec = getDefaultDurationSec(selected)
-    max3Button.disabled = selected.length === 0
-    max3Button.title =
-      defaultSec === null ? 'Select rally callers first' : `Set timer to ${formatMarchSec(defaultSec)}`
+    for (const { bufferSec, button } of bufferButtons) {
+      const target = getBufferDurationSec(selected, bufferSec)
+      button.disabled = selected.length === 0
+      button.title =
+        target === null ? 'Select rally callers first' : `Set timer to ${formatMarchSec(target)}`
+    }
 
     list.textContent = ''
     if (rows.length === 0) {
@@ -147,8 +156,8 @@ export function mountRallyQueue(root: HTMLElement): {
       consumed = new Set()
       render()
     },
-    onUseMax3(listener: () => void): void {
-      max3Listeners.add(listener)
+    onApplyBuffer(listener: (bufferSec: number) => void): void {
+      bufferListeners.add(listener)
     },
   }
 }

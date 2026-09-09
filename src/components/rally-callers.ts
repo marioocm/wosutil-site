@@ -16,6 +16,7 @@ import {
 } from '../rally-callers'
 import type { RallyCaller } from '../rally-callers'
 import {
+  formatCallTargetUtc,
   isSelectable,
   loadSelection,
   sanitizeSelection,
@@ -36,6 +37,34 @@ const primaryButtonClass =
   'font-primary cursor-pointer rounded-sm bg-primary px-3 py-2 text-center text-button-md font-medium text-on-primary transition-colors hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-40'
 const secondaryButtonClass =
   'font-primary cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft'
+
+const COPY_ICON =
+  '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><path d="M8 4V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h1"/></svg>'
+const CHECK_ICON =
+  '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5l2.5 2.5 4.5-5.5"/></svg>'
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // Clipboard API unavailable (permissions, insecure context): fallback.
+  }
+  try {
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('aria-hidden', 'true')
+    area.style.position = 'fixed'
+    area.style.opacity = '0'
+    document.body.append(area)
+    area.select()
+    const ok = document.execCommand('copy')
+    area.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -61,12 +90,15 @@ export function mountRallyCallers(root: HTMLElement): {
   getCallers: () => RallyCaller[]
   getSelection: () => Set<string>
   onSelectionChange: (listener: () => void) => void
+  setRaceState: (running: boolean, endTimeMs: number) => void
 } {
   let callers: RallyCaller[] = loadCallers(localStorage, Date.now())
   let selection: Set<string> = sanitizeSelection(loadSelection(localStorage), callers)
   let formError: string | null = null
   let rowError: string | null = null
   let editing: Editing = null
+  let raceRunning = false
+  let raceEndTime = 0
   const selectionListeners = new Set<() => void>()
 
   persist()
@@ -170,6 +202,36 @@ export function mountRallyCallers(root: HTMLElement): {
 
   function findCaller(id: string): RallyCaller | undefined {
     return callers.find((caller) => caller.id === id)
+  }
+
+  function flashCopyButton(button: HTMLButtonElement, ok: boolean, name: string): void {
+    button.innerHTML = ok ? CHECK_ICON : COPY_ICON
+    button.setAttribute('aria-label', ok ? 'Copied!' : `Copy failed, retry copy for ${name}`)
+    button.title = ok ? 'Copied!' : 'Copy failed'
+    window.setTimeout(() => {
+      if (!button.isConnected) return
+      button.innerHTML = COPY_ICON
+      button.setAttribute('aria-label', `Copy call time for ${name}`)
+      button.title = 'Copy call UTC time'
+    }, 1500)
+  }
+
+  async function copyCallTime(id: string, button: HTMLButtonElement): Promise<void> {
+    const caller = findCaller(id)
+    const effective = caller ? getEffectiveMarchSec(caller) : null
+    if (!caller || effective === null) return
+    const ok = await copyText(formatCallTargetUtc(raceEndTime, effective))
+    flashCopyButton(button, ok, caller.name)
+  }
+
+  function setRaceState(running: boolean, endTimeMs: number): void {
+    raceEndTime = endTimeMs
+    if (running === raceRunning) return
+    raceRunning = running
+    // Update copy buttons in place: a full re-render would steal focus mid-race.
+    for (const button of list.querySelectorAll<HTMLButtonElement>('[data-copy-btn]')) {
+      button.disabled = !raceRunning
+    }
   }
 
   function syncFormError(): void {
@@ -362,6 +424,24 @@ export function mountRallyCallers(root: HTMLElement): {
         renderList(true)
       })
       item.append(marchButton)
+    }
+
+    if (selected) {
+      const copyButton = document.createElement('button')
+      copyButton.type = 'button'
+      copyButton.id = `rally-copy-${caller.id}`
+      copyButton.className =
+        'shrink-0 cursor-pointer rounded-sm border border-hairline-strong bg-canvas p-1.5 text-ink transition-colors hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep disabled:cursor-not-allowed disabled:opacity-40'
+      copyButton.innerHTML = COPY_ICON
+      copyButton.disabled = !raceRunning
+      copyButton.title = 'Copy call UTC time'
+      copyButton.setAttribute('aria-label', `Copy call time for ${caller.name}`)
+      copyButton.dataset['copyBtn'] = caller.id
+      copyButton.addEventListener('click', (event) => {
+        event.stopPropagation()
+        void copyCallTime(caller.id, copyButton)
+      })
+      item.append(copyButton)
     }
 
     const toggle = document.createElement('button')
@@ -563,6 +643,9 @@ export function mountRallyCallers(root: HTMLElement): {
     },
     onSelectionChange(listener: () => void): void {
       selectionListeners.add(listener)
+    },
+    setRaceState(running: boolean, endTimeMs: number): void {
+      setRaceState(running, endTimeMs)
     },
     refresh(now: number): void {
       const purged = purgeExpired(callers, now)
