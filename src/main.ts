@@ -1,6 +1,6 @@
 import { mountRallyCallers } from './components/rally-callers'
 import { mountRallyQueue } from './components/rally-queue'
-import { getDefaultDurationSec, getSelectedCallers } from './rally-selection'
+import { getBufferDurationSec, getDefaultDurationSec, getSelectedCallers } from './rally-selection'
 import type { RallyCaller } from './rally-callers'
 import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
@@ -159,9 +159,9 @@ playButton.addEventListener('click', onPlay)
 resetButton.addEventListener('click', onReset)
 clearButton.addEventListener('click', onClear)
 rallyCallers.onSelectionChange(syncQueueSelection)
-rallyQueue.onUseMax3(() => {
+rallyQueue.onApplyBuffer((bufferSec) => {
   if (running) return
-  const next = getDefaultDurationSec(currentSelection())
+  const next = getBufferDurationSec(currentSelection(), bufferSec)
   if (next === null) return
   configuredSeconds = next
   remainingMs = next * 1000
@@ -182,6 +182,6 @@ setInterval(() => {
     }
   }
   rallyCallers.refresh(Date.now())
-  rallyQueue.tick(Math.ceil(remainingMs / 1000), running)
+  rallyQueue.tick(Math.ceil(remainingMs / 1000), running, endTime)
   render()
 }, TICK_MS)

@@ -1,5 +1,6 @@
 import { getEffectiveMarchSec } from './rally-callers'
 import type { RallyCaller } from './rally-callers'
+import { formatUtcClock } from './timer'
 
 export const SELECTION_STORAGE_KEY = 'wosutil:rally-selection:v1'
 export const QUEUE_BUFFER_SEC = 3
@@ -42,8 +43,19 @@ export function getMaxMarchSec(selected: RallyCaller[]): number | null {
 }
 
 export function getDefaultDurationSec(selected: RallyCaller[]): number | null {
+  return getBufferDurationSec(selected, QUEUE_BUFFER_SEC)
+}
+
+export function getBufferDurationSec(
+  selected: RallyCaller[],
+  bufferSec: number,
+): number | null {
   const max = getMaxMarchSec(selected)
-  return max === null ? null : max + QUEUE_BUFFER_SEC
+  return max === null ? null : max + bufferSec
+}
+
+export function formatCallTargetUtc(endTimeMs: number, callAtSec: number): string {
+  return `${formatUtcClock(new Date(endTimeMs - callAtSec * 1000))} UTC`
 }
 
 export function buildQueue(selected: RallyCaller[]): QueueEntry[] {
