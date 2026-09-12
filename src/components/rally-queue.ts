@@ -9,7 +9,7 @@ import {
 } from '../rally-selection'
 import type { QueueEntry } from '../rally-selection'
 
-export const QUEUE_BUFFERS = [3, 20] as const
+export const QUEUE_BUFFERS = [3, 10, 20] as const
 
 const secondaryButtonClass =
   'font-primary cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft disabled:cursor-not-allowed disabled:opacity-40'
