@@ -1,5 +1,6 @@
 import { mountRallyCallers } from './components/rally-callers'
 import { mountRallyQueue } from './components/rally-queue'
+import { ENEMY_STORAGE_KEY } from './rally-callers'
 import { getBufferDurationSec, getDefaultDurationSec, getSelectedCallers } from './rally-selection'
 import type { RallyCaller } from './rally-callers'
 import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
@@ -23,6 +24,13 @@ const resetButton = getElement('reset-button') as HTMLButtonElement
 const clearButton = getElement('clear-button') as HTMLButtonElement
 const rallyPanel = getElement('rally-panel')
 const rallyCallers = mountRallyCallers(rallyPanel)
+const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
+  storageKey: ENEMY_STORAGE_KEY,
+  selectable: false,
+  callerLabel: 'Enemy caller',
+  emptyText: 'No enemy callers yet. Add the first above.',
+  idPrefix: 'enemy',
+})
 const rallyQueue = mountRallyQueue(getElement('rally-queue'))
 
 const MAX_MINUTES = 99
@@ -182,6 +190,7 @@ setInterval(() => {
     }
   }
   rallyCallers.refresh(Date.now())
+  enemyCallers.refresh(Date.now())
   rallyQueue.tick(Math.ceil(remainingMs / 1000), running, endTime)
   render()
 }, TICK_MS)

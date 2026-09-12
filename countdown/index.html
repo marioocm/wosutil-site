@@ -36,11 +36,25 @@
       </header>
 
       <main class="mx-auto flex w-full flex-1 flex-col items-center gap-10 px-6 py-8 lg:grid lg:grid-cols-2 lg:items-start">
-        <section
-          id="rally-panel"
-          aria-label="Rally callers"
-          class="order-2 flex w-full max-w-[34rem] flex-col gap-3 rounded-xl border border-hairline bg-canvas p-4 lg:order-1 lg:max-w-[min(34rem,100%)] lg:justify-self-center"
-        ></section>
+        <div
+          class="order-2 flex w-full max-w-[34rem] flex-col gap-4 lg:order-1 lg:max-w-[min(34rem,100%)] lg:justify-self-center"
+        >
+          <section
+            id="rally-panel"
+            aria-label="Rally callers"
+            class="flex w-full flex-col gap-3 rounded-xl border border-hairline bg-canvas p-4"
+          >
+            <h2 class="text-body-md font-medium text-ink">Rally callers</h2>
+          </section>
+
+          <section
+            id="enemy-panel"
+            aria-label="Enemy callers"
+            class="flex w-full flex-col gap-3 rounded-xl border border-hairline bg-canvas p-4"
+          >
+            <h2 class="text-body-md font-medium text-ink">Enemy callers</h2>
+          </section>
+        </div>
 
         <div class="order-1 flex w-full flex-col items-center gap-10 lg:order-2">
           <section
