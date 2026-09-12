@@ -11,6 +11,7 @@ import {
   purgeExpired,
   saveCallers,
   sortCallers,
+  STORAGE_KEY,
   validateCallerName,
   validatePetMarch,
 } from '../rally-callers'
@@ -20,6 +21,7 @@ import {
   loadSelection,
   sanitizeSelection,
   saveSelection,
+  SELECTION_STORAGE_KEY,
   toggleSelection,
 } from '../rally-selection'
 import { buildDurationGroup, wireMarchEditor } from './duration-input'
@@ -56,14 +58,41 @@ function ignorePasswordManagers(target: HTMLElement): void {
   target.setAttribute('data-bwignore', 'true')
 }
 
-export function mountRallyCallers(root: HTMLElement): {
+export interface MountRallyCallersOptions {
+  /** Storage key for the caller list. Defaults to STORAGE_KEY (allies). */
+  storageKey?: string
+  /** Storage key for the selection. Only used when `selectable` is true. */
+  selectionStorageKey?: string
+  /** When false, rows render without selection controls and never notify. */
+  selectable?: boolean
+  /** Label/placeholder for the name field (e.g. 'Rally caller', 'Enemy caller'). */
+  callerLabel?: string
+  /** Empty-list message. */
+  emptyText?: string
+  /** Prefix for static DOM ids so two panels can coexist. Defaults to 'rally'. */
+  idPrefix?: string
+}
+
+export function mountRallyCallers(
+  root: HTMLElement,
+  options: MountRallyCallersOptions = {},
+): {
   refresh: (now: number) => void
   getCallers: () => RallyCaller[]
   getSelection: () => Set<string>
   onSelectionChange: (listener: () => void) => void
 } {
-  let callers: RallyCaller[] = loadCallers(localStorage, Date.now())
-  let selection: Set<string> = sanitizeSelection(loadSelection(localStorage), callers)
+  const storageKey = options.storageKey ?? STORAGE_KEY
+  const selectionStorageKey = options.selectionStorageKey ?? SELECTION_STORAGE_KEY
+  const selectable = options.selectable ?? true
+  const callerLabel = options.callerLabel ?? 'Rally caller'
+  const emptyText = options.emptyText ?? 'No rally callers yet. Add the first above.'
+  const prefix = options.idPrefix ?? 'rally'
+
+  let callers: RallyCaller[] = loadCallers(localStorage, Date.now(), storageKey)
+  let selection: Set<string> = selectable
+    ? sanitizeSelection(loadSelection(localStorage, selectionStorageKey), callers)
+    : new Set<string>()
   let formError: string | null = null
   let rowError: string | null = null
   let editing: Editing = null
@@ -73,69 +102,70 @@ export function mountRallyCallers(root: HTMLElement): {
 
   const form = document.createElement('form')
   form.className = 'flex flex-col gap-2'
-  form.setAttribute('aria-label', 'Add rally caller')
+  form.setAttribute('aria-label', `Add ${callerLabel.toLowerCase()}`)
   form.autocomplete = 'off'
   ignorePasswordManagers(form)
 
   const formRow = el('div', 'flex flex-col gap-2 sm:flex-row sm:items-center')
   const nameInput = document.createElement('input')
   nameInput.type = 'text'
-  nameInput.id = 'rally-caller'
-  nameInput.name = 'rally-caller'
-  nameInput.placeholder = 'Rally caller'
+  nameInput.id = `${prefix}-caller`
+  nameInput.name = `${prefix}-caller`
+  nameInput.placeholder = callerLabel
   nameInput.autocomplete = 'off'
   nameInput.maxLength = 40
   nameInput.className = `${inputClass} min-w-0 flex-1`
   ignorePasswordManagers(nameInput)
   const nameLabel = document.createElement('label')
-  nameLabel.htmlFor = 'rally-caller'
+  nameLabel.htmlFor = `${prefix}-caller`
   nameLabel.className = 'sr-only'
-  nameLabel.textContent = 'Rally caller'
+  nameLabel.textContent = callerLabel
 
   const formDuration = buildDurationGroup({
     initial: null,
     minutesLabel: 'March minutes',
     secondsLabel: 'March seconds',
-    minutesName: 'rally-mm',
-    secondsName: 'rally-ss',
+    minutesName: `${prefix}-mm`,
+    secondsName: `${prefix}-ss`,
   })
-  formDuration.mm.id = 'rally-mm'
-  formDuration.ss.id = 'rally-ss'
+  formDuration.mm.id = `${prefix}-mm`
+  formDuration.ss.id = `${prefix}-ss`
 
   const addButton = document.createElement('button')
   addButton.type = 'submit'
-  addButton.id = 'rally-add'
+  addButton.id = `${prefix}-add`
   addButton.textContent = 'Add'
   addButton.className = `${primaryButtonClass} shrink-0`
 
   const formErrorEl = el('p', 'invisible text-caption text-accent-tomato')
-  formErrorEl.id = 'rally-form-error'
+  formErrorEl.id = `${prefix}-form-error`
   formErrorEl.setAttribute('role', 'alert')
 
   formRow.append(nameInput, formDuration.group, addButton)
   form.append(nameLabel, formRow, formErrorEl)
 
   const list = document.createElement('ul')
-  list.id = 'rally-list'
+  list.id = `${prefix}-list`
   list.className = 'flex flex-col gap-2'
-  list.setAttribute('aria-label', 'Rally caller list')
+  list.setAttribute('aria-label', `${callerLabel} list`)
 
-  const empty = el('p', 'text-caption text-ink-mute', 'No rally callers yet. Add the first above.')
-  empty.id = 'rally-empty'
+  const empty = el('p', 'text-caption text-ink-mute', emptyText)
+  empty.id = `${prefix}-empty`
   empty.setAttribute('role', 'status')
 
   const rowErrorEl = el('p', 'invisible text-caption text-accent-tomato')
-  rowErrorEl.id = 'rally-row-error'
+  rowErrorEl.id = `${prefix}-row-error`
   rowErrorEl.setAttribute('role', 'alert')
 
   root.append(form, rowErrorEl, list, empty)
 
   function persist(): void {
-    saveCallers(localStorage, callers)
+    saveCallers(localStorage, callers, storageKey)
   }
 
   function persistSelection(): void {
-    saveSelection(localStorage, selection)
+    if (!selectable) return
+    saveSelection(localStorage, selection, selectionStorageKey)
   }
 
   function notifySelection(): void {
@@ -143,6 +173,7 @@ export function mountRallyCallers(root: HTMLElement): {
   }
 
   function pruneSelection(): void {
+    if (!selectable) return
     const pruned = sanitizeSelection(selection, callers)
     // Drop callers that lost their march time (not selectable anymore).
     for (const id of [...pruned]) {
@@ -156,16 +187,17 @@ export function mountRallyCallers(root: HTMLElement): {
   }
 
   function toggleSelect(id: string): void {
+    if (!selectable) return
     const caller = findCaller(id)
     if (!caller || !isSelectable(caller)) return
     // Never steal an in-progress edit: row clicks while editing do nothing.
     if (editing?.id === id) return
-    const refocus = document.activeElement?.id === `rally-select-${id}`
+    const refocus = document.activeElement?.id === `${prefix}-select-${id}`
     selection = toggleSelection(selection, id)
     persistSelection()
     notifySelection()
     renderList()
-    if (refocus) document.getElementById(`rally-select-${id}`)?.focus()
+    if (refocus) document.getElementById(`${prefix}-select-${id}`)?.focus()
   }
 
   function findCaller(id: string): RallyCaller | undefined {
@@ -220,42 +252,49 @@ export function mountRallyCallers(root: HTMLElement): {
 
   function renderRow(caller: RallyCaller): HTMLElement {
     const item = document.createElement('li')
-    const selectable = isSelectable(caller)
-    const selected = selectable && selection.has(caller.id)
-    item.className = selected
-      ? 'flex items-center gap-2 rounded-md border border-primary-deep bg-primary/10 px-3 py-2 shadow-sm transition-all -translate-y-px cursor-pointer'
-      : 'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all hover:border-hairline-strong cursor-pointer'
+    const canSelect = isSelectable(caller)
+    const selected = selectable && canSelect && selection.has(caller.id)
+    if (selectable) {
+      item.className = selected
+        ? 'flex items-center gap-2 rounded-md border border-primary-deep bg-primary/10 px-3 py-2 shadow-sm transition-all -translate-y-px cursor-pointer'
+        : 'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all hover:border-hairline-strong cursor-pointer'
+      item.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement | null
+        if (target?.closest('button,input,a,select,textarea,label')) return
+        toggleSelect(caller.id)
+      })
+    } else {
+      item.className =
+        'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all'
+    }
     item.dataset['callerId'] = caller.id
     if (selected) item.dataset['selected'] = 'true'
-    item.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement | null
-      if (target?.closest('button,input,a,select,textarea,label')) return
-      toggleSelect(caller.id)
-    })
 
-    const selectButton = document.createElement('button')
-    selectButton.type = 'button'
-    selectButton.id = `rally-select-${caller.id}`
-    selectButton.className = selected
-      ? 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary-deep bg-primary text-on-primary focus-visible:outline-2 focus-visible:outline-primary-deep'
-      : 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-hairline-strong bg-canvas text-transparent transition-colors hover:border-primary-deep focus-visible:outline-2 focus-visible:outline-primary-deep'
-    selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false')
-    selectButton.setAttribute('aria-label', `Select ${caller.name}`)
-    if (!selectable) {
-      selectButton.disabled = true
-      selectButton.setAttribute('aria-disabled', 'true')
-      selectButton.title = 'Add a march time to select'
-      selectButton.classList.add('cursor-not-allowed', 'opacity-40')
-    } else {
-      selectButton.title = selected ? 'Deselect' : 'Select'
+    if (selectable) {
+      const selectButton = document.createElement('button')
+      selectButton.type = 'button'
+      selectButton.id = `${prefix}-select-${caller.id}`
+      selectButton.className = selected
+        ? 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary-deep bg-primary text-on-primary focus-visible:outline-2 focus-visible:outline-primary-deep'
+        : 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-hairline-strong bg-canvas text-transparent transition-colors hover:border-primary-deep focus-visible:outline-2 focus-visible:outline-primary-deep'
+      selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false')
+      selectButton.setAttribute('aria-label', `Select ${caller.name}`)
+      if (!canSelect) {
+        selectButton.disabled = true
+        selectButton.setAttribute('aria-disabled', 'true')
+        selectButton.title = 'Add a march time to select'
+        selectButton.classList.add('cursor-not-allowed', 'opacity-40')
+      } else {
+        selectButton.title = selected ? 'Deselect' : 'Select'
+      }
+      selectButton.innerHTML =
+        '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5l2.5 2.5 4.5-5.5"/></svg>'
+      selectButton.addEventListener('click', (event) => {
+        event.stopPropagation()
+        toggleSelect(caller.id)
+      })
+      item.append(selectButton)
     }
-    selectButton.innerHTML =
-      '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5l2.5 2.5 4.5-5.5"/></svg>'
-    selectButton.addEventListener('click', (event) => {
-      event.stopPropagation()
-      toggleSelect(caller.id)
-    })
-    item.append(selectButton)
 
     if (editing?.id === caller.id && editing.field === 'name') {
       const input = document.createElement('input')

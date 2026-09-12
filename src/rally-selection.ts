@@ -116,9 +116,12 @@ export function sanitizeSelection(
   return new Set([...selection].filter((id) => valid.has(id)))
 }
 
-export function loadSelection(storage: Pick<Storage, 'getItem'>): Set<string> {
+export function loadSelection(
+  storage: Pick<Storage, 'getItem'>,
+  key: string = SELECTION_STORAGE_KEY,
+): Set<string> {
   try {
-    return new Set(parseSelection(storage.getItem(SELECTION_STORAGE_KEY)))
+    return new Set(parseSelection(storage.getItem(key)))
   } catch {
     return new Set()
   }
@@ -127,9 +130,10 @@ export function loadSelection(storage: Pick<Storage, 'getItem'>): Set<string> {
 export function saveSelection(
   storage: Pick<Storage, 'setItem'>,
   selection: ReadonlySet<string>,
+  key: string = SELECTION_STORAGE_KEY,
 ): void {
   try {
-    storage.setItem(SELECTION_STORAGE_KEY, serializeSelection(selection))
+    storage.setItem(key, serializeSelection(selection))
   } catch {
     // Storage full or unavailable: keep in-memory state, skip persistence.
   }
