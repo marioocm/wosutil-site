@@ -27,12 +27,23 @@
           ></span>
           <h1 class="text-heading-lg font-medium tracking-tight">WoS Util</h1>
         </div>
-        <p
-          id="utc-clock"
-          class="rounded-full border border-hairline bg-canvas-soft px-3 py-1 text-micro tabular-nums text-ink-mute"
-        >
-          UTC: --:--:--
-        </p>
+        <div class="flex items-center gap-2">
+          <button
+            id="share-button"
+            type="button"
+            title="Copy share link with your rally setup"
+            aria-label="Copy share link with your rally setup"
+            class="font-primary cursor-pointer rounded-full border border-hairline-strong bg-canvas px-3 py-1 text-micro font-medium text-ink transition-colors hover:bg-canvas-soft"
+          >
+            Share
+          </button>
+          <p
+            id="utc-clock"
+            class="rounded-full border border-hairline bg-canvas-soft px-3 py-1 text-micro tabular-nums text-ink-mute"
+          >
+            UTC: --:--:--
+          </p>
+        </div>
       </header>
 
       <main class="mx-auto flex w-full flex-1 flex-col items-center gap-10 px-6 py-8 lg:grid lg:grid-cols-2 lg:items-start">

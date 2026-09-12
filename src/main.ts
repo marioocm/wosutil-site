@@ -3,6 +3,13 @@ import { mountRallyQueue } from './components/rally-queue'
 import { ENEMY_STORAGE_KEY } from './rally-callers'
 import { getBufferDurationSec, getDefaultDurationSec, getSelectedCallers } from './rally-selection'
 import type { RallyCaller } from './rally-callers'
+import {
+  applySharedState,
+  buildShareUrl,
+  collectShareState,
+  hasExistingState,
+  parseShareFromHash,
+} from './share'
 import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
@@ -13,6 +20,46 @@ function getElement(id: string): HTMLElement {
   return element
 }
 
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // Clipboard API unavailable (permissions, insecure context): fallback.
+  }
+  try {
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('aria-hidden', 'true')
+    area.style.position = 'fixed'
+    area.style.opacity = '0'
+    document.body.append(area)
+    area.select()
+    const ok = document.execCommand('copy')
+    area.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
+
+function maybeImportSharedState(): void {
+  const payload = parseShareFromHash(window.location.hash)
+  if (!payload) return
+  const needsConfirm = hasExistingState(localStorage)
+  const accepted =
+    !needsConfirm ||
+    window.confirm('This link contains shared rally data. Replace your current lists?')
+  if (accepted) applySharedState(localStorage, payload, Date.now())
+  history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+}
+
+maybeImportSharedState()
+window.addEventListener('hashchange', () => {
+  // Pasting a share link into the open page only changes the hash (no reload).
+  if (parseShareFromHash(window.location.hash)) window.location.reload()
+})
+
 const minutesDisplay = getElement('minutes')
 const secondsDisplay = getElement('seconds')
 const clockElement = getElement('utc-clock')
@@ -22,6 +69,7 @@ const secondsInput = getElement('seconds-input') as HTMLInputElement
 const playButton = getElement('play-button') as HTMLButtonElement
 const resetButton = getElement('reset-button') as HTMLButtonElement
 const clearButton = getElement('clear-button') as HTMLButtonElement
+const shareButton = getElement('share-button') as HTMLButtonElement
 const rallyPanel = getElement('rally-panel')
 const rallyCallers = mountRallyCallers(rallyPanel)
 const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
@@ -141,6 +189,22 @@ function onClear(): void {
   render()
 }
 
+async function onShare(): Promise<void> {
+  const url = buildShareUrl(
+    window.location.href,
+    collectShareState(
+      rallyCallers.getCallers(),
+      enemyCallers.getCallers(),
+      rallyCallers.getSelection(),
+    ),
+  )
+  const ok = await copyText(url)
+  shareButton.textContent = ok ? 'Copied!' : 'Copy failed'
+  window.setTimeout(() => {
+    if (shareButton.isConnected) shareButton.textContent = 'Share'
+  }, 1500)
+}
+
 function render(): void {
   const displaySeconds = Math.ceil(remainingMs / 1000)
   const { minutes, seconds } = splitSeconds(displaySeconds)
@@ -166,6 +230,9 @@ secondsInput.addEventListener('change', () => padInputField(secondsInput))
 playButton.addEventListener('click', onPlay)
 resetButton.addEventListener('click', onReset)
 clearButton.addEventListener('click', onClear)
+shareButton.addEventListener('click', () => {
+  void onShare()
+})
 rallyCallers.onSelectionChange(syncQueueSelection)
 rallyQueue.onApplyBuffer((bufferSec) => {
   if (running) return
