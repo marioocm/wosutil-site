@@ -2,6 +2,7 @@ import { clamp, pad2, parseSecondsInput, splitSeconds } from './timer'
 
 export const PET_DURATION_MS = 2 * 60 * 60 * 1000
 export const STORAGE_KEY = 'wosutil:rally-callers:v1'
+export const ENEMY_STORAGE_KEY = 'wosutil:enemy-callers:v1'
 export const MAX_MINUTES = 99
 export const MAX_SECONDS = 59
 
@@ -150,17 +151,25 @@ export function serializeCallers(list: RallyCaller[]): string {
   return JSON.stringify(list)
 }
 
-export function loadCallers(storage: Pick<Storage, 'getItem'>, now: number): RallyCaller[] {
+export function loadCallers(
+  storage: Pick<Storage, 'getItem'>,
+  now: number,
+  key: string = STORAGE_KEY,
+): RallyCaller[] {
   try {
-    return purgeExpired(parseCallers(storage.getItem(STORAGE_KEY)), now)
+    return purgeExpired(parseCallers(storage.getItem(key)), now)
   } catch {
     return []
   }
 }
 
-export function saveCallers(storage: Pick<Storage, 'setItem'>, list: RallyCaller[]): void {
+export function saveCallers(
+  storage: Pick<Storage, 'setItem'>,
+  list: RallyCaller[],
+  key: string = STORAGE_KEY,
+): void {
   try {
-    storage.setItem(STORAGE_KEY, serializeCallers(list))
+    storage.setItem(key, serializeCallers(list))
   } catch {
     // Storage full or unavailable: keep in-memory state, skip persistence.
   }
