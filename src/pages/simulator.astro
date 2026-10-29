@@ -1,18 +1,109 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
+import { STAT_BONUSES } from '../lib/stat-bonuses'
+
+const inputClass =
+  'w-[4ch] min-w-0 max-w-full p-0 text-center font-mono text-caption tabular-nums text-inherit placeholder:text-ink-subtle/60 focus:outline-none sm:text-p2'
+const valueClass =
+  'flex cursor-text items-center justify-center gap-0.5 rounded-sm px-0.5 py-1 text-ink transition-colors hover:bg-tint/40 focus-within:bg-tint/40 focus-within:ring-2 focus-within:ring-ink/10 sm:gap-1 sm:px-1.5'
 ---
 
 <SiteLayout
   title="WoS Util · Battle Simulator"
-  description="WoS Util battle simulator for Whiteout Survival, in development."
+  description="WoS Util battle simulator for Whiteout Survival: compare the stat bonuses of both sides."
   active="simulator"
 >
   <main
-    class="mx-auto flex w-full max-w-[1440px] flex-1 items-center justify-center px-4 py-16 sm:px-6 lg:px-10 xl:px-[100px]"
+    class="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
   >
-    <div class="flex max-w-[34rem] flex-col gap-2 text-center">
-      <h1 class="text-h4 font-medium tracking-[-0.01em]">Battle simulator</h1>
-      <p class="text-p3 text-ink-muted">In development.</p>
-    </div>
+    <section
+      class="mx-auto w-full max-w-[34rem] rounded-card border border-line bg-paper p-5"
+      aria-labelledby="stat-bonuses-title"
+    >
+      <h2 id="stat-bonuses-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
+        Stats Bonuses
+      </h2>
+
+      <table
+        class="mt-4 w-full table-fixed border-collapse"
+        aria-labelledby="stat-bonuses-title"
+        data-stat-bonuses
+      >
+        <colgroup>
+          <col />
+          <col class="w-[clamp(6.5rem,32vw,10rem)]" />
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col"><span class="sr-only">Left</span></th>
+            <th scope="col"><span class="sr-only">Stat</span></th>
+            <th scope="col"><span class="sr-only">Right</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            STAT_BONUSES.map((stat, index) => (
+              <tr data-stat-row>
+                <td class:list={['py-1', index > 0 && 'border-t border-line']}>
+                  <label class={valueClass} data-stat-value="left">
+                    <input
+                      id={`stat-${stat.id}-left`}
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="0.00"
+                      autocomplete="off"
+                      spellcheck="false"
+                      data-stat-side="left"
+                      aria-label={`Left ${stat.label} percentage`}
+                      class={inputClass}
+                    />
+                    <span
+                      class="shrink-0 font-mono text-caption opacity-60 sm:text-p2"
+                      aria-hidden="true">%</span
+                    >
+                  </label>
+                </td>
+                <th
+                  scope="row"
+                  class:list={[
+                    'py-1.5 text-center text-p3 font-medium leading-tight',
+                    index > 0 && 'border-t border-line',
+                  ]}
+                >
+                  {stat.label}
+                </th>
+                <td class:list={['py-1', index > 0 && 'border-t border-line']}>
+                  <label class={valueClass} data-stat-value="right">
+                    <input
+                      id={`stat-${stat.id}-right`}
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="0.00"
+                      autocomplete="off"
+                      spellcheck="false"
+                      data-stat-side="right"
+                      aria-label={`Right ${stat.label} percentage`}
+                      class={inputClass}
+                    />
+                    <span
+                      class="shrink-0 font-mono text-caption opacity-60 sm:text-p2"
+                      aria-hidden="true">%</span
+                    >
+                  </label>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+
+      <p id="stat-bonuses-summary" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+    </section>
   </main>
+
+  <script>
+    import { initStatBonuses } from '../scripts/stat-bonuses'
+    initStatBonuses()
+  </script>
 </SiteLayout>

@@ -115,3 +115,11 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+[data-stat-value][data-stat-state="higher"] {
+  color: var(--positive);
+}
+
+[data-stat-value][data-stat-state="lower"] {
+  color: var(--negative);
+}

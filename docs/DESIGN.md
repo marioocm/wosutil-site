@@ -8,9 +8,9 @@ typography and deliberately minimal chrome.
 
 ## Principles
 
-1. **Monochrome.** Ink, paper and neutral tints only. No decorative color accents
-   in the current build. If a future feature needs semantic color (success, danger),
-   add it as a token and use it only for that meaning.
+1. **Monochrome by default.** Ink, paper and neutral tints only. Semantic color is
+   reserved for the Stats Bonuses comparison: green for the higher side, red for the
+   lower side, through `--positive` / `--negative`. No decorative accents.
 2. **Warm, printed feel.** The canvas is warm cream, not pure white; text is warm
    near-black, not pure black.
 3. **Quiet structure.** Cards are defined by 1px hairlines, not shadows.
@@ -57,6 +57,8 @@ Semantic CSS variables live in `src/styles/theme.css`. Light values are defined 
 | `--line-strong` | `rgba(11,9,7,.38)`   | Emphasized borders            |
 | `--invert`      | `#3c3a39`            | Inverted surfaces (Play)      |
 | `--invert-fg`   | `#fefcf5`            | Text on inverted surfaces     |
+| `--positive`    | `#2e6b4f`            | Higher stat bonus             |
+| `--negative`    | `#a13b35`            | Lower stat bonus              |
 
 ### Dark
 
@@ -72,15 +74,18 @@ Semantic CSS variables live in `src/styles/theme.css`. Light values are defined 
 | `--line-strong` | `rgba(255,252,246,.35)`|
 | `--invert`      | `#f4f0e6`              |
 | `--invert-fg`   | `#171412`              |
+| `--positive`    | `#86c9a0`              |
+| `--negative`    | `#f0a19b`              |
 
 Both themes must keep body text at WCAG AA contrast. The current values pass for
 normal text; verify again if tokens change.
 
-### Optional semantic accents
+### Semantic accents
 
-The system does not use accent colors today. If one becomes necessary (e.g. a
-destructive action), add a dedicated token and scope it to that semantic meaning
-instead of reintroducing a palette. Keep it rare.
+Green and red are the only accents in the system. They are limited to the Stats
+Bonuses comparison: `--positive` marks the higher value and `--negative` the lower
+one. Ties, empty sides and invalid input stay neutral. Do not reuse these tokens for
+unrelated actions, labels or backgrounds.
 
 ---
 
@@ -189,6 +194,21 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - When a call is due while the timer runs, the row inverts to `--ink` /
   `--background`. No color-coded flash.
 
+### Stats Bonuses table
+
+- Outlined --paper card with a centered “Stats Bonuses” title.
+- Three-column table: left-side values centered in their column, the stat name
+  centered in the middle, and right-side values centered in their column.
+- The twelve rows follow the game order: Infantry / Lancer / Marksman × Attack /
+  Defense / Lethality / Health.
+- Values are percentage inputs with at most two decimals; extra decimals are blocked
+  while typing and values are normalized to two decimals on blur. The number and its
+  `%` suffix stay together, centered as one unit. The field is borderless by default
+  (hover/focus adds a tint and an ink ring).
+- The higher side is `--positive`, the lower side `--negative`. Equal values or rows
+  with a missing side stay in `--ink`.
+- Rows are separated by hairlines, never zebra stripes.
+
 ### Footer
 
 - Centered GitHub link only. No secondary tagline.
@@ -221,7 +241,7 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ## Avoid
 
 - Large radii, pill buttons or rounded-full chrome.
-- Colored accents, decorative dots or color-coded rows.
+- Decorative color accents or color-coded rows outside the Stats Bonuses comparison.
 - Shadows on cards; use hairline borders.
 - Extra labels, slash-prefixed eyebrows, taglines or repeated titles.
 - New proprietary fonts or copied brand assets.

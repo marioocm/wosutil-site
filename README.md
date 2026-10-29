@@ -1,6 +1,6 @@
 # WoS Util Site
 
-Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator (in development).
+Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator (starting with the Stats Bonuses comparison).
 
 Live site: [marioocm.github.io/wosutil-site](https://marioocm.github.io/wosutil-site/)
 
@@ -36,7 +36,7 @@ pnpm preview     # preview the production build
 - `src/pages/` — routes: countdown, simulator, 404 and `robots.txt`.
 - `src/layouts/` — document shell (`BaseLayout`) and site chrome (`SiteLayout`).
 - `src/components/` — static header/footer and the countdown widgets.
-- `src/scripts/` — browser behavior: countdown island and header chrome.
+- `src/scripts/` — browser behavior: countdown island, header chrome and the simulator stat table.
 - `src/lib/` — shared logic and types, with Vitest tests.
 - `src/styles/` — Tailwind entry and design tokens.
 - `public/` — `.nojekyll` (required for Astro's `_astro/` assets on Pages) and favicon.

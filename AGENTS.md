@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-Static website for WoS Util (Whiteout Survival utility): a rally countdown page and a battle simulator (placeholder). Open source (MIT), deployed to GitHub Pages. Stack: Astro 7 (static output) + TypeScript + Tailwind CSS v4, package manager: pnpm.
+Static website for WoS Util (Whiteout Survival utility): a rally countdown page and a battle simulator (in development). Open source (MIT), deployed to GitHub Pages. Stack: Astro 7 (static output) + TypeScript + Tailwind CSS v4, package manager: pnpm.
 
 ## Structure
 - `astro.config.ts` → static Astro config: `site`/`base` derived from `GITHUB_REPOSITORY` (overridable with `SITE_URL`/`BASE_PATH`), root redirect (`redirects`), sitemap, prefetch and the Tailwind Vite plugin.
@@ -12,7 +12,8 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown page 
 - `src/pages/countdown.astro`, `src/pages/simulator.astro` → pages; `src/pages/404.astro` → redirecting 404; `src/pages/robots.txt.ts` → generated `robots.txt`.
 - `src/scripts/countdown.ts` → countdown island: DOM wiring, timer state machine, rally/queue/share behavior.
 - `src/scripts/site-chrome.ts` → header behavior: UTC clock, theme toggle, nav indicator, share reveal/exit animation, mobile auto-hide.
-- `src/lib/timer.ts`, `share.ts`, `rally-selection.ts`, `rally-callers.ts`, `theme.ts`, `redirect.ts`, `nav.ts` → shared logic and types; pure helpers are unit-tested with Vitest.
+- `src/scripts/stat-bonuses.ts` → simulator stats table: live comparison, two-decimal formatting on blur and the hidden summary.
+- `src/lib/timer.ts`, `share.ts`, `rally-selection.ts`, `rally-callers.ts`, `stat-bonuses.ts`, `theme.ts`, `redirect.ts`, `nav.ts` → shared logic and types; pure helpers are unit-tested with Vitest.
 - `src/styles/global.css` → Tailwind entry + small global component CSS; `src/styles/theme.css` → design tokens (`@theme`, light/dark CSS variables).
 - `public/.nojekyll` → required so GitHub Pages serves Astro's `_astro/` assets; `public/favicon.svg`.
 - `docs/DESIGN.md` → design system reference and source of truth for layout, color, type, header/panel behavior and motion. **Read it before touching UI.**
@@ -35,6 +36,7 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown page 
 - Countdown runs drift-free: it stores `endTime` and recomputes `remainingMs` from `Date.now()` on a 250ms tick, instead of decrementing each second.
 - Inputs are disabled while running; Reset restores the configured duration; Clear empties everything.
 - The countdown page is the site default: the root redirect and the 404 probe both point there. `redirect.ts` detects the countdown page via the static `id="countdown"` marker.
+- The simulator starts with the 12-row Stats Bonuses table: `STAT_BONUSES` in `src/lib/stat-bonuses.ts` defines the game order, `src/pages/simulator.astro` renders it and `src/scripts/stat-bonuses.ts` compares both sides live. Inputs are percentages with at most two decimals (extra decimals are blocked while typing and values are normalized to two decimals on blur); the higher side uses `--positive`, the lower side `--negative`, and ties/empty/invalid values stay neutral. The script is page-scoped, not shipped to the countdown.
 - `pnpm typecheck` uses `tsc --noEmit`, not `astro check`: Astro 7's checker currently refuses TypeScript 7 (it asks for TS 6, or the experimental `@astrojs/ts-content-mapper` with TS 7.1+). Keep `.astro` templates thin and rely on `pnpm build` to validate them.
 - SEO: per-page title/description, canonical + Open Graph in `BaseLayout.astro`, `@astrojs/sitemap`, generated `robots.txt`, and `noindex` on the redirect/404 pages.
 
