@@ -84,7 +84,7 @@ export function initCountdown(): void {
     storageKey: ENEMY_STORAGE_KEY,
     selectable: false,
     callerLabel: 'Enemy caller',
-    emptyText: 'No enemy callers yet. Add the first above.',
+    emptyText: 'I use this to time enemy pets expire time.',
     idPrefix: 'enemy',
   })
   const rallyQueue = mountRallyQueue(getElement('rally-queue'))
