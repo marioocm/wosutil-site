@@ -39,7 +39,7 @@ describe('countdownRedirectPaths', () => {
 
 describe('isCountdownPage', () => {
   it('detects the countdown page marker', () => {
-    expect(isCountdownPage('<div id="utc-clock">UTC: 12:00:00</div>')).toBe(true)
+    expect(isCountdownPage('<main id="countdown">…</main>')).toBe(true)
   })
 
   it('rejects pages without the marker', () => {

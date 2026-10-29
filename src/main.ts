@@ -1,5 +1,6 @@
 import { mountRallyCallers } from './components/rally-callers'
 import { mountRallyQueue } from './components/rally-queue'
+import { mountSiteFooter, mountSiteHeader } from './components/site-layout'
 import { ENEMY_STORAGE_KEY } from './rally-callers'
 import { getBufferDurationSec, getDefaultDurationSec, getSelectedCallers } from './rally-selection'
 import type { RallyCaller } from './rally-callers'
@@ -10,8 +11,7 @@ import {
   hasExistingState,
   parseShareFromHash,
 } from './share'
-import { mountThemeToggle } from './theme'
-import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
+import { clamp, clampInput, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
 
@@ -63,7 +63,6 @@ window.addEventListener('hashchange', () => {
 
 const minutesDisplay = getElement('minutes')
 const secondsDisplay = getElement('seconds')
-const clockElement = getElement('utc-clock')
 const statusElement = getElement('status')
 const minutesInput = getElement('minutes-input') as HTMLInputElement
 const secondsInput = getElement('seconds-input') as HTMLInputElement
@@ -73,8 +72,6 @@ const playIcon = getElement('play-icon')
 const pauseIcon = getElement('pause-icon')
 const resetButton = getElement('reset-button') as HTMLButtonElement
 const clearButton = getElement('clear-button') as HTMLButtonElement
-const shareButton = getElement('share-button') as HTMLButtonElement
-const themeToggle = getElement('theme-toggle') as HTMLButtonElement
 const rallyPanel = getElement('rally-panel')
 const rallyCallers = mountRallyCallers(rallyPanel)
 const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
@@ -86,7 +83,9 @@ const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
 })
 const rallyQueue = mountRallyQueue(getElement('rally-queue'))
 
-mountThemeToggle(themeToggle)
+const app = getElement('app')
+mountSiteHeader(app, { active: 'countdown', onShare })
+mountSiteFooter(app)
 
 const MAX_MINUTES = 99
 const MAX_SECONDS = 59
@@ -196,7 +195,7 @@ function onClear(): void {
   render()
 }
 
-async function onShare(): Promise<void> {
+async function onShare(): Promise<boolean> {
   const url = buildShareUrl(
     window.location.href,
     collectShareState(
@@ -205,11 +204,7 @@ async function onShare(): Promise<void> {
       rallyCallers.getSelection(),
     ),
   )
-  const ok = await copyText(url)
-  shareButton.textContent = ok ? 'Copied!' : 'Copy failed'
-  window.setTimeout(() => {
-    if (shareButton.isConnected) shareButton.textContent = 'Share'
-  }, 1500)
+  return copyText(url)
 }
 
 function render(): void {
@@ -217,7 +212,6 @@ function render(): void {
   const { minutes, seconds } = splitSeconds(displaySeconds)
   minutesDisplay.textContent = pad2(minutes)
   secondsDisplay.textContent = pad2(seconds)
-  clockElement.textContent = `UTC: ${formatUtcClock(new Date())}`
   playLabel.textContent = running ? 'Pause' : 'Play'
   playIcon.classList.toggle('hidden', running)
   pauseIcon.classList.toggle('hidden', !running)
@@ -239,9 +233,6 @@ secondsInput.addEventListener('change', () => padInputField(secondsInput))
 playButton.addEventListener('click', onPlay)
 resetButton.addEventListener('click', onReset)
 clearButton.addEventListener('click', onClear)
-shareButton.addEventListener('click', () => {
-  void onShare()
-})
 rallyCallers.onSelectionChange(syncQueueSelection)
 rallyQueue.onApplyBuffer((bufferSec) => {
   if (running) return

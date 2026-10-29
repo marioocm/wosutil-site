@@ -1,4 +1,4 @@
-export const COUNTDOWN_MARKER = 'id="utc-clock"'
+export const COUNTDOWN_MARKER = 'id="countdown"'
 
 export function countdownRedirectPaths(pathname: string): string[] {
   const segments = pathname.split('/').filter(Boolean)
