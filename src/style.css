@@ -33,6 +33,51 @@
   display: none;
 }
 
+.actions[data-animated] .actions-main,
+.actions[data-animated] .share-button {
+  transition:
+    transform 320ms linear,
+    opacity 150ms ease;
+}
+
+.actions[data-share-hidden] .actions-main,
+.actions[data-share-hidden] .share-button {
+  transform: translateX(var(--share-shift, 0px));
+}
+
+.actions[data-share-hidden] .share-button {
+  pointer-events: none;
+}
+
+.share-slot {
+  display: flex;
+  overflow: clip;
+  overflow-clip-margin: 6px;
+}
+
+@media (max-width: 639px), (pointer: coarse) {
+  .site-header {
+    transition: transform 220ms ease;
+  }
+
+  .site-header[data-scroll-hidden] {
+    transform: translateY(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions[data-animated] .actions-main,
+  .actions[data-animated] .share-button {
+    transition: none;
+  }
+}
+
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;

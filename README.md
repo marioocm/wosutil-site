@@ -1,6 +1,6 @@
 # WoS Util Site
 
-Static website for [WoS Util](https://github.com/marioocm/wosutil) — a countdown timer: set a duration (MM:SS), press play, reset or clear it, with a live UTC clock.
+Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer (set a duration in MM:SS, press play, reset or clear it, with a live UTC clock) and a battle simulator (in development). A shared nav switches between both sections.
 
 ## Stack
 
@@ -33,7 +33,7 @@ pnpm build       # production build → dist/
 - `.github/workflows/ci.yml` — typecheck, tests and build on every push/PR.
 - `.github/workflows/deploy.yml` — builds and publishes to GitHub Pages on push to `main`.
 
-The site lives at `/countdown/`; the root URL redirects there.
+The site lives at `/countdown/` and `/simulator/`; the root URL redirects to `/countdown/`.
 
 ## License
 

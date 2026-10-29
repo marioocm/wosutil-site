@@ -1,7 +1,8 @@
 # WoS Util — Design System
 
-A small, editorial interface for a rally countdown. Warm paper surfaces, warm ink,
-hairline borders, tight typography and deliberately minimal chrome.
+A small, editorial interface for Whiteout Survival utilities: a rally countdown
+and a battle simulator. Warm paper surfaces, warm ink, hairline borders, tight
+typography and deliberately minimal chrome.
 
 ---
 
@@ -29,7 +30,7 @@ hairline borders, tight typography and deliberately minimal chrome.
 | UI      | Instrument Sans | Google Fonts |
 | Numeric | Geist Mono      | Google Fonts |
 
-Loaded from Google Fonts in `countdown/index.html`.
+Loaded from Google Fonts in each page's `index.html`.
 
 Fallbacks: `--font-primary` ends in system-ui; `--font-mono` ends in
 `ui-monospace`, Menlo, Monaco, Consolas.
@@ -118,8 +119,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Max content width: `1440px`.
 - Horizontal padding: `px-4` mobile → `px-[100px]` at `xl`.
-- Header height: `72px` mobile, `80px` desktop.
-- Main grid on desktop: two columns, callers left, timer/queue right.
+- Header height: two rows on mobile (44px brand row + 40px nav row); one
+  `56px` row from `sm`.
+- Countdown main grid on desktop: two columns, callers left, timer/queue right.
 - Mobile order: timer and controls first, callers below.
 - Vertical rhythm: `gap-8`/`gap-10`; panels use `gap-4`.
 
@@ -130,8 +132,24 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Header
 
 - Sticky, warm paper background with hairline bottom border.
-- Wordmark left; UTC clock, theme toggle and Share action right.
-- No logo mark, tagline or extra navigation.
+- Wordmark left, followed by the Simulator / Countdown section links.
+- UTC clock, theme toggle and Share action (countdown only) right.
+- Active section: ink text with a 2px ink underline flush with the header
+  border. Inactive sections: muted text that darkens on hover.
+- Hovering (or focusing) a section slides the single underline under it; it
+  returns to the active section when the pointer/focus leaves. Clicking
+  navigates immediately, with no click delay. Reduced-motion users get instant
+  moves.
+- The Share action belongs to the countdown page. When leaving it, the
+  destination page renders a visual-only Share and slides it behind the right
+  edge of its slot (320ms, linear) while UTC/theme move to that page's
+  positions; countdown load plays the reverse. The click itself is immediate.
+- On narrow/touch viewports the sticky header hides on scroll down
+  (`translateY(-100%)`, 220ms) and returns on scroll up, near the top, or when
+  a header control receives focus.
+- Mobile: brand + actions share the first row; the section links move to a
+  second row separated by a hairline. From `sm` up it is one row.
+- No logo mark, tagline, hamburger or extra navigation.
 
 ### Timer
 
@@ -193,9 +211,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Default follows `prefers-color-scheme`.
 - The top-right toggle overrides and persists to `localStorage`
   (`wosutil:theme`).
-- `countdown/index.html` runs a tiny inline script before CSS to set the initial
-  class and `color-scheme`, avoiding a flash of the wrong theme.
-- `src/theme.ts` owns resolution, persistence and the toggle listener.
+- Every page runs a tiny inline script before CSS to set the initial class and
+  `color-scheme`, avoiding a flash of the wrong theme.
+- `src/theme.ts` owns resolution, persistence and the toggle listener. The
+  shared header mounts it on every page.
 
 ---
 
