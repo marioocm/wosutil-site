@@ -25,12 +25,12 @@ typography and deliberately minimal chrome.
 
 ## Fonts
 
-| Role    | Family          | Source       |
-| ------- | --------------- | ------------ |
-| UI      | Instrument Sans | Google Fonts |
-| Numeric | Geist Mono      | Google Fonts |
+| Role    | Family                   | Source                          |
+| ------- | ------------------------ | ------------------------------- |
+| UI      | Instrument Sans Variable | Fontsource (self-hosted)        |
+| Numeric | Geist Mono Variable      | Fontsource (self-hosted)        |
 
-Loaded from Google Fonts in each page's `index.html`.
+Declared with `@font-face` in `src/layouts/BaseLayout.astro` using Fontsource variable files and `font-display: optional` (no FOUT).
 
 Fallbacks: `--font-primary` ends in system-ui; `--font-mono` ends in
 `ui-monospace`, Menlo, Monaco, Consolas.
@@ -89,8 +89,8 @@ instead of reintroducing a palette. Keep it rare.
 ### Families
 
 ```css
---font-primary: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
---font-mono: "Geist Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+--font-primary: "Instrument Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+--font-mono: "Geist Mono Variable", ui-monospace, Menlo, Monaco, Consolas, monospace;
 ```
 
 ### Scale (fluid)
@@ -213,7 +213,7 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   (`wosutil:theme`).
 - Every page runs a tiny inline script before CSS to set the initial class and
   `color-scheme`, avoiding a flash of the wrong theme.
-- `src/theme.ts` owns resolution, persistence and the toggle listener. The
+- `src/lib/theme.ts` owns resolution, persistence and the toggle listener. The
   shared header mounts it on every page.
 
 ---
