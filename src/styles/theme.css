@@ -2,8 +2,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-primary: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --font-primary: "Instrument Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
   --text-h0: clamp(4.375rem, 4vw + 2rem, 6.25rem);
   --text-h0--line-height: 1;

@@ -1,13 +1,13 @@
-import { formatMarchSec } from '../rally-callers'
-import type { RallyCaller } from '../rally-callers'
+import { formatMarchSec } from '../lib/rally-callers'
+import type { RallyCaller } from '../lib/rally-callers'
 import {
   buildQueue,
   formatCallTargetUtc,
   getBufferDurationSec,
   getFlashingIds,
   getNewlyConsumedIds,
-} from '../rally-selection'
-import type { QueueEntry } from '../rally-selection'
+} from '../lib/rally-selection'
+import type { QueueEntry } from '../lib/rally-selection'
 
 export const QUEUE_BUFFERS = [3, 10, 20] as const
 

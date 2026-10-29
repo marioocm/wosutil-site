@@ -1,0 +1,26 @@
+---
+import SiteFooter from '../components/SiteFooter.astro'
+import SiteHeader from '../components/SiteHeader.astro'
+import type { SiteSection } from '../lib/nav'
+import BaseLayout from './BaseLayout.astro'
+
+interface Props {
+  title: string
+  description: string
+  active: SiteSection
+}
+
+const { title, description, active } = Astro.props
+---
+
+<BaseLayout title={title} description={description} countdown={active === 'countdown'}>
+  <div id="app" class="flex min-h-dvh flex-col" data-page={active}>
+    <SiteHeader active={active} />
+    <slot />
+    <SiteFooter />
+  </div>
+  <script>
+    import { initSiteChrome } from '../scripts/site-chrome'
+    initSiteChrome()
+  </script>
+</BaseLayout>
