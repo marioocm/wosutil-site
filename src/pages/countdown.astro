@@ -1,0 +1,140 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+---
+
+<SiteLayout
+  title="WoS Util · Rally Countdown"
+  description="WoS Util rally countdown: set a duration, press play, and track it with a live UTC clock."
+  active="countdown"
+>
+  <main
+    id="countdown"
+    class="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-10 px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start lg:gap-12 lg:px-10 lg:py-14 xl:px-[100px]"
+  >
+    <div class="order-2 flex w-full flex-col gap-4 lg:order-1 lg:max-w-[34rem] lg:justify-self-center">
+      <section
+        id="rally-panel"
+        aria-label="Rally callers"
+        class="flex w-full flex-col gap-4 rounded-card border border-line bg-paper p-5"
+      >
+        <h2 class="text-p1 font-medium tracking-[-0.01em]">Rally callers</h2>
+      </section>
+
+      <section
+        id="enemy-panel"
+        aria-label="Enemy callers"
+        class="flex w-full flex-col gap-4 rounded-card border border-line bg-paper p-5"
+      >
+        <h2 class="text-p1 font-medium tracking-[-0.01em]">Enemy callers</h2>
+      </section>
+    </div>
+
+    <div class="order-1 flex w-full flex-col items-center gap-8 lg:order-2">
+      <section class="w-full" aria-live="polite" aria-label="Countdown">
+        <div
+          class="mx-auto grid w-full max-w-[36rem] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4"
+        >
+          <div
+            class="flex items-center justify-center rounded-card border border-line bg-paper px-4 py-6 sm:px-6 sm:py-8"
+          >
+            <span
+              id="minutes"
+              class="text-[clamp(4rem,10vw,8.75rem)] font-medium leading-[0.85] tracking-[-0.06em] tabular-nums"
+            >
+              00
+            </span>
+          </div>
+          <span
+            class="text-[clamp(2.5rem,6vw,5rem)] font-medium leading-none text-ink-subtle"
+            aria-hidden="true">:</span
+          >
+          <div
+            class="flex items-center justify-center rounded-card border border-line bg-paper px-4 py-6 sm:px-6 sm:py-8"
+          >
+            <span
+              id="seconds"
+              class="text-[clamp(4rem,10vw,8.75rem)] font-medium leading-[0.85] tracking-[-0.06em] tabular-nums"
+            >
+              00
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <div class="flex w-full max-w-[36rem] flex-col items-center gap-4">
+        <div class="flex items-center justify-center gap-2" role="group" aria-label="Duration">
+          <input
+            id="minutes-input"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            max="99"
+            placeholder="MM"
+            aria-label="Minutes"
+            class="w-20 rounded-sm border border-line bg-paper px-3 py-2.5 text-center font-mono text-p2 text-ink tabular-nums transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:opacity-40"
+          />
+          <span class="text-p1 text-ink-subtle" aria-hidden="true">:</span>
+          <input
+            id="seconds-input"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            max="59"
+            placeholder="SS"
+            aria-label="Seconds"
+            class="w-20 rounded-sm border border-line bg-paper px-3 py-2.5 text-center font-mono text-p2 text-ink tabular-nums transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:opacity-40"
+          />
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button
+            id="play-button"
+            class="inline-flex min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <svg
+              id="play-icon"
+              viewBox="0 0 16 16"
+              width="12"
+              height="12"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M4.5 2.5v11l9-5.5-9-5.5Z"></path>
+            </svg>
+            <svg
+              id="pause-icon"
+              class="hidden"
+              viewBox="0 0 16 16"
+              width="12"
+              height="12"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z"></path>
+            </svg>
+            <span id="play-label">Play</span>
+          </button>
+          <button
+            id="reset-button"
+            class="cursor-pointer rounded-sm border border-line-strong bg-transparent px-4 py-2.5 text-button font-medium text-ink transition-colors hover:border-ink hover:bg-tint/40 active:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Reset
+          </button>
+          <button
+            id="clear-button"
+            class="cursor-pointer rounded-sm px-3 py-2.5 text-button font-medium text-ink-muted transition-colors hover:text-ink active:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Clear
+          </button>
+        </div>
+        <p id="status" class="hidden font-mono text-eyebrow text-ink">Time's up</p>
+      </div>
+
+      <section
+        id="rally-queue"
+        aria-label="Call queue"
+        class="flex w-full max-w-[36rem] flex-col gap-4 rounded-card border border-line bg-paper p-5"
+      >
+      </section>
+    </div>
+  </main>
+</SiteLayout>

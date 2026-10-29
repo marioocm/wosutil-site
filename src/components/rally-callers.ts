@@ -14,8 +14,8 @@ import {
   STORAGE_KEY,
   validateCallerName,
   validatePetMarch,
-} from '../rally-callers'
-import type { RallyCaller } from '../rally-callers'
+} from '../lib/rally-callers'
+import type { RallyCaller } from '../lib/rally-callers'
 import {
   isSelectable,
   loadSelection,
@@ -23,7 +23,7 @@ import {
   saveSelection,
   SELECTION_STORAGE_KEY,
   toggleSelection,
-} from '../rally-selection'
+} from '../lib/rally-selection'
 import { buildDurationGroup, wireMarchEditor } from './duration-input'
 
 type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
@@ -389,13 +389,15 @@ export function mountRallyCallers(
     } else {
       const marchButton = document.createElement('button')
       marchButton.type = 'button'
-      marchButton.className =
-        'shrink-0 cursor-pointer rounded-sm border border-transparent px-2 py-1 font-mono text-p2 tabular-nums text-ink-muted transition-colors hover:bg-tint/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
-      marchButton.textContent = formatMarchSec(getEffectiveMarchSec(caller))
+      marchButton.className = `shrink-0 cursor-pointer rounded-sm border border-transparent px-2 py-1 font-mono text-p2 tabular-nums ${
+        selected ? 'text-ink' : 'text-ink-muted'
+      } transition-colors hover:bg-tint/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`
+      const marchText = formatMarchSec(getEffectiveMarchSec(caller))
+      marchButton.textContent = marchText
       marchButton.title = 'Click to edit'
       marchButton.setAttribute(
         'aria-label',
-        `Edit ${caller.petActive ? 'pet' : 'base'} march time for ${caller.name}`,
+        `${marchText} — edit ${caller.petActive ? 'pet' : 'base'} march time for ${caller.name}`,
       )
       marchButton.addEventListener('click', () => {
         editing = { id: caller.id, field: caller.petActive ? 'pet' : 'base' }
@@ -409,10 +411,11 @@ export function mountRallyCallers(
     toggle.type = 'button'
     toggle.setAttribute('role', 'switch')
     toggle.setAttribute('aria-checked', caller.petActive ? 'true' : 'false')
-    toggle.setAttribute('aria-label', `Pet skill for ${caller.name}`)
+    const petLabel = caller.petActive ? 'Pets ON' : 'Pets OFF'
+    toggle.setAttribute('aria-label', `${petLabel} — pet skill for ${caller.name}`)
     toggle.className = caller.petActive ? primarySmallButtonClass : secondarySmallButtonClass
     toggle.classList.add('shrink-0')
-    toggle.textContent = caller.petActive ? 'Pets ON' : 'Pets OFF'
+    toggle.textContent = petLabel
     toggle.addEventListener('click', () => {
       togglePet(caller.id)
     })

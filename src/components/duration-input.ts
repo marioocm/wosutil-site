@@ -1,10 +1,10 @@
-import { clampInput, padInput } from '../timer'
+import { clampInput, padInput } from '../lib/timer'
 import {
   marchPartsFromSec,
   marchSecFromParts,
   MAX_MINUTES,
   MAX_SECONDS,
-} from '../rally-callers'
+} from '../lib/rally-callers'
 
 /**
  * Shared MM:SS duration input pair, used wherever a march time is entered:

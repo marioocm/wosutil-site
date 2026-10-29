@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+
+const countdownUrl = new URL(`${import.meta.env.BASE_URL}countdown/`, Astro.site ?? Astro.url)
+---
+
+<BaseLayout
+  title="WoS Util · Page not found"
+  description="The requested page does not exist. Redirecting to the WoS Util rally countdown."
+  noindex
+>
+  <main
+    class="mx-auto flex min-h-dvh w-full max-w-[34rem] flex-col items-center justify-center gap-3 px-4 text-center"
+  >
+    <h1 class="text-h4 font-medium tracking-[-0.01em]">Page not found</h1>
+    <p class="text-p3 text-ink-muted">
+      Taking you to the <a class="underline" href={countdownUrl}>rally countdown</a>…
+    </p>
+  </main>
+  <script>
+    import { redirectToCountdown } from '../lib/redirect'
+    redirectToCountdown()
+  </script>
+</BaseLayout>
