@@ -1,8 +1,36 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 
-@theme {
-  --font-primary: "Inter", system-ui, sans-serif;
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--bg);
+  }
+}
+
+.theme-icon-sun {
+  display: none;
+}
+
+.dark .theme-icon-sun {
+  display: block;
+}
+
+.dark .theme-icon-moon {
+  display: none;
 }
 
 input[type="number"] {

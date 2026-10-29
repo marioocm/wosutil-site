@@ -9,8 +9,9 @@ Static website for WoS Util (Whiteout Survival utility): a countdown timer page.
 - `src/main.ts` → entry point, DOM wiring, timer state machine
 - `src/timer.ts` → pure helpers: time splitting, clamping, input parsing, UTC clock (unit-tested with Vitest)
 - `src/redirect.ts` → root-relative countdown redirect: probes candidate paths so the redirect works from any URL (dev server, Pages subpath, forks). `index.html` imports it; `public/404.html` inlines a copy (can't be bundled). Unit-tested with Vitest.
-- `src/style.css` → Tailwind entry; `src/styles/theme.css` → design tokens (`@theme`)
-- `docs/DESIGN.md` → design system reference (Supabase-inspired palette, typography, components). **Read it before touching UI.**
+- `src/theme.ts` → light/dark theme resolution, persistence (`wosutil:theme`) and the top-right toggle. Unit-tested with Vitest.
+- `src/style.css` → Tailwind entry; `src/styles/theme.css` → design tokens (`@theme`, light/dark CSS variables)
+- `docs/DESIGN.md` → design system reference (monochrome cream/ink palette, outlined cards, small radii, minimalist labels). **Read it before touching UI.**
 - `.github/workflows/ci.yml` → typecheck, tests, build on every push/PR
 - `.github/workflows/deploy.yml` → build + publish to GitHub Pages on main
 
@@ -19,13 +20,16 @@ Static website for WoS Util (Whiteout Survival utility): a countdown timer page.
 - `base: './'` in `vite.config.ts` → relative asset paths, works on the Pages subpath and on forks.
 - Tailwind v4 CSS-first config: tokens in `src/styles/theme.css` (`@theme`). No `tailwind.config.js`.
 - Named spacing tokens (`--spacing-md: 12px`, …) collide with size utilities: `max-w-md` resolves to 12px, not 28rem. Always use arbitrary values for max-widths (e.g. `max-w-[34rem]`).
-- Design is light-only ("Theme: light" in `docs/DESIGN.md`); dark surfaces (`canvas-night`, `on-dark`) exist as tokens for contrast sections, no dark mode toggle yet.
-- Font: Circular is proprietary → substituted with Inter (Google Fonts) via `--font-primary` override in `src/style.css`.
+- Theme: light **and** dark. The page follows `prefers-color-scheme` by default; the top-right toggle (`theme-toggle`) overrides it and persists the choice in `localStorage` (`wosutil:theme`). `countdown/index.html` runs a tiny inline script before the stylesheet to avoid a flash of the wrong theme; `src/theme.ts` wires the toggle.
+- Semantic colors are CSS variables mapped through `@theme inline` (`--color-background`, `--color-paper`, `--color-ink`, …). Light values live in `:root`, dark values in `.dark`; use these tokens instead of raw hex values in components.
+- Fonts: Instrument Sans + Geist Mono, loaded from Google Fonts in `countdown/index.html`. Do not add proprietary fonts or copy Suisse Int'l — it requires a commercial license.
+- Visual language: warm cream canvas, hairline outlined cards (no shadows), small radii (≤8px on cards, 4px on controls/rows), tight fluid headings, and monospace only for times/UTC. Keep the UI monochrome (ink/paper/tint); no colored accents or decorative labels/dots.
 - The timer is duration-based (MM:SS display): the user enters minutes/seconds (`minutes-input`, `seconds-input` in `countdown/index.html`) and presses Play. State machine in `src/main.ts`: `configuredSeconds`, `remainingMs`, `running`, `finished`, `endTime`.
 - Countdown runs drift-free: it stores `endTime` and recomputes `remainingMs` from `Date.now()` on a 250ms tick, instead of decrementing each second.
 - Inputs are disabled while running; Reset restores the configured duration; Clear empties everything.
-- The page also shows the current UTC time in a badge at the top-right corner (`utc-clock`, "UTC: HH:MM:SS"), updated every tick. Header layout: logo top-left, content centered below.
-- Single page today; when adding pages, extract shared UI (nav, footer) into `src/components/` as TS render functions imported by each page's entry.
+- The page also shows the current UTC time in a badge at the top-right corner (`utc-clock`, "UTC: HH:MM:SS"), updated every tick. Header layout: logo top-left; UTC clock, theme toggle and Share pill top-right.
+- Drawer/panels: `rally-panel`, `enemy-panel` and `rally-queue` are outlined cards. Selected rows use a neutral tint with an ink border; running/flashing queue rows invert to ink/background. No color-coded accents.
+- Single page today; when adding pages, extract shared UI (nav, footer, theme toggle) into `src/components/` as TS render functions imported by each page's entry.
 
 ## Commands
 - Install: `pnpm install`

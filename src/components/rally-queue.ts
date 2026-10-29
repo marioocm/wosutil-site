@@ -11,8 +11,8 @@ import type { QueueEntry } from '../rally-selection'
 
 export const QUEUE_BUFFERS = [3, 10, 20] as const
 
-const secondaryButtonClass =
-  'font-primary cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft disabled:cursor-not-allowed disabled:opacity-40'
+const smallButtonClass =
+  'font-primary cursor-pointer rounded-sm border border-line-strong bg-transparent px-2.5 py-1 text-center text-caption font-medium text-ink transition-colors hover:border-ink hover:bg-tint/40 active:bg-tint/60 disabled:cursor-not-allowed disabled:opacity-40'
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -66,15 +66,15 @@ export function mountRallyQueue(root: HTMLElement): {
   let raceEndTime = 0
   const bufferListeners = new Set<(bufferSec: number) => void>()
 
-  const header = el('div', 'flex items-center justify-between gap-2')
-  const title = el('h2', 'text-body-md font-medium text-ink', 'Up next')
-  const bufferGroup = el('div', 'flex shrink-0 items-center gap-2')
+  const header = el('div', 'flex flex-wrap items-center justify-between gap-2')
+  const title = el('h2', 'text-p1 font-medium tracking-[-0.01em]', 'Up next')
+  const bufferGroup = el('div', 'flex flex-wrap items-center gap-2')
   const bufferButtons = QUEUE_BUFFERS.map((bufferSec) => {
     const button = document.createElement('button')
     button.type = 'button'
     button.id = `rally-max${bufferSec}`
     button.textContent = `Set Max +${bufferSec}s`
-    button.className = `${secondaryButtonClass} shrink-0 px-2 py-1 text-caption`
+    button.className = `${smallButtonClass} shrink-0`
     button.addEventListener('click', () => {
       for (const listener of bufferListeners) listener(bufferSec)
     })
@@ -89,7 +89,7 @@ export function mountRallyQueue(root: HTMLElement): {
   list.className = 'flex flex-col gap-2'
   list.setAttribute('aria-label', 'Call queue')
 
-  const empty = el('p', 'text-caption text-ink-mute', 'Select rally callers to build the queue.')
+  const empty = el('p', 'text-p3 text-ink-muted', 'Select rally callers to build the queue.')
   empty.id = 'rally-queue-empty'
   empty.setAttribute('role', 'status')
 
@@ -145,25 +145,26 @@ export function mountRallyQueue(root: HTMLElement): {
   function renderRow(entry: QueueEntry, flashing: boolean): HTMLElement {
     const item = document.createElement('li')
     item.className = flashing
-      ? 'flex items-center justify-between gap-2 rounded-md border border-primary-deep bg-primary px-3 py-2 font-medium text-on-primary shadow-sm transition-all -translate-y-px'
-      : 'flex items-center justify-between gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all'
+      ? 'flex items-center justify-between gap-2 rounded-sm border border-ink bg-ink px-3 py-2 font-medium text-background transition-colors'
+      : 'flex items-center justify-between gap-2 rounded-sm border border-line bg-background px-3 py-2 transition-colors'
     item.dataset['queueId'] = entry.id
     if (flashing) {
       item.dataset['flashing'] = 'true'
       item.setAttribute('aria-current', 'true')
     }
-    const name = el('span', 'min-w-0 flex-1 truncate text-body-md', entry.name)
+    const name = el('span', 'min-w-0 flex-1 truncate text-p2', entry.name)
     const time = el(
       'span',
-      'shrink-0 text-body-md tabular-nums',
+      'shrink-0 font-mono text-p2 tabular-nums',
       formatMarchSec(entry.callAtSec),
     )
     const copy = document.createElement('button')
     copy.type = 'button'
     copy.id = `rally-copy-${entry.id}`
     copy.dataset['copyBtn'] = entry.id
-    copy.className =
-      'shrink-0 cursor-pointer rounded-sm border border-hairline-strong bg-canvas p-1.5 text-ink transition-colors hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep disabled:cursor-not-allowed disabled:opacity-40'
+    copy.className = flashing
+      ? 'shrink-0 cursor-pointer rounded-sm border border-background/30 bg-transparent p-1.5 text-background transition-colors hover:bg-background/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-background disabled:cursor-not-allowed disabled:opacity-40'
+      : 'shrink-0 cursor-pointer rounded-sm border border-line bg-transparent p-1.5 text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-40'
     copy.innerHTML = COPY_ICON
     copy.disabled = !raceRunning
     copy.title = 'Copy call UTC time'
