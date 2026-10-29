@@ -1,70 +1,40 @@
-/* Supabaze-Inspired Tailwind CSS v4 theme */
+/* Design tokens — see docs/DESIGN.md */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-primary: #3ecf8e;
-  --color-primary-deep: #24b47e;
-  --color-primary-soft: #4ade80;
-  --color-ink: #171717;
-  --color-ink-secondary: #212121;
-  --color-ink-mute: #707070;
-  --color-ink-mute-2: #9a9a9a;
-  --color-ink-faint: #b2b2b2;
-  --color-on-primary: #171717;
-  --color-on-dark: #ffffff;
-  --color-canvas: #ffffff;
-  --color-canvas-soft: #fafafa;
-  --color-canvas-night: #1c1c1c;
-  --color-canvas-night-soft: #202020;
-  --color-hairline: #dfdfdf;
-  --color-hairline-strong: #c7c7c7;
-  --color-hairline-cool: #ededed;
-  --color-hairline-cool-2: #efefef;
-  --color-hairline-cool-3: #d4d4d4;
-  --color-accent-purple: #6b01c2;
-  --color-accent-violet: #644fc1;
-  --color-accent-purple-soft: #eddbf9;
-  --color-accent-yellow: #ffdb13;
-  --color-accent-tomato: #ff2201;
-  --color-accent-pink: #c7007e;
-  --color-accent-indigo: #054cff;
-  --color-accent-crimson: #e2005a;
-  --font-primary: Circular, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-family-2: ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-  --text-display-xxl: 64px;
-  --leading-display-xxl: 1.1;
-  --tracking-display-xxl: -1.92px;
-  --text-display-xl: 48px;
-  --leading-display-xl: 1.1;
-  --tracking-display-xl: -1.44px;
-  --text-display-lg: 36px;
-  --leading-display-lg: 1.15;
-  --tracking-display-lg: -0.72px;
-  --text-display-md: 28px;
-  --leading-display-md: 1.2;
-  --tracking-display-md: -0.42px;
-  --text-heading-lg: 22px;
-  --leading-heading-lg: 1.2;
-  --tracking-heading-lg: 0;
-  --text-heading-md: 18px;
-  --leading-heading-md: 1.4;
-  --tracking-heading-md: 0;
-  --text-body-lg: 18px;
-  --leading-body-lg: 1.55;
-  --tracking-body-lg: 0;
-  --text-body-md: 16px;
-  --leading-body-md: 1.5;
-  --tracking-body-md: 0;
-  --text-button-md: 14px;
-  --leading-button-md: 1;
-  --tracking-button-md: 0;
-  --text-caption: 13px;
-  --leading-caption: 1.45;
-  --tracking-caption: 0;
-  --text-micro: 12px;
-  --leading-micro: 1.45;
-  --tracking-micro: 0;
-  --text-code: 14px;
-  --leading-code: 1.5;
-  --tracking-code: 0;
+  --font-primary: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --text-h0: clamp(4.375rem, 4vw + 2rem, 6.25rem);
+  --text-h0--line-height: 1;
+  --text-h0--letter-spacing: -0.022em;
+  --text-h1: clamp(3.4375rem, 3vw + 1.5rem, 4.6875rem);
+  --text-h1--line-height: 1;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h2: clamp(2.5rem, 2.5vw + 1rem, 4rem);
+  --text-h2--line-height: 1.02;
+  --text-h2--letter-spacing: -0.016em;
+  --text-h3: clamp(2rem, 1.5vw + 1rem, 2.625rem);
+  --text-h3--line-height: 1.05;
+  --text-h3--letter-spacing: -0.012em;
+  --text-h4: clamp(1.5rem, 1vw + 0.75rem, 2rem);
+  --text-h4--line-height: 1.1;
+  --text-h4--letter-spacing: -0.01em;
+  --text-p1: clamp(1.0625rem, 0.5vw + 0.75rem, 1.375rem);
+  --text-p1--line-height: 1.5;
+  --text-p2: clamp(0.875rem, 0.5vw + 0.5rem, 1.125rem);
+  --text-p2--line-height: 1.5;
+  --text-p3: clamp(0.75rem, 0.35vw + 0.5rem, 0.9375rem);
+  --text-p3--line-height: 1.45;
+  --text-eyebrow: 0.9375rem;
+  --text-eyebrow--line-height: 1.4;
+  --text-button: 0.875rem;
+  --text-button--line-height: 1;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.45;
+
   --spacing-xxs: 2px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -73,10 +43,53 @@
   --spacing-xl: 24px;
   --spacing-xxl: 32px;
   --spacing-huge: 64px;
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-card: 8px;
+  --radius-xl: 10px;
   --radius-full: 9999px;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-paper: var(--paper);
+  --color-tint: var(--tint);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-invert: var(--invert);
+  --color-invert-fg: var(--invert-fg);
+}
+
+:root {
+  --bg: #fefcf5;
+  --paper: #fffcf6;
+  --tint: #eaeae2;
+  --ink: #3c3a39;
+  --ink-muted: #6f6b67;
+  --ink-subtle: #767169;
+  --line: rgba(11, 9, 7, 0.12);
+  --line-strong: rgba(11, 9, 7, 0.38);
+  --invert: #3c3a39;
+  --invert-fg: #fefcf5;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #151311;
+  --paper: #1d1a17;
+  --tint: #2a2521;
+  --ink: #f4f0e6;
+  --ink-muted: #b8b1a7;
+  --ink-subtle: #8a847c;
+  --line: rgba(255, 252, 246, 0.12);
+  --line-strong: rgba(255, 252, 246, 0.35);
+  --invert: #f4f0e6;
+  --invert-fg: #171412;
+  color-scheme: dark;
 }

@@ -10,6 +10,7 @@ import {
   hasExistingState,
   parseShareFromHash,
 } from './share'
+import { mountThemeToggle } from './theme'
 import { clamp, clampInput, formatUtcClock, pad2, padInput, parseSecondsInput, splitSeconds } from './timer'
 
 const TICK_MS = 250
@@ -67,9 +68,13 @@ const statusElement = getElement('status')
 const minutesInput = getElement('minutes-input') as HTMLInputElement
 const secondsInput = getElement('seconds-input') as HTMLInputElement
 const playButton = getElement('play-button') as HTMLButtonElement
+const playLabel = getElement('play-label')
+const playIcon = getElement('play-icon')
+const pauseIcon = getElement('pause-icon')
 const resetButton = getElement('reset-button') as HTMLButtonElement
 const clearButton = getElement('clear-button') as HTMLButtonElement
 const shareButton = getElement('share-button') as HTMLButtonElement
+const themeToggle = getElement('theme-toggle') as HTMLButtonElement
 const rallyPanel = getElement('rally-panel')
 const rallyCallers = mountRallyCallers(rallyPanel)
 const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
@@ -80,6 +85,8 @@ const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
   idPrefix: 'enemy',
 })
 const rallyQueue = mountRallyQueue(getElement('rally-queue'))
+
+mountThemeToggle(themeToggle)
 
 const MAX_MINUTES = 99
 const MAX_SECONDS = 59
@@ -103,8 +110,8 @@ function readDurationSeconds(): number {
 }
 
 function syncInputs(): void {
-  minutesInput.value = configuredSeconds === 0 ? '' : Math.floor(configuredSeconds / 60).toString()
-  secondsInput.value = configuredSeconds === 0 ? '' : (configuredSeconds % 60).toString()
+  minutesInput.value = configuredSeconds === 0 ? '' : pad2(Math.floor(configuredSeconds / 60))
+  secondsInput.value = configuredSeconds === 0 ? '' : pad2(configuredSeconds % 60)
 }
 
 function currentSelection(): RallyCaller[] {
@@ -211,15 +218,17 @@ function render(): void {
   minutesDisplay.textContent = pad2(minutes)
   secondsDisplay.textContent = pad2(seconds)
   clockElement.textContent = `UTC: ${formatUtcClock(new Date())}`
-  playButton.textContent = running ? 'Pause' : 'Play'
+  playLabel.textContent = running ? 'Pause' : 'Play'
+  playIcon.classList.toggle('hidden', running)
+  pauseIcon.classList.toggle('hidden', !running)
   minutesInput.disabled = running
   secondsInput.disabled = running
   resetButton.disabled = configuredSeconds === 0
   if (finished) {
     statusElement.textContent = "Time's up"
-    statusElement.classList.remove('invisible')
+    statusElement.classList.remove('hidden')
   } else {
-    statusElement.classList.add('invisible')
+    statusElement.classList.add('hidden')
   }
 }
 

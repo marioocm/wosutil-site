@@ -5,154 +5,183 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="WoS Util countdown timer: set a duration, press play, and track it with a live UTC clock."
+      content="WoS Util rally countdown: set a duration, press play, and track it with a live UTC clock."
     />
-    <title>WoS Util · Countdown</title>
+    <title>WoS Util · Rally Countdown</title>
+    <script>
+      ;(() => {
+        try {
+          const stored = localStorage.getItem('wosutil:theme')
+          const dark =
+            stored === 'dark' ||
+            (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch {
+          // Storage or matchMedia unavailable: keep the light default.
+        }
+      })()
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../src/style.css" />
     <script type="module" src="../src/main.ts"></script>
   </head>
-  <body class="font-primary bg-canvas text-ink antialiased">
+  <body class="font-primary bg-background text-ink antialiased">
     <div class="flex min-h-dvh flex-col">
-      <header class="flex items-center justify-between px-6 py-4">
-        <div class="flex items-center gap-3">
-          <span
-            class="inline-block size-3 rounded-full bg-primary"
-            aria-hidden="true"
-          ></span>
-          <h1 class="text-heading-lg font-medium tracking-tight">WoS Util</h1>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            id="share-button"
-            type="button"
-            title="Copy share link with your rally setup"
-            aria-label="Copy share link with your rally setup"
-            class="font-primary cursor-pointer rounded-full border border-hairline-strong bg-canvas px-3 py-1 text-micro font-medium text-ink transition-colors hover:bg-canvas-soft"
+      <header class="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur-md">
+        <div class="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:h-[80px] lg:px-10 xl:px-[100px]">
+          <a
+            href="./"
+            class="truncate text-[22px] font-medium leading-none tracking-[-0.03em]"
+            aria-label="WoS Util rally countdown"
           >
-            Share
-          </button>
-          <p
-            id="utc-clock"
-            class="rounded-full border border-hairline bg-canvas-soft px-3 py-1 text-micro tabular-nums text-ink-mute"
-          >
-            UTC: --:--:--
-          </p>
+            WoS Util
+          </a>
+
+          <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+            <p
+              id="utc-clock"
+              class="hidden font-mono text-micro tabular-nums text-ink-muted sm:block"
+              aria-label="Current UTC time"
+            >
+              UTC: --:--:--
+            </p>
+            <span class="hidden h-5 w-px bg-line sm:block" aria-hidden="true"></span>
+            <button
+              id="theme-toggle"
+              type="button"
+              aria-label="Switch theme"
+              title="Switch theme"
+              aria-pressed="false"
+              class="flex size-9 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              <svg class="theme-icon-moon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M13.5 9.6A5.9 5.9 0 0 1 6.4 2.5a5.9 5.9 0 1 0 7.1 7.1Z" />
+              </svg>
+              <svg class="theme-icon-sun" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+                <circle cx="8" cy="8" r="3" />
+                <path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3.05 3.05l1.13 1.13M11.82 11.82l1.13 1.13M12.95 3.05l-1.13 1.13M4.18 11.82l-1.13 1.13" />
+              </svg>
+            </button>
+            <button
+              id="share-button"
+              type="button"
+              title="Copy share link with your rally setup"
+              aria-label="Copy share link with your rally setup"
+              class="cursor-pointer rounded-sm bg-invert px-4 py-2 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              Share
+            </button>
+          </div>
         </div>
       </header>
 
-      <main class="mx-auto flex w-full flex-1 flex-col items-center gap-10 px-6 py-8 lg:grid lg:grid-cols-2 lg:items-start">
-        <div
-          class="order-2 flex w-full max-w-[34rem] flex-col gap-4 lg:order-1 lg:max-w-[min(34rem,100%)] lg:justify-self-center"
-        >
+      <main class="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-10 px-4 py-10 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start lg:gap-12 lg:px-10 lg:py-14 xl:px-[100px]">
+        <div class="order-2 flex w-full flex-col gap-4 lg:order-1 lg:max-w-[34rem] lg:justify-self-center">
           <section
             id="rally-panel"
             aria-label="Rally callers"
-            class="flex w-full flex-col gap-3 rounded-xl border border-hairline bg-canvas p-4"
+            class="flex w-full flex-col gap-4 rounded-card border border-line bg-paper p-5"
           >
-            <h2 class="text-body-md font-medium text-ink">Rally callers</h2>
+            <h2 class="text-p1 font-medium tracking-[-0.01em]">Rally callers</h2>
           </section>
 
           <section
             id="enemy-panel"
             aria-label="Enemy callers"
-            class="flex w-full flex-col gap-3 rounded-xl border border-hairline bg-canvas p-4"
+            class="flex w-full flex-col gap-4 rounded-card border border-line bg-paper p-5"
           >
-            <h2 class="text-body-md font-medium text-ink">Enemy callers</h2>
+            <h2 class="text-p1 font-medium tracking-[-0.01em]">Enemy callers</h2>
           </section>
         </div>
 
-        <div class="order-1 flex w-full flex-col items-center gap-10 lg:order-2">
+        <div class="order-1 flex w-full flex-col items-center gap-8 lg:order-2">
+          <section class="w-full" aria-live="polite" aria-label="Countdown">
+            <div class="grid w-full max-w-[36rem] mx-auto grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4">
+              <div class="flex items-center justify-center rounded-card border border-line bg-paper px-4 py-6 sm:px-6 sm:py-8">
+                <span id="minutes" class="text-[clamp(4rem,10vw,8.75rem)] font-medium tabular-nums leading-[0.85] tracking-[-0.06em]">00</span>
+              </div>
+              <span class="text-[clamp(2.5rem,6vw,5rem)] font-medium leading-none text-ink-subtle" aria-hidden="true">:</span>
+              <div class="flex items-center justify-center rounded-card border border-line bg-paper px-4 py-6 sm:px-6 sm:py-8">
+                <span id="seconds" class="text-[clamp(4rem,10vw,8.75rem)] font-medium tabular-nums leading-[0.85] tracking-[-0.06em]">00</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="flex w-full max-w-[36rem] flex-col items-center gap-4">
+            <div class="flex items-center justify-center gap-2" role="group" aria-label="Duration">
+              <input
+                id="minutes-input"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                max="99"
+                placeholder="MM"
+                aria-label="Minutes"
+                class="w-20 rounded-sm border border-line bg-paper px-3 py-2.5 text-center font-mono text-p2 tabular-nums text-ink transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:opacity-40"
+              />
+              <span class="text-p1 text-ink-subtle" aria-hidden="true">:</span>
+              <input
+                id="seconds-input"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                max="59"
+                placeholder="SS"
+                aria-label="Seconds"
+                class="w-20 rounded-sm border border-line bg-paper px-3 py-2.5 text-center font-mono text-p2 tabular-nums text-ink transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:opacity-40"
+              />
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-2">
+              <button
+                id="play-button"
+                class="inline-flex min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                <svg id="play-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+                  <path d="M4.5 2.5v11l9-5.5-9-5.5Z" />
+                </svg>
+                <svg id="pause-icon" class="hidden" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+                  <path d="M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z" />
+                </svg>
+                <span id="play-label">Play</span>
+              </button>
+              <button
+                id="reset-button"
+                class="cursor-pointer rounded-sm border border-line-strong bg-transparent px-4 py-2.5 text-button font-medium text-ink transition-colors hover:border-ink hover:bg-tint/40 active:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Reset
+              </button>
+              <button
+                id="clear-button"
+                class="cursor-pointer rounded-sm px-3 py-2.5 text-button font-medium text-ink-muted transition-colors hover:text-ink active:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                Clear
+              </button>
+            </div>
+            <p id="status" class="hidden font-mono text-eyebrow text-ink">Time's up</p>
+          </div>
+
           <section
-            class="flex items-center gap-3 sm:gap-4"
-            aria-live="polite"
-            aria-label="Countdown"
-          >
-          <div class="flex min-w-28 flex-col items-center gap-2 rounded-xl bg-canvas-soft px-4 py-5 sm:min-w-36 sm:px-6 lg:px-3">
-            <span id="minutes" class="text-[88px] font-medium tabular-nums leading-[1.1] tracking-[-0.03em] sm:text-[144px] lg:text-[140px] xl:text-[176px]">00</span>
-          </div>
-          <span class="text-[64px] font-medium leading-[1.1] text-ink-mute sm:text-[104px] lg:text-[102px] xl:text-[128px]" aria-hidden="true">:</span>
-          <div class="flex min-w-28 flex-col items-center gap-2 rounded-xl bg-canvas-soft px-4 py-5 sm:min-w-36 sm:px-6 lg:px-3">
-            <span id="seconds" class="text-[88px] font-medium tabular-nums leading-[1.1] tracking-[-0.03em] sm:text-[144px] lg:text-[140px] xl:text-[176px]">00</span>
-          </div>
-        </section>
-
-        <section class="flex flex-col items-center gap-4">
-          <div class="flex items-center gap-2" role="group" aria-label="Duration">
-            <input
-              id="minutes-input"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              max="99"
-              placeholder="MM"
-              aria-label="Minutes"
-              class="font-primary w-20 rounded-sm border border-hairline bg-canvas px-3 py-2 text-center text-body-md tabular-nums text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-50"
-            />
-            <span class="text-display-md text-ink-mute" aria-hidden="true">:</span>
-            <input
-              id="seconds-input"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              max="59"
-              placeholder="SS"
-              aria-label="Seconds"
-              class="font-primary w-20 rounded-sm border border-hairline bg-canvas px-3 py-2 text-center text-body-md tabular-nums text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:opacity-50"
-            />
-          </div>
-          <div class="flex gap-3">
-            <button
-              id="play-button"
-              class="font-primary w-18 cursor-pointer rounded-sm bg-primary px-3 py-2 text-center text-button-md font-medium text-on-primary transition-colors hover:bg-primary-deep"
-            >
-              Play
-            </button>
-            <button
-              id="reset-button"
-              class="font-primary w-18 cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Reset
-            </button>
-            <button
-              id="clear-button"
-              class="font-primary w-18 cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft"
-            >
-              Clear
-            </button>
-          </div>
-        </section>
-
-        <p id="status" class="invisible text-caption text-ink-mute">Time's up</p>
-
-        <section
-          id="rally-queue"
-          aria-label="Call queue"
-          class="flex w-full max-w-[28rem] flex-col gap-3 rounded-xl border border-hairline bg-canvas p-4"
-        ></section>
+            id="rally-queue"
+            aria-label="Call queue"
+            class="flex w-full max-w-[36rem] flex-col gap-4 rounded-card border border-line bg-paper p-5"
+          ></section>
         </div>
       </main>
 
-      <footer class="flex justify-center pb-6">
+      <footer class="mt-auto flex justify-center px-4 py-6">
         <a
           href="https://github.com/marioocm/wosutil-site"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-2 text-caption text-ink-mute transition-colors hover:text-ink"
+          class="inline-flex items-center gap-2 text-caption text-ink-muted transition-colors hover:text-ink"
         >
-          <svg
-            viewBox="0 0 16 16"
-            width="16"
-            height="16"
-            fill="currentColor"
-            aria-hidden="true"
-            class="shrink-0 -translate-y-px"
-          >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true" class="shrink-0">
             <path
               d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
             />

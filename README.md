@@ -11,7 +11,7 @@ Static website for [WoS Util](https://github.com/marioocm/wosutil) — a countdo
 - [pnpm](https://pnpm.io/) — package manager
 - GitHub Pages + GitHub Actions — CI/CD
 
-Design system: Supabase-inspired tokens (see [docs/DESIGN.md](docs/DESIGN.md)).
+Design system: monochrome warm editorial UI with light/dark themes and a system-aware toggle (see [docs/DESIGN.md](docs/DESIGN.md)).
 
 ## Local development
 

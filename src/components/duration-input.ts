@@ -19,9 +19,9 @@ import {
  * swapping a button for its editor never changes the row height.
  */
 const baseInputClass =
-  'font-primary rounded-sm border border-hairline bg-canvas text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
-const fullInputClass = `${baseInputClass} w-20 px-3 py-2 text-center tabular-nums`
-const smallInputClass = `${baseInputClass} w-16 shrink-0 px-2 py-1 text-center tabular-nums`
+  'font-primary rounded-sm border border-line bg-background text-p2 text-ink transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10'
+const fullInputClass = `${baseInputClass} w-20 px-3 py-2 text-center font-mono tabular-nums`
+const smallInputClass = `${baseInputClass} w-16 shrink-0 px-2 py-1 text-center font-mono tabular-nums`
 
 export interface DurationGroup {
   group: HTMLElement
@@ -88,7 +88,7 @@ export function buildDurationGroup(options: {
   ss.addEventListener('blur', () => {
     ss.value = padInput(ss.value)
   })
-  const sep = span('shrink-0 text-body-md text-ink-mute', ':')
+  const sep = span('shrink-0 text-p2 text-ink-subtle', ':')
   sep.setAttribute('aria-hidden', 'true')
   group.append(mm, sep, ss)
   return { group, mm, ss }

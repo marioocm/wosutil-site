@@ -1,275 +1,209 @@
-# Supabaze-Inspired — Style Reference
-> An inspired interpretation of Supabaze's design language — an open-source database platform built on a clean white-and-near-black system with a single signature emerald-green CTA, a custom humanist sans display tier, and dense product UI mockups composited above the hero. The brand reads as quietly technical: minimal chrome, a near-monochrome palette, and the green primary acting as the only chromatic event on the page.
+# WoS Util — Design System
 
-**Theme:** light
+A small, editorial interface for a rally countdown. Warm paper surfaces, warm ink,
+hairline borders, tight typography and deliberately minimal chrome.
 
-**Source website:** [https://supabase.com/](https://supabase.com/)  
-Use the live official website to compare and validate this extracted snapshot. The current source website remains authoritative.
+---
 
-## Tokens — Colors
+## Principles
 
-| Name | Value | Token | Role |
-|---|---|---|---|
-| primary | `#3ecf8e` | `--color-primary` | primary role extracted from the source design |
-| primary deep | `#24b47e` | `--color-primary-deep` | primary deep role extracted from the source design |
-| primary soft | `#4ade80` | `--color-primary-soft` | primary soft role extracted from the source design |
-| ink | `#171717` | `--color-ink` | ink role extracted from the source design |
-| ink secondary | `#212121` | `--color-ink-secondary` | ink secondary role extracted from the source design |
-| ink mute | `#707070` | `--color-ink-mute` | ink mute role extracted from the source design |
-| ink mute 2 | `#9a9a9a` | `--color-ink-mute-2` | ink mute 2 role extracted from the source design |
-| ink faint | `#b2b2b2` | `--color-ink-faint` | ink faint role extracted from the source design |
-| on primary | `#171717` | `--color-on-primary` | on primary role extracted from the source design |
-| on dark | `#ffffff` | `--color-on-dark` | on dark role extracted from the source design |
-| canvas | `#ffffff` | `--color-canvas` | canvas role extracted from the source design |
-| canvas soft | `#fafafa` | `--color-canvas-soft` | canvas soft role extracted from the source design |
-| canvas night | `#1c1c1c` | `--color-canvas-night` | canvas night role extracted from the source design |
-| canvas night soft | `#202020` | `--color-canvas-night-soft` | canvas night soft role extracted from the source design |
-| hairline | `#dfdfdf` | `--color-hairline` | hairline role extracted from the source design |
-| hairline strong | `#c7c7c7` | `--color-hairline-strong` | hairline strong role extracted from the source design |
-| hairline cool | `#ededed` | `--color-hairline-cool` | hairline cool role extracted from the source design |
-| hairline cool 2 | `#efefef` | `--color-hairline-cool-2` | hairline cool 2 role extracted from the source design |
-| hairline cool 3 | `#d4d4d4` | `--color-hairline-cool-3` | hairline cool 3 role extracted from the source design |
-| accent purple | `#6b01c2` | `--color-accent-purple` | accent purple role extracted from the source design |
-| accent violet | `#644fc1` | `--color-accent-violet` | accent violet role extracted from the source design |
-| accent purple soft | `#eddbf9` | `--color-accent-purple-soft` | accent purple soft role extracted from the source design |
-| accent yellow | `#ffdb13` | `--color-accent-yellow` | accent yellow role extracted from the source design |
-| accent tomato | `#ff2201` | `--color-accent-tomato` | accent tomato role extracted from the source design |
-| accent pink | `#c7007e` | `--color-accent-pink` | accent pink role extracted from the source design |
-| accent indigo | `#054cff` | `--color-accent-indigo` | accent indigo role extracted from the source design |
-| accent crimson | `#e2005a` | `--color-accent-crimson` | accent crimson role extracted from the source design |
+1. **Monochrome.** Ink, paper and neutral tints only. No decorative color accents
+   in the current build. If a future feature needs semantic color (success, danger),
+   add it as a token and use it only for that meaning.
+2. **Warm, printed feel.** The canvas is warm cream, not pure white; text is warm
+   near-black, not pure black.
+3. **Quiet structure.** Cards are defined by 1px hairlines, not shadows.
+4. **Small radii.** Slightly rounded corners: 8px on cards, 4px on controls and rows.
+5. **Minimal labels.** Only functional titles. No decorative dots, eyebrow labels or
+   slash-prefixed metadata.
+6. **Mono only when it means something.** Monospace is reserved for times, UTC and
+   numeric fields — never for decorative labels.
+7. **Fluid type.** Headings scale with `clamp()`; no abrupt breakpoint jumps.
 
-## Tokens — Typography
+---
 
-### Circular, 'Helvetica Neue', Helvetica, Arial, sans-serif · `--font-primary`
-- **Substitute:** Inter, system-ui, sans-serif
-- **Weights:** 500, 400
-- **Sizes:** 64px, 48px, 36px, 28px, 22px, 18px, 16px, 14px, 13px, 12px
-- **Line height:** 1.1, 1.15, 1.2, 1.4, 1.55, 1.5, 1, 1.45
-- **Letter spacing:** -1.92px, -1.44px, -0.72px, -0.42px, 0
-- **Role:** Brand typography family observed across the documented type scale.
+## Fonts
 
-### ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', monospace · `--font-family-2`
-- **Substitute:** Inter, system-ui, sans-serif
-- **Weights:** 400
-- **Sizes:** 14px
-- **Line height:** 1.5
-- **Letter spacing:** 0
-- **Role:** Brand typography family observed across the documented type scale.
+| Role    | Family          | Source       |
+| ------- | --------------- | ------------ |
+| UI      | Instrument Sans | Google Fonts |
+| Numeric | Geist Mono      | Google Fonts |
 
-### Type Scale
+Loaded from Google Fonts in `countdown/index.html`.
 
-| Role | Size | Line Height | Letter Spacing | Token |
-|---|---|---|---|---|
-| display-xxl | 64px | 1.1 | -1.92px | `--text-display-xxl` |
-| display-xl | 48px | 1.1 | -1.44px | `--text-display-xl` |
-| display-lg | 36px | 1.15 | -0.72px | `--text-display-lg` |
-| display-md | 28px | 1.2 | -0.42px | `--text-display-md` |
-| heading-lg | 22px | 1.2 | 0 | `--text-heading-lg` |
-| heading-md | 18px | 1.4 | 0 | `--text-heading-md` |
-| body-lg | 18px | 1.55 | 0 | `--text-body-lg` |
-| body-md | 16px | 1.5 | 0 | `--text-body-md` |
-| button-md | 14px | 1 | 0 | `--text-button-md` |
-| caption | 13px | 1.45 | 0 | `--text-caption` |
-| micro | 12px | 1.45 | 0 | `--text-micro` |
-| code | 14px | 1.5 | 0 | `--text-code` |
+Fallbacks: `--font-primary` ends in system-ui; `--font-mono` ends in
+`ui-monospace`, Menlo, Monaco, Consolas.
 
-## Tokens — Spacing & Shapes
+---
 
-**Density:** comfortable
+## Colors
 
-### Spacing Scale
+Semantic CSS variables live in `src/styles/theme.css`. Light values are defined in
+`:root`, dark values in `.dark`. Components use the mapped Tailwind tokens
+(`--color-*`, via `@theme inline`), never raw hex values.
 
-| Name | Value | Token |
-|---|---|---|
-| xxs | 2px | `--spacing-xxs` |
-| xs | 4px | `--spacing-xs` |
-| sm | 8px | `--spacing-sm` |
-| md | 12px | `--spacing-md` |
-| lg | 16px | `--spacing-lg` |
-| xl | 24px | `--spacing-xl` |
-| xxl | 32px | `--spacing-xxl` |
-| huge | 64px | `--spacing-huge` |
+### Light
 
-### Border Radius
+| Token           | Value                | Usage                         |
+| --------------- | -------------------- | ----------------------------- |
+| `--bg`          | `#fefcf5`            | Page canvas                   |
+| `--paper`       | `#fffcf6`            | Cards, header, footer         |
+| `--tint`        | `#eaeae2`            | Selected rows, subtle fills   |
+| `--ink`         | `#3c3a39`            | Primary text, active controls |
+| `--ink-muted`   | `#6f6b67`            | Secondary text, icons         |
+| `--ink-subtle`  | `#767169`            | Placeholders, separators      |
+| `--line`        | `rgba(11,9,7,.12)`   | Hairline borders              |
+| `--line-strong` | `rgba(11,9,7,.38)`   | Emphasized borders            |
+| `--invert`      | `#3c3a39`            | Inverted surfaces (Play)      |
+| `--invert-fg`   | `#fefcf5`            | Text on inverted surfaces     |
 
-| Name | Value | Token |
-|---|---|---|
-| xs | 4px | `--radius-xs` |
-| sm | 6px | `--radius-sm` |
-| md | 8px | `--radius-md` |
-| lg | 12px | `--radius-lg` |
-| xl | 16px | `--radius-xl` |
-| full | 9999px | `--radius-full` |
+### Dark
 
-### Layout
+| Token           | Value                  |
+| --------------- | ---------------------- |
+| `--bg`          | `#151311`              |
+| `--paper`       | `#1d1a17`              |
+| `--tint`        | `#2a2521`              |
+| `--ink`         | `#f4f0e6`              |
+| `--ink-muted`   | `#b8b1a7`              |
+| `--ink-subtle`  | `#8a847c`              |
+| `--line`        | `rgba(255,252,246,.12)`|
+| `--line-strong` | `rgba(255,252,246,.35)`|
+| `--invert`      | `#f4f0e6`              |
+| `--invert-fg`   | `#171412`              |
 
-- **Section gap:** 32px
-- **Card padding:** 16px
-- **Element gap:** 12px
-- **Max content width:** 1200px
+Both themes must keep body text at WCAG AA contrast. The current values pass for
+normal text; verify again if tokens change.
 
-## Components
+### Optional semantic accents
 
-### button primary green
-**Role:** button primary green component
+The system does not use accent colors today. If one becomes necessary (e.g. a
+destructive action), add a dedicated token and scope it to that semantic meaning
+instead of reintroducing a palette. Keep it rare.
 
-- **backgroundColor:** `{colors.primary}`
-- **textColor:** `{colors.on-primary}`
-- **typography:** `{typography.button-md}`
-- **rounded:** `{rounded.sm}`
-- **padding:** `8px 16px`
+---
 
-### button primary green pressed
-**Role:** button primary green pressed component
+## Typography
 
-- **backgroundColor:** `{colors.primary-deep}`
-- **textColor:** `{colors.on-primary}`
-- **typography:** `{typography.button-md}`
-- **rounded:** `{rounded.sm}`
-- **padding:** `8px 16px`
+### Families
 
-### button secondary outline
-**Role:** button secondary outline component
+```css
+--font-primary: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+--font-mono: "Geist Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+```
 
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.button-md}`
-- **rounded:** `{rounded.sm}`
-- **padding:** `8px 16px`
+### Scale (fluid)
 
-### button on dark
-**Role:** button on dark component
+| Token          | Range       | Usage                       |
+| -------------- | ----------- | --------------------------- |
+| `--text-h0`    | 70 → 100px  | Display                     |
+| `--text-h1`    | 55 → 75px   | Page display                |
+| `--text-h2`    | 40 → 64px   | Large headings              |
+| `--text-h3`    | 32 → 42px   | Section headings            |
+| `--text-h4`    | 24 → 32px   | Panel headings              |
+| `--text-p1`    | 17 → 22px   | Panel titles, body large    |
+| `--text-p2`    | 14 → 18px   | Body, row text              |
+| `--text-p3`    | 12 → 15px   | Empty states, captions      |
+| `--text-eyebrow` | 15px      | Reserved for small metadata |
+| `--text-button` | 14px       | Buttons                     |
+| `--text-caption` | 13px      | Fine print                  |
+| `--text-micro`  | 12px       | UTC clock, row micro-meta   |
 
-- **backgroundColor:** `{colors.canvas-night}`
-- **textColor:** `{colors.on-dark}`
-- **typography:** `{typography.button-md}`
-- **rounded:** `{rounded.sm}`
-- **padding:** `8px 16px`
+Weights: 400 regular, 500 medium. Display headings use tight tracking
+(`-0.01em` to `-0.06em` in the timer) and line-height near 1.
 
-### button link
-**Role:** button link component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.button-md}`
-- **rounded:** `{rounded.xs}`
-- **padding:** `0px`
-
-### text input
-**Role:** text input component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.sm}`
-- **padding:** `8px 12px`
-
-### card feature light
-**Role:** card feature light component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.lg}`
-- **padding:** `32px`
-
-### card pricing
-**Role:** card pricing component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.lg}`
-- **padding:** `32px`
-
-### card pricing featured
-**Role:** card pricing featured component
-
-- **backgroundColor:** `{colors.canvas-night}`
-- **textColor:** `{colors.on-dark}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.lg}`
-- **padding:** `32px`
-
-### card feature dark
-**Role:** card feature dark component
-
-- **backgroundColor:** `{colors.canvas-night}`
-- **textColor:** `{colors.on-dark}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.lg}`
-- **padding:** `32px`
-
-### code block
-**Role:** code block component
-
-- **backgroundColor:** `{colors.canvas-night}`
-- **textColor:** `{colors.on-dark}`
-- **typography:** `{typography.code}`
-- **rounded:** `{rounded.sm}`
-- **padding:** `16px`
-
-### pill tag green
-**Role:** pill tag green component
-
-- **backgroundColor:** `{colors.primary}`
-- **textColor:** `{colors.on-primary}`
-- **typography:** `{typography.micro}`
-- **rounded:** `{rounded.full}`
-- **padding:** `2px 8px`
-
-### pill tag soft
-**Role:** pill tag soft component
-
-- **backgroundColor:** `{colors.canvas-soft}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.micro}`
-- **rounded:** `{rounded.full}`
-- **padding:** `2px 8px`
-
-### nav bar light
-**Role:** nav bar light component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.xs}`
-- **padding:** `16px 24px`
-
-### link on light
-**Role:** link on light component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink}`
-- **typography:** `{typography.body-md}`
-- **rounded:** `{rounded.xs}`
-- **padding:** `0px`
-
-### footer light
-**Role:** footer light component
-
-- **backgroundColor:** `{colors.canvas}`
-- **textColor:** `{colors.ink-mute}`
-- **typography:** `{typography.caption}`
-- **rounded:** `{rounded.xs}`
-- **padding:** `64px 24px`
-
-## Do's and Don'ts
-
-### Do
-
-- Use `--color-primary` for the brand's primary interaction treatment.
-- Keep page surfaces anchored to `--color-canvas`.
-- Preserve every typography style's documented size, line height, and letter spacing.
-- Compare major implementation decisions against [the live Supabaze-Inspired website](https://supabase.com/).
-
-### Don't
-
-- Do not introduce colors outside the documented color token set.
-- Do not replace `--color-ink` with an arbitrary neutral.
-- Do not flatten documented component states or spacing relationships.
-- Do not treat this extracted snapshot as newer than the live source website.
+---
 
 ## Layout
 
-Use the documented spacing scale and component geometry as the implementation baseline. Validate responsive composition and current page rhythm against [the live source](https://supabase.com/).
+- Max content width: `1440px`.
+- Horizontal padding: `px-4` mobile → `px-[100px]` at `xl`.
+- Header height: `72px` mobile, `80px` desktop.
+- Main grid on desktop: two columns, callers left, timer/queue right.
+- Mobile order: timer and controls first, callers below.
+- Vertical rhythm: `gap-8`/`gap-10`; panels use `gap-4`.
+
+---
+
+## Components
+
+### Header
+
+- Sticky, warm paper background with hairline bottom border.
+- Wordmark left; UTC clock, theme toggle and Share action right.
+- No logo mark, tagline or extra navigation.
+
+### Timer
+
+- Two outlined cards, one per unit, with the colon between them.
+- Digits: Instrument Sans, tabular numerals, fluid `clamp()` size, tight tracking.
+- No “MIN” / “SEC” labels; the units are obvious from the layout.
+- Card: `--paper` background, 1px `--line` border, 8px radius.
+
+### Inputs
+
+- Numeric duration fields, monospace, centered.
+- `--paper` background, 1px border, 4px radius.
+- Focus: border becomes `--ink`, 2px ink-tinted ring.
+- Disabled: 40% opacity.
+
+### Buttons
+
+- Primary: inverted surface (`--invert` / `--invert-fg`), 4px radius.
+- Secondary: transparent with `--line-strong` border.
+- Ghost: no border, muted text that darkens on hover.
+- Disabled primary: `--tint` background with muted text (no opacity wash).
+
+### Caller panels
+
+- Outlined --paper cards with a single text title.
+- Rows: outlined sub-cards on the page background, 4px radius.
+- Row hover: border darkens and background picks up a light `--tint` wash.
+- Selected row: `--tint` background with an `--ink` border and square check.
+- Remove action: neutral icon that darkens on hover; no red accent.
+- Empty state: one short sentence in muted text.
+
+### Call queue
+
+- Outlined --paper card titled “Up next”.
+- Buffer actions are small outlined controls.
+- Rows show name, time and a copy button.
+- When a call is due while the timer runs, the row inverts to `--ink` /
+  `--background`. No color-coded flash.
+
+### Footer
+
+- Centered GitHub link only. No secondary tagline.
+
+---
+
+## Interaction
+
+- **Hover:** outlines darken, subtle `--tint` fills appear, ghost text darkens.
+- **Active:** primary controls drop to 70% opacity; outlined controls fill with
+  a stronger tint. No scale or bounce.
+- **Focus:** 2px ink outline with 2px offset; inputs use an ink border plus a soft
+  ink ring.
+- No parallax, spotlight effects, decorative arrows or cursor-following motion.
+
+---
+
+## Theme behavior
+
+- Default follows `prefers-color-scheme`.
+- The top-right toggle overrides and persists to `localStorage`
+  (`wosutil:theme`).
+- `countdown/index.html` runs a tiny inline script before CSS to set the initial
+  class and `color-scheme`, avoiding a flash of the wrong theme.
+- `src/theme.ts` owns resolution, persistence and the toggle listener.
+
+---
+
+## Avoid
+
+- Large radii, pill buttons or rounded-full chrome.
+- Colored accents, decorative dots or color-coded rows.
+- Shadows on cards; use hairline borders.
+- Extra labels, slash-prefixed eyebrows, taglines or repeated titles.
+- New proprietary fonts or copied brand assets.
+- Raw hex colors in components; use semantic tokens.

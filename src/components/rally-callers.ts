@@ -29,15 +29,17 @@ import { buildDurationGroup, wireMarchEditor } from './duration-input'
 type Editing = { id: string; field: 'name' | 'base' | 'pet' } | null
 
 const inputClass =
-  'font-primary rounded-sm border border-hairline bg-canvas px-3 py-2 text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
+  'font-primary rounded-sm border border-line bg-background px-3 py-2 text-p2 text-ink transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10'
 // Same box as the small duration inputs (px-2 py-1 + border): swapping the
 // name button for this input never changes the row height.
 const rowTextInputClass =
-  'font-primary min-w-0 flex-1 rounded-sm border border-hairline bg-canvas px-2 py-1 text-body-md text-ink [color-scheme:light] focus:border-primary-deep focus:outline-none focus:ring-2 focus:ring-primary/25'
+  'font-primary min-w-0 flex-1 rounded-sm border border-line bg-background px-2 py-1 text-p2 text-ink transition-colors focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10'
 const primaryButtonClass =
-  'font-primary cursor-pointer rounded-sm bg-primary px-3 py-2 text-center text-button-md font-medium text-on-primary transition-colors hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-40'
-const secondaryButtonClass =
-  'font-primary cursor-pointer rounded-sm border border-hairline-strong bg-canvas px-3 py-2 text-center text-button-md font-medium text-ink transition-colors hover:bg-canvas-soft'
+  'font-primary cursor-pointer rounded-sm bg-invert px-4 py-2 text-center text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 disabled:cursor-not-allowed disabled:bg-tint disabled:text-ink-muted'
+const primarySmallButtonClass =
+  'font-primary cursor-pointer rounded-sm bg-invert px-2.5 py-1 text-center text-caption font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70'
+const secondarySmallButtonClass =
+  'font-primary cursor-pointer rounded-sm border border-line-strong bg-transparent px-2.5 py-1 text-center text-caption font-medium text-ink transition-colors hover:border-ink hover:bg-tint/40 active:bg-tint/60'
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -137,7 +139,7 @@ export function mountRallyCallers(
   addButton.textContent = 'Add'
   addButton.className = `${primaryButtonClass} shrink-0`
 
-  const formErrorEl = el('p', 'invisible text-caption text-accent-tomato')
+  const formErrorEl = el('p', 'hidden text-caption text-ink')
   formErrorEl.id = `${prefix}-form-error`
   formErrorEl.setAttribute('role', 'alert')
 
@@ -149,11 +151,11 @@ export function mountRallyCallers(
   list.className = 'flex flex-col gap-2'
   list.setAttribute('aria-label', `${callerLabel} list`)
 
-  const empty = el('p', 'text-caption text-ink-mute', emptyText)
+  const empty = el('p', 'text-p3 text-ink-muted', emptyText)
   empty.id = `${prefix}-empty`
   empty.setAttribute('role', 'status')
 
-  const rowErrorEl = el('p', 'invisible text-caption text-accent-tomato')
+  const rowErrorEl = el('p', 'hidden text-caption text-ink')
   rowErrorEl.id = `${prefix}-row-error`
   rowErrorEl.setAttribute('role', 'alert')
 
@@ -207,10 +209,10 @@ export function mountRallyCallers(
   function syncFormError(): void {
     if (formError === null) {
       formErrorEl.textContent = ''
-      formErrorEl.classList.add('invisible')
+      formErrorEl.classList.add('hidden')
     } else {
       formErrorEl.textContent = formError
-      formErrorEl.classList.remove('invisible')
+      formErrorEl.classList.remove('hidden')
     }
     addButton.disabled = nameInput.value.trim() === ''
   }
@@ -218,10 +220,10 @@ export function mountRallyCallers(
   function syncRowError(): void {
     if (rowError === null) {
       rowErrorEl.textContent = ''
-      rowErrorEl.classList.add('invisible')
+      rowErrorEl.classList.add('hidden')
     } else {
       rowErrorEl.textContent = rowError
-      rowErrorEl.classList.remove('invisible')
+      rowErrorEl.classList.remove('hidden')
     }
   }
 
@@ -256,8 +258,8 @@ export function mountRallyCallers(
     const selected = selectable && canSelect && selection.has(caller.id)
     if (selectable) {
       item.className = selected
-        ? 'flex items-center gap-2 rounded-md border border-primary-deep bg-primary/10 px-3 py-2 shadow-sm transition-all -translate-y-px cursor-pointer'
-        : 'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all hover:border-hairline-strong cursor-pointer'
+        ? 'flex items-center gap-2 rounded-sm border border-ink bg-tint px-3 py-2 transition-colors cursor-pointer'
+        : 'flex items-center gap-2 rounded-sm border border-line bg-background px-3 py-2 transition-colors hover:border-line-strong hover:bg-tint/30 cursor-pointer'
       item.addEventListener('click', (event) => {
         const target = event.target as HTMLElement | null
         if (target?.closest('button,input,a,select,textarea,label')) return
@@ -265,7 +267,7 @@ export function mountRallyCallers(
       })
     } else {
       item.className =
-        'flex items-center gap-2 rounded-md border border-hairline bg-canvas px-3 py-2 transition-all'
+        'flex items-center gap-2 rounded-sm border border-line bg-background px-3 py-2 transition-colors'
     }
     item.dataset['callerId'] = caller.id
     if (selected) item.dataset['selected'] = 'true'
@@ -275,8 +277,8 @@ export function mountRallyCallers(
       selectButton.type = 'button'
       selectButton.id = `${prefix}-select-${caller.id}`
       selectButton.className = selected
-        ? 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-primary-deep bg-primary text-on-primary focus-visible:outline-2 focus-visible:outline-primary-deep'
-        : 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-hairline-strong bg-canvas text-transparent transition-colors hover:border-primary-deep focus-visible:outline-2 focus-visible:outline-primary-deep'
+        ? 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-ink bg-ink text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
+        : 'flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line-strong bg-paper text-transparent transition-colors hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
       selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false')
       selectButton.setAttribute('aria-label', `Select ${caller.name}`)
       if (!canSelect) {
@@ -325,7 +327,7 @@ export function mountRallyCallers(
       const nameButton = document.createElement('button')
       nameButton.type = 'button'
       nameButton.className =
-        'min-w-0 w-auto max-w-[10rem] shrink cursor-pointer truncate text-left text-body-md font-medium text-ink hover:underline focus-visible:outline-2 focus-visible:outline-primary-deep'
+        'min-w-0 w-auto max-w-[10rem] shrink cursor-pointer truncate text-left text-p2 font-medium text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
       nameButton.textContent = caller.name
       nameButton.title = 'Click to edit'
       nameButton.setAttribute('aria-label', `Edit caller ${caller.name}`)
@@ -388,7 +390,7 @@ export function mountRallyCallers(
       const marchButton = document.createElement('button')
       marchButton.type = 'button'
       marchButton.className =
-        'shrink-0 cursor-pointer rounded-sm border border-transparent px-2 py-1 text-body-md tabular-nums text-ink hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
+        'shrink-0 cursor-pointer rounded-sm border border-transparent px-2 py-1 font-mono text-p2 tabular-nums text-ink-muted transition-colors hover:bg-tint/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
       marchButton.textContent = formatMarchSec(getEffectiveMarchSec(caller))
       marchButton.title = 'Click to edit'
       marchButton.setAttribute(
@@ -408,8 +410,8 @@ export function mountRallyCallers(
     toggle.setAttribute('role', 'switch')
     toggle.setAttribute('aria-checked', caller.petActive ? 'true' : 'false')
     toggle.setAttribute('aria-label', `Pet skill for ${caller.name}`)
-    toggle.className = caller.petActive ? primaryButtonClass : secondaryButtonClass
-    toggle.classList.add('shrink-0', 'px-2', 'py-1', 'text-caption')
+    toggle.className = caller.petActive ? primarySmallButtonClass : secondarySmallButtonClass
+    toggle.classList.add('shrink-0')
     toggle.textContent = caller.petActive ? 'Pets ON' : 'Pets OFF'
     toggle.addEventListener('click', () => {
       togglePet(caller.id)
@@ -419,7 +421,7 @@ export function mountRallyCallers(
     if (caller.petActive) {
       const remaining = el(
         'span',
-        'shrink-0 text-micro tabular-nums text-ink-mute',
+        'hidden shrink-0 font-mono text-micro tabular-nums text-ink-muted sm:inline',
         formatPetRemaining(getPetRemainingMs(caller, Date.now())),
       )
       remaining.title = 'Pet skill remaining'
@@ -431,7 +433,7 @@ export function mountRallyCallers(
     const removeButton = document.createElement('button')
     removeButton.type = 'button'
     removeButton.className =
-      'shrink-0 cursor-pointer rounded-sm border border-hairline-strong bg-canvas p-1.5 text-accent-tomato transition-colors hover:bg-canvas-soft focus-visible:outline-2 focus-visible:outline-primary-deep'
+      'shrink-0 cursor-pointer rounded-sm border border-line bg-transparent p-1.5 text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
     removeButton.innerHTML =
       '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>'
     removeButton.title = 'Remove'
