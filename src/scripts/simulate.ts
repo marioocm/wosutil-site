@@ -207,7 +207,7 @@ export function initSimulation(): void {
       const payload: unknown = await response.json().catch(() => null)
       if (!response.ok) throw new Error(errorMessage(payload, response.status))
       renderResult(payload as SimulationResult, state)
-      setStatus('Simulation complete.')
+      setStatus('')
     } catch (error) {
       setStatus(
         error instanceof DOMException && error.name === 'AbortError'

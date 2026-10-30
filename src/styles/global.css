@@ -183,6 +183,10 @@ input[type="number"]::-webkit-outer-spin-button {
   overflow: hidden;
 }
 
+[data-simulate-status]:empty {
+  display: none;
+}
+
 .simulation-result {
   container-type: inline-size;
 }
