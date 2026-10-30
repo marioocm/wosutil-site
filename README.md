@@ -22,6 +22,20 @@ pnpm dev
 
 The dev server runs at `http://localhost:4321/`.
 
+## Simulator API
+
+The simulator page calls the `wosutil-sim` engine API. The local default is
+`http://localhost:8000`; run the API with `docker compose up -d --build` in the
+sibling `wosutil-sim` repository.
+
+- Local override without rebuilding: `?api=http://192.168.1.50:8000`.
+- Build-time override: copy `.env.example` to `.env` and set `PUBLIC_SIM_API`.
+- Production: set the repository variable `PUBLIC_SIM_API` (Settings → Secrets
+  and variables → Actions → Variables). The value is public and ends up in the
+  browser bundle, so never put secrets in a `PUBLIC_*` variable.
+- The API must be HTTPS when the site is served over HTTPS (GitHub Pages), and
+  its origin must be allowed in the API's `WOS_CORS_ORIGINS`.
+
 ## Checks
 
 ```sh
