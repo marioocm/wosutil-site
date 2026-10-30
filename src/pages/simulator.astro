@@ -659,6 +659,36 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
 
         <p id="stat-bonuses-summary" class="sr-only" aria-live="polite" aria-atomic="true"></p>
       </section>
+
+      <section
+        id="simulation"
+        class="w-full rounded-card border border-line bg-paper p-5"
+        aria-labelledby="simulation-title"
+        data-simulation
+      >
+        <h2 id="simulation-title" class="sr-only">Simulation</h2>
+
+        <div class="flex justify-center">
+          <button
+            type="button"
+            data-simulate
+            aria-controls="simulation-result"
+            class="inline-flex min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Simulate
+          </button>
+        </div>
+
+        <textarea
+          id="simulation-result"
+          data-simulate-result
+          readonly
+          rows="6"
+          placeholder="Simulation results will appear here."
+          aria-label="Simulation result"
+          class="mt-4 w-full resize-y rounded-sm border border-line bg-background px-3 py-2 font-mono text-caption leading-relaxed text-ink transition-colors placeholder:text-ink-subtle/60 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+        ></textarea>
+      </section>
     </div>
   </main>
 
