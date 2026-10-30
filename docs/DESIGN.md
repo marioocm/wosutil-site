@@ -301,8 +301,12 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   inverted `Simulate` button and a muted status line. Results stay hidden until
   a run succeeds. Below `lg` the card follows Stats Bonuses.
 - The results render inside the Simulation card below the status line, with a
-  smooth scroll on success. The card drops its sticky behavior once a result
-  exists so the full report can scroll.
+  smooth scroll on the first success. The first result expands from the Simulate
+  button with the same 220ms height motion as Joiners; repeat runs leave the
+  panel and the Battle Details state in place, tween the overview numbers and
+  slide the winrate bar over 240ms. Reduced-motion users get instant updates.
+  The card drops its sticky behavior once a result exists so the full report can
+  scroll.
 - Container queries keep the report legible in the narrow sidebar: under
   `12rem` the Total Troops and average-survivor rows stack their centered label
   above the two side values and the triggered headers shorten to `Trig.`;

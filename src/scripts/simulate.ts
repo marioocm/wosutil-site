@@ -15,6 +15,7 @@ import {
 } from '../lib/simulation'
 
 const DEFAULT_API = 'http://localhost:8000'
+const NUMBER_TWEEN_MS = 260
 
 function resolveApiBase(): string {
   const query = new URLSearchParams(window.location.search).get('api')
@@ -77,7 +78,68 @@ export function initSimulation(): void {
   }))
 
   const apiBase = resolveApiBase()
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const numberFrames = new WeakMap<HTMLElement, number>()
+  const numberValues = new WeakMap<HTMLElement, number>()
   let expanded = detailsContent.dataset['expanded'] === 'true'
+
+  function setNumber(
+    element: HTMLElement,
+    value: number,
+    format: (current: number) => string,
+  ): void {
+    const frame = numberFrames.get(element)
+    if (frame !== undefined) {
+      window.cancelAnimationFrame(frame)
+      numberFrames.delete(element)
+    }
+
+    const previous = numberValues.get(element)
+    numberValues.set(element, value)
+
+    if (previous === undefined || previous === value || reduceMotion.matches) {
+      element.textContent = format(value)
+      return
+    }
+
+    const start = performance.now()
+    const step = (now: number): void => {
+      const progress = Math.min((now - start) / NUMBER_TWEEN_MS, 1)
+      const eased = 1 - (1 - progress) ** 3
+      const current = previous + (value - previous) * eased
+      numberValues.set(element, current)
+      element.textContent = format(current)
+      if (progress < 1) {
+        numberFrames.set(element, window.requestAnimationFrame(step))
+      } else {
+        numberFrames.delete(element)
+        element.textContent = format(value)
+      }
+    }
+    numberFrames.set(element, window.requestAnimationFrame(step))
+  }
+
+  function scrollResultIntoView(): void {
+    const rect = resultRoot.getBoundingClientRect()
+    if (rect.top >= 64 && rect.bottom <= window.innerHeight) return
+    resultRoot.scrollIntoView({
+      behavior: reduceMotion.matches ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }
+
+  function revealResult(): void {
+    if (!resultRoot.hidden) return
+    resultRoot.hidden = false
+    scrollResultIntoView()
+    if (reduceMotion.matches) {
+      resultRoot.dataset['expanded'] = 'true'
+      return
+    }
+    window.requestAnimationFrame(() => {
+      resultRoot.dataset['expanded'] = 'true'
+    })
+  }
 
   function setExpanded(next: boolean): void {
     expanded = next
@@ -130,20 +192,21 @@ export function initSimulation(): void {
   function renderResult(result: SimulationResult, state: SimulatorState): void {
     const attRate = clampRate(result.win_rate?.att ?? result.att_win_rate)
     const defRate = clampRate(result.win_rate?.def ?? 1 - attRate)
+    const firstResult = resultRoot.hidden
 
-    winrateLeft.textContent = formatWinRate(attRate)
-    winrateRight.textContent = formatWinRate(defRate)
+    setNumber(winrateLeft, attRate, formatWinRate)
+    setNumber(winrateRight, defRate, formatWinRate)
     winrateLeftBar.style.width = `${attRate * 100}%`
     winrateRightBar.style.width = `${defRate * 100}%`
 
-    totalLeft.textContent = formatBattleCount(result.initial.att)
-    totalRight.textContent = formatBattleCount(result.initial.def)
-    survivorsLeft.textContent = formatBattleCount(result.att.total_mean)
-    survivorsRight.textContent = formatBattleCount(result.def.total_mean)
+    setNumber(totalLeft, result.initial.att, formatBattleCount)
+    setNumber(totalRight, result.initial.def, formatBattleCount)
+    setNumber(survivorsLeft, result.att.total_mean, formatBattleCount)
+    setNumber(survivorsRight, result.def.total_mean, formatBattleCount)
 
     survivorRows.forEach((cells, index) => {
-      cells.left.textContent = formatBattleCount(result.att.survivors_mean[index] ?? 0)
-      cells.right.textContent = formatBattleCount(result.def.survivors_mean[index] ?? 0)
+      setNumber(cells.left, result.att.survivors_mean[index] ?? 0, formatBattleCount)
+      setNumber(cells.right, result.def.survivors_mean[index] ?? 0, formatBattleCount)
     })
 
     renderSkillRows(
@@ -159,15 +222,8 @@ export function initSimulation(): void {
     warnings.hidden = warningList.length === 0
     warnings.textContent = warningList.join(' · ')
 
-    setExpanded(false)
     shell?.setAttribute('data-has-result', 'true')
-    resultRoot.hidden = false
-    window.requestAnimationFrame(() => {
-      const rect = resultRoot.getBoundingClientRect()
-      if (rect.top >= 64 && rect.bottom <= window.innerHeight) return
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      resultRoot.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
-    })
+    if (firstResult) revealResult()
   }
 
   detailsToggle.addEventListener('click', () => setExpanded(!expanded))
@@ -179,7 +235,6 @@ export function initSimulation(): void {
     const state = readSimulatorState()
     const problem = validateSimulatorState(state)
     if (problem) {
-      resultRoot.hidden = true
       setStatus(problem)
       return
     }
@@ -189,7 +244,6 @@ export function initSimulation(): void {
     const label = button.textContent
     button.disabled = true
     button.textContent = 'Simulating...'
-    resultRoot.hidden = true
     section.setAttribute('aria-busy', 'true')
     setStatus(`Running ${SIMULATION_SEEDS} seeds...`)
 
