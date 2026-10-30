@@ -5,6 +5,7 @@ import {
   buildSkillRows,
   formatActivations,
   formatBattleCount,
+  formatSimulationFailure,
   formatWinRate,
   SIMULATION_SEEDS,
   SKILL_LEVEL,
@@ -305,3 +306,43 @@ describe('battle result formatting', () => {
     expect(formatActivations(12.46)).toBe('12.5')
   })
 })
+
+describe('formatSimulationFailure', () => {
+  it('explains rate limits with and without a retry delay', () => {
+    expect(formatSimulationFailure({ kind: 'rate-limit' })).toBe(
+      'Too many simulations at once. Wait 10 seconds and try again.',
+    )
+    expect(formatSimulationFailure({ kind: 'rate-limit', retryAfterSeconds: 7 })).toBe(
+      'Too many simulations at once. Try again in 7 seconds.',
+    )
+    expect(formatSimulationFailure({ kind: 'rate-limit', retryAfterSeconds: 1 })).toBe(
+      'Too many simulations at once. Try again in 1 second.',
+    )
+  })
+
+  it('hides the production API URL on network failures', () => {
+    expect(formatSimulationFailure({ kind: 'network' })).toBe(
+      'The simulation service is busy or unreachable. Wait a few seconds and try again.',
+    )
+  })
+
+  it('points local developers to the engine', () => {
+    expect(
+      formatSimulationFailure(
+        { kind: 'network' },
+        { apiBase: 'http://localhost:8000', localApi: true },
+      ),
+    ).toBe('Could not reach the simulation engine at http://localhost:8000. Is it running?')
+  })
+
+  it('keeps engine details for API errors and handles timeouts', () => {
+    expect(formatSimulationFailure({ kind: 'api', detail: 'Unknown hero: Foo' })).toBe(
+      'Simulation failed: Unknown hero: Foo',
+    )
+    expect(formatSimulationFailure({ kind: 'api' })).toBe('Simulation failed. Try again.')
+    expect(formatSimulationFailure({ kind: 'timeout' })).toBe(
+      'The simulation timed out. Try again.',
+    )
+  })
+})
+

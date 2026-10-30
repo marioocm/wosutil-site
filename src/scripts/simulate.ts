@@ -4,6 +4,7 @@ import {
   buildEngineCase,
   formatActivations,
   formatBattleCount,
+  formatSimulationFailure,
   formatWinRate,
   readSimulatorState,
   SIMULATION_SEEDS,
@@ -30,6 +31,36 @@ function errorMessage(payload: unknown, status: number): string {
     if (detail) return JSON.stringify(detail)
   }
   return `API error ${status}`
+}
+
+function retryAfterSeconds(response: Response): number | null {
+  const header = response.headers.get('Retry-After')?.trim()
+  if (!header) return null
+  const seconds = Number(header)
+  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds)
+  const date = Date.parse(header)
+  if (Number.isNaN(date)) return null
+  return Math.max(1, Math.ceil((date - Date.now()) / 1000))
+}
+
+function isLocalApi(base: string): boolean {
+  try {
+    const host = new URL(base).hostname
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
+  } catch {
+    return false
+  }
+}
+
+class SimulationRequestError extends Error {
+  constructor(
+    message: string,
+    readonly rateLimited = false,
+    readonly retryAfterSeconds: number | null = null,
+  ) {
+    super(message)
+    this.name = 'SimulationRequestError'
+  }
 }
 
 function must<T extends Element>(root: ParentNode, selector: string): T {
@@ -157,6 +188,29 @@ export function initSimulation(): void {
     status.textContent = message
   }
 
+  function failureMessage(error: unknown): string {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return formatSimulationFailure({ kind: 'timeout' })
+    }
+    if (error instanceof TypeError) {
+      return formatSimulationFailure(
+        { kind: 'network' },
+        { apiBase, localApi: isLocalApi(apiBase) },
+      )
+    }
+    if (error instanceof SimulationRequestError) {
+      return formatSimulationFailure(
+        error.rateLimited
+          ? { kind: 'rate-limit', retryAfterSeconds: error.retryAfterSeconds }
+          : { kind: 'api', detail: error.message },
+      )
+    }
+    return formatSimulationFailure({
+      kind: 'api',
+      detail: error instanceof Error ? error.message : String(error),
+    })
+  }
+
   function cell(text: string, className: string): HTMLTableCellElement {
     const element = document.createElement('td')
     element.className = className
@@ -260,15 +314,15 @@ export function initSimulation(): void {
         signal: controller.signal,
       })
       const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(errorMessage(payload, response.status))
+      if (!response.ok) {
+        throw response.status === 429
+          ? new SimulationRequestError('rate limited', true, retryAfterSeconds(response))
+          : new SimulationRequestError(errorMessage(payload, response.status))
+      }
       renderResult(payload as SimulationResult, state)
       setStatus('')
     } catch (error) {
-      setStatus(
-        error instanceof DOMException && error.name === 'AbortError'
-          ? 'The simulation timed out.'
-          : `Simulation failed: ${error instanceof Error ? error.message : String(error)}. Is the API running at ${apiBase}?`,
-      )
+      setStatus(failureMessage(error))
     } finally {
       window.clearTimeout(timeout)
       section.removeAttribute('aria-busy')
