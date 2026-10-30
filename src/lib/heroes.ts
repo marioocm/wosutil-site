@@ -87,13 +87,37 @@ export function getTroopTypeLabel(type: TroopType): string {
   return TROOP_TYPES.find((item) => item.id === type)?.label ?? type
 }
 
+export function getTroopTypeShortLabel(type: TroopType): string {
+  return TROOP_TYPES.find((item) => item.id === type)?.shortLabel ?? type
+}
+
+function compareHeroes(a: Hero, b: Hero): number {
+  const aGeneration = a.generation ?? 0
+  const bGeneration = b.generation ?? 0
+  if (aGeneration !== bGeneration) return bGeneration - aGeneration
+  return a.name.localeCompare(b.name)
+}
+
+export function getAllHeroes(): Hero[] {
+  return [...HEROES].sort(compareHeroes)
+}
+
 export function getHeroesByType(type: TroopType): Hero[] {
-  return HEROES.filter((hero) => hero.type === type).sort((a, b) => {
-    const aGeneration = a.generation ?? 0
-    const bGeneration = b.generation ?? 0
-    if (aGeneration !== bGeneration) return bGeneration - aGeneration
-    return a.name.localeCompare(b.name)
-  })
+  return HEROES.filter((hero) => hero.type === type).sort(compareHeroes)
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+export function filterHeroes(heroes: readonly Hero[], query: string): Hero[] {
+  const normalized = normalizeSearch(query)
+  if (normalized === '') return [...heroes]
+  return heroes.filter((hero) => normalizeSearch(hero.name).includes(normalized))
 }
 
 export function formatHeroGeneration(generation: number | null): string {

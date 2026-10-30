@@ -33,6 +33,19 @@ const heroTileClass =
   'relative flex aspect-square w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-sm border border-line bg-background transition-colors group-hover:border-line-strong group-hover:bg-tint/40 group-active:bg-tint/60'
 const heroCaptionClass =
   'min-h-[1.5rem] w-full break-words text-center text-micro leading-tight text-ink-muted'
+const joinerSlotClass =
+  'group flex w-14 cursor-pointer flex-col items-center gap-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:w-16'
+const joinerTileClass =
+  'relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-sm border border-line bg-background transition-colors group-hover:border-line-strong group-hover:bg-tint/40 group-active:bg-tint/60'
+const joinerCaptionClass =
+  'line-clamp-2 min-h-[1.75rem] w-full break-words text-center text-[10px] leading-tight text-ink-muted sm:min-h-[2rem] sm:text-micro'
+
+const JOINER_SIDES = [
+  { id: 'left', label: 'Left' },
+  { id: 'right', label: 'Right' },
+] as const
+
+const JOINER_INDEXES = [1, 2, 3, 4] as const
 ---
 
 <SiteLayout
@@ -156,6 +169,154 @@ const heroCaptionClass =
             </div>
           </div>
         </dialog>
+      </section>
+
+      <section
+        id="joiners"
+        class="w-full rounded-card border border-line bg-paper p-5"
+        aria-labelledby="joiners-title"
+        data-joiners
+      >
+        <div class="relative flex items-center justify-center">
+          <h2 id="joiners-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
+            Joiners
+          </h2>
+          <button
+            type="button"
+            data-joiners-toggle
+            aria-expanded="false"
+            aria-controls="joiners-content"
+            aria-label="Show joiners"
+            title="Show joiners"
+            class="absolute right-0 top-1/2 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <svg
+              data-joiners-icon
+              class="transition-transform duration-200"
+              viewBox="0 0 16 16"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m4 6 4 4 4-4"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div
+          id="joiners-content"
+          class="joiners-content"
+          data-joiners-content
+          data-expanded="false"
+          aria-hidden="true"
+          inert
+        >
+          <div class="joiners-content-inner">
+            <div class="grid grid-cols-2 gap-4 pt-4">
+            {
+              JOINER_SIDES.map((side) => (
+              <div
+                class:list={[
+                  'grid grid-cols-2 gap-2',
+                  side.id === 'left' ? 'justify-self-start' : 'justify-self-end',
+                ]}
+                role="group"
+                aria-label={`${side.label} side joiners`}
+                data-joiner-side={side.id}
+              >
+                {JOINER_INDEXES.map((index) => (
+                  <button
+                    type="button"
+                    class={joinerSlotClass}
+                    data-joiner-slot
+                    data-joiner-side={side.id}
+                    data-joiner-index={index}
+                    data-joiner-selected="false"
+                    aria-haspopup="dialog"
+                    aria-controls="joiner-picker"
+                  >
+                    <span class={joinerTileClass} data-joiner-tile aria-hidden="true">
+                      <span
+                        class="absolute left-0.5 top-0.5 z-[1] rounded-xs bg-paper px-0.5 text-[9px] leading-tight text-ink-muted"
+                        data-joiner-type
+                        hidden
+                      ></span>
+                      <span
+                        class="flex items-center justify-center text-p2 font-medium leading-none text-ink-muted"
+                        data-joiner-visual
+                      >
+                        +
+                      </span>
+                    </span>
+                    <span class={joinerCaptionClass} data-joiner-caption>Select</span>
+                    <span class="sr-only">
+                      {`Select joiner ${index} for the ${side.label.toLowerCase()} side`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ))
+          }
+        </div>
+
+        <dialog
+          id="joiner-picker"
+          class="joiner-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="joiner-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="joiner-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  Select joiner
+                </h3>
+                <p data-joiner-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-joiner-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="border-b border-line px-4 py-3">
+              <input
+                type="search"
+                data-joiner-search
+                placeholder="Search heroes"
+                aria-label="Search heroes"
+                autocomplete="off"
+                spellcheck="false"
+                class="w-full rounded-sm border border-line bg-background px-3 py-2 font-primary text-p2 text-ink transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+              />
+            </div>
+            <div
+              data-joiner-options
+              class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
+            >
+            </div>
+          </div>
+        </dialog>
+          </div>
+        </div>
       </section>
 
       <section
@@ -503,10 +664,12 @@ const heroCaptionClass =
 
   <script>
     import { initHeroComparison } from '../scripts/hero-comparison'
+    import { initJoiners } from '../scripts/joiners'
     import { initStatBonuses } from '../scripts/stat-bonuses'
     import { initTroopPower } from '../scripts/troop-power'
 
     initHeroComparison()
+    initJoiners()
     initTroopPower()
     initStatBonuses()
   </script>

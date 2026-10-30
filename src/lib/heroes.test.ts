@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { HERO_IMAGES } from './hero-images'
 import {
+  filterHeroes,
   formatHeroGeneration,
+  getAllHeroes,
   getHeroesByType,
   getTroopTypeLabel,
+  getTroopTypeShortLabel,
   heroInitials,
   HEROES,
   TROOP_TYPES,
@@ -36,6 +39,32 @@ describe('TROOP_TYPES', () => {
     expect(TROOP_TYPES.map((type) => type.id)).toEqual(['infantry', 'lancer', 'marksman'])
     expect(TROOP_TYPES.map((type) => type.shortLabel)).toEqual(['INF', 'LAN', 'MAR'])
     expect(getTroopTypeLabel('marksman')).toBe('Marksman')
+    expect(getTroopTypeShortLabel('infantry')).toBe('INF')
+  })
+})
+
+describe('getAllHeroes', () => {
+  it('returns every hero sorted by generation with epics last', () => {
+    const heroes = getAllHeroes()
+    expect(heroes).toHaveLength(HEROES.length)
+    expect(heroes.slice(0, 3).map((hero) => hero.name)).toEqual(['Aiden', 'Bertha', 'Eleanor'])
+    expect(heroes.at(-1)?.generation).toBeNull()
+  })
+})
+
+describe('filterHeroes', () => {
+  it('filters by name ignoring case and surrounding spaces', () => {
+    expect(filterHeroes(getAllHeroes(), ' natalia ').map((hero) => hero.name)).toEqual(['Natalia'])
+    expect(filterHeroes(getAllHeroes(), 'MOLLY').map((hero) => hero.name)).toEqual(['Molly'])
+  })
+
+  it('returns the full sorted list for an empty query', () => {
+    const all = getAllHeroes()
+    expect(filterHeroes(all, '')).toEqual(all)
+  })
+
+  it('returns no results when nothing matches', () => {
+    expect(filterHeroes(getAllHeroes(), 'zzzz')).toEqual([])
   })
 })
 

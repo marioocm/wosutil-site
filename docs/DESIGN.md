@@ -211,6 +211,22 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - The picker is a paper panel with a hairline border, a dark translucent backdrop,
   a close control and native Escape handling. No shadows.
 
+### Joiners
+
+- Outlined --paper card with a centered “Joiners” title and a small outlined
+  chevron button at the right. The card starts collapsed, showing only the title
+  row; the button expands or collapses the content and updates
+  `aria-expanded` / `aria-label`. The height animates over 220ms; reduced-motion
+  users get an instant toggle.
+- Two symmetric 2×2 grids of smaller square slots, one per side. Empty slots show
+  a plus and a muted “Select” caption; selected slots fill with the hero portrait,
+  a small INF/LAN/MAR chip and the hero name.
+- Clicking a slot opens a native `<dialog>` picker with a search field and a
+  scrollable list of every combat hero. With no query the list stays ordered by
+  generation, newest first and epics last; the search filters by name. A leading
+  None option clears the slot. The picker uses the same paper panel, backdrop and
+  close control as Hero Comparison.
+
 ### Troop Power
 
 - Outlined --paper card with a centered “Troop Power” title.

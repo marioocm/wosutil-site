@@ -1,9 +1,8 @@
-import { getHeroImage } from '../lib/hero-images'
+import { fillHeroVisual } from '../components/hero-visual'
 import {
   formatHeroGeneration,
   getHeroesByType,
   getTroopTypeLabel,
-  heroInitials,
   type Hero,
   type TroopType,
 } from '../lib/heroes'
@@ -21,37 +20,6 @@ function slotKey(type: TroopType, side: Side): string {
 
 function sideLabel(side: Side): string {
   return side === 'left' ? 'Left side' : 'Right side'
-}
-
-function fillHeroVisual(container: HTMLElement, hero: Hero | null): void {
-  container.replaceChildren()
-
-  const fallback = document.createElement('span')
-  fallback.textContent = hero ? heroInitials(hero.name) : '+'
-  container.append(fallback)
-
-  if (!hero) return
-
-  const src = getHeroImage(hero.id)
-  if (!src) return
-
-  const image = document.createElement('img')
-  image.alt = ''
-  image.loading = 'lazy'
-  image.decoding = 'async'
-  image.referrerPolicy = 'no-referrer'
-  image.draggable = false
-  image.className = 'absolute inset-0 h-full w-full object-cover'
-  image.addEventListener(
-    'load',
-    () => {
-      fallback.hidden = true
-    },
-    { once: true },
-  )
-  image.addEventListener('error', () => image.remove(), { once: true })
-  image.src = src
-  container.append(image)
 }
 
 function renderSlot(button: HTMLButtonElement): void {
@@ -79,6 +47,7 @@ function createHeroOption(
   const avatar = document.createElement('span')
   avatar.className =
     'relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-line bg-background text-micro font-medium text-ink-muted'
+  avatar.setAttribute('aria-hidden', 'true')
   fillHeroVisual(avatar, hero)
 
   const name = document.createElement('span')
@@ -118,6 +87,7 @@ function createNoneOption(onSelect: () => void): HTMLButtonElement {
   const avatar = document.createElement('span')
   avatar.className =
     'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-line bg-background text-p2 text-ink-muted'
+  avatar.setAttribute('aria-hidden', 'true')
   avatar.textContent = '−'
 
   const name = document.createElement('span')
