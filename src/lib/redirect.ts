@@ -1,21 +1,22 @@
-export const COUNTDOWN_MARKER = 'id="countdown"'
+export const DEFAULT_SECTION = 'simulator'
+export const DEFAULT_PAGE_MARKER = 'id="simulator"'
 
-export function countdownRedirectPaths(pathname: string): string[] {
+export function defaultRedirectPaths(pathname: string): string[] {
   const segments = pathname.split('/').filter(Boolean)
   const paths: string[] = []
   for (let i = segments.length; i >= 0; i--) {
     const base = segments.slice(0, i).join('/')
-    paths.push('/' + (base ? base + '/' : '') + 'countdown/')
+    paths.push('/' + (base ? base + '/' : '') + DEFAULT_SECTION + '/')
   }
   return paths
 }
 
-export function isCountdownPage(html: string): boolean {
-  return html.includes(COUNTDOWN_MARKER)
+export function isDefaultPage(html: string): boolean {
+  return html.includes(DEFAULT_PAGE_MARKER)
 }
 
-export function redirectToCountdown(): void {
-  const paths = countdownRedirectPaths(window.location.pathname)
+export function redirectToDefault(): void {
+  const paths = defaultRedirectPaths(window.location.pathname)
   let index = 0
 
   const tryNext = (): void => {
@@ -24,7 +25,7 @@ export function redirectToCountdown(): void {
     fetch(url, { cache: 'no-store' })
       .then((response) => (response.ok ? response.text() : ''))
       .then((html) => {
-        if (isCountdownPage(html)) {
+        if (isDefaultPage(html)) {
           window.location.replace(url)
         } else {
           tryNext()

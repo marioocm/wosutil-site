@@ -17,7 +17,7 @@ export default defineConfig({
   trailingSlash: 'always',
   prefetch: true,
   redirects: {
-    '/': `${base}countdown/`,
+    '/': `${base}simulator/`,
   },
   integrations: [
     sitemap({
