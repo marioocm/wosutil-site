@@ -2,6 +2,7 @@ import { mountRallyCallers } from '../components/rally-callers'
 import { mountRallyQueue } from '../components/rally-queue'
 import { ENEMY_STORAGE_KEY } from '../lib/rally-callers'
 import type { RallyCaller } from '../lib/rally-callers'
+import { seedCountdownDefaults } from '../lib/rally-defaults'
 import {
   getBufferDurationSec,
   getDefaultDurationSec,
@@ -63,6 +64,7 @@ export function initCountdown(): void {
   }
 
   maybeImportSharedState()
+  seedCountdownDefaults(localStorage, Date.now())
   window.addEventListener('hashchange', () => {
     // Pasting a share link into the open page only changes the hash (no reload).
     if (parseShareFromHash(window.location.hash)) window.location.reload()
