@@ -1,3 +1,4 @@
+import { getHeroImage } from '../lib/hero-images'
 import {
   formatHeroGeneration,
   getHeroesByType,
@@ -23,7 +24,34 @@ function sideLabel(side: Side): string {
 }
 
 function fillHeroVisual(container: HTMLElement, hero: Hero | null): void {
-  container.textContent = hero ? heroInitials(hero.name) : '+'
+  container.replaceChildren()
+
+  const fallback = document.createElement('span')
+  fallback.textContent = hero ? heroInitials(hero.name) : '+'
+  container.append(fallback)
+
+  if (!hero) return
+
+  const src = getHeroImage(hero.id)
+  if (!src) return
+
+  const image = document.createElement('img')
+  image.alt = ''
+  image.loading = 'lazy'
+  image.decoding = 'async'
+  image.referrerPolicy = 'no-referrer'
+  image.draggable = false
+  image.className = 'absolute inset-0 h-full w-full object-cover'
+  image.addEventListener(
+    'load',
+    () => {
+      fallback.hidden = true
+    },
+    { once: true },
+  )
+  image.addEventListener('error', () => image.remove(), { once: true })
+  image.src = src
+  container.append(image)
 }
 
 function renderSlot(button: HTMLButtonElement): void {
@@ -50,7 +78,7 @@ function createHeroOption(
 
   const avatar = document.createElement('span')
   avatar.className =
-    'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-line bg-background text-micro font-medium text-ink-muted'
+    'relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-line bg-background text-micro font-medium text-ink-muted'
   fillHeroVisual(avatar, hero)
 
   const name = document.createElement('span')

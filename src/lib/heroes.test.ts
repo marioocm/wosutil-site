@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { HERO_IMAGES } from './hero-images'
 import {
   formatHeroGeneration,
   getHeroesByType,
@@ -18,6 +19,15 @@ describe('HEROES', () => {
     expect(getHeroesByType('infantry')).toHaveLength(19)
     expect(getHeroesByType('lancer')).toHaveLength(21)
     expect(getHeroesByType('marksman')).toHaveLength(21)
+  })
+})
+
+describe('HERO_IMAGES', () => {
+  it('maps every hero to an https portrait and nothing else', () => {
+    expect(Object.keys(HERO_IMAGES).sort()).toEqual(HEROES.map((hero) => hero.id).sort())
+    for (const image of Object.values(HERO_IMAGES)) {
+      expect(image).toMatch(/^https:\/\//)
+    }
   })
 })
 

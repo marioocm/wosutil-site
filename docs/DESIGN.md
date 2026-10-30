@@ -200,13 +200,38 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Three symmetric rows with square slots pinned to the left and right card sides.
   There is no center label: each slot shows its troop-type abbreviation — INF, LAN
   or MAR — with a small bare plus/initials indicator beneath.
-- Empty slots show the plus and a muted “Select” caption. Selected slots show the hero's initials and the hero name below.
+- Empty slots show the plus and a muted “Select” caption. Selected slots fill the
+  tile with the hero's portrait, keep the troop-type abbreviation in a small paper
+  chip and show the hero name below. Portraits are hotlinked from the Whiteout
+  Survival Wiki; if they fail to load, the hero's initials remain.
 - Clicking a slot opens a native `<dialog>` picker filtered to that troop type.
   A leading None option clears the slot. Heroes are ordered newest generation
-  first, with epics last. Each option shows a small avatar/initials, the hero name
+  first, with epics last. Each option shows a small portrait avatar, the hero name
   and `Gen N` / `Epic`.
 - The picker is a paper panel with a hairline border, a dark translucent backdrop,
   a close control and native Escape handling. No shadows.
+
+### Troop Power
+
+- Outlined --paper card with a centered “Troop Power” title.
+- Two symmetric sides. Each side has a centered “Total Troops” input, then three
+  square INF/LAN/MAR tiles in the hero-slot style. The whole tile selects the
+  troop tier (T1–T12); a grayscale hexagon badge overlapping its top-right corner
+  selects the fire crystal level (FC0–FC10) and shows the number inside. The
+  troop count sits below the tile in an editable field (a dash until data is
+  entered). Editing a count makes the total the sum of the three and derives the
+  ratio; editing the total or ratio reallocates the counts.
+- Tier and FC are chosen in paper `<dialog>` pickers with dark translucent
+  backdrops, a close control and native Escape handling. Options are large
+  buttons in a four-column grid, with the current value selected.
+- Below the tiles, one horizontal ratio bar is split into three monochrome tinted
+  segments and shows each troop type's share as a percentage inside its third.
+  Two dividers adjust Infantry/Lancer and Lancer/Marksman; dragging the middle
+  Lancer segment transfers troops between Infantry and Marksman while keeping
+  Lancer fixed. Dragging is relative, so a click focuses without changing the
+  ratio; arrow keys step 1%.
+- Handles use ink bars with a soft ink ring on hover/focus. Segment fills use
+  neutral tints only; no semantic accent color is introduced.
 
 ### Stats Bonuses table
 
