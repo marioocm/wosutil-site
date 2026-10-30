@@ -333,7 +333,6 @@ export function initSimulation(): void {
     button.disabled = true
     button.textContent = 'Simulating...'
     section.setAttribute('aria-busy', 'true')
-    setStatus(`Running ${SIMULATION_SEEDS} seeds...`)
 
     try {
       const response = await fetch(`${apiBase}/v1/simulate`, {
