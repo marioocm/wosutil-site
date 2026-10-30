@@ -1,3 +1,8 @@
+import {
+  getGenerationLineup,
+  getGenerationPreset,
+  onGenerationChange,
+} from '../lib/generations'
 import type { TroopType } from '../lib/heroes'
 import {
   DEFAULT_TROOP_FC,
@@ -32,6 +37,10 @@ interface DragState {
   startX: number
   initialRatio: TroopRatio
   moved: boolean
+}
+
+interface TroopSideController {
+  applyLoadout: (total: number, ratio: TroopRatio) => void
 }
 
 const DRAG_THRESHOLD_PX = 4
@@ -206,10 +215,10 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
   return { open }
 }
 
-function initSide(side: HTMLElement): void {
+function initSide(side: HTMLElement): TroopSideController | null {
   const totalElement = side.querySelector<HTMLInputElement>('[data-troop-total]')
   const trackElement = side.querySelector<HTMLElement>('[data-troop-ratio-track]')
-  if (!totalElement || !trackElement) return
+  if (!totalElement || !trackElement) return null
   const totalInput: HTMLInputElement = totalElement
   const track: HTMLElement = trackElement
 
@@ -289,6 +298,13 @@ function initSide(side: HTMLElement): void {
   function setRatio(next: TroopRatio): void {
     state.ratio = next
     state.counts = state.total === null ? null : allocateTroopCounts(state.total, next)
+    render()
+  }
+
+  function applyLoadout(total: number, ratio: TroopRatio): void {
+    state.total = total
+    state.ratio = ratio
+    state.counts = allocateTroopCounts(total, ratio)
     render()
   }
 
@@ -433,14 +449,19 @@ function initSide(side: HTMLElement): void {
   track.addEventListener('lostpointercapture', endDrag)
 
   render()
+
+  return { applyLoadout }
 }
 
 export function initTroopPower(): void {
   const section = document.querySelector<HTMLElement>('[data-troop-power]')
   if (!section) return
 
+  const sideControllers = new Map<string, TroopSideController>()
   for (const side of section.querySelectorAll<HTMLElement>('[data-troop-power-side]')) {
-    initSide(side)
+    const controller = initSide(side)
+    const sideId = side.dataset['troopPowerSide']
+    if (controller && sideId) sideControllers.set(sideId, controller)
   }
 
   const tierDialog = section.querySelector<HTMLDialogElement>('#troop-tier-picker')
@@ -516,6 +537,8 @@ export function initTroopPower(): void {
         })
       : null
 
+  const loadouts = new Map<string, TroopLoadout>()
+
   for (const card of section.querySelectorAll<HTMLElement>('[data-troop-type]')) {
     const tierButton = card.querySelector<HTMLButtonElement>('[data-troop-tier-slot]')
     const fcButton = card.querySelector<HTMLButtonElement>('[data-troop-fc-slot]')
@@ -552,6 +575,11 @@ export function initTroopPower(): void {
     }
     renderLoadout(loadout)
 
+    const sideId = card.closest<HTMLElement>('[data-troop-power-side]')?.dataset[
+      'troopPowerSide'
+    ]
+    if (sideId) loadouts.set(`${sideId}:${typeId}`, loadout)
+
     if (tierPicker) {
       tierButton.addEventListener('click', () => tierPicker.open(loadout, tierButton))
     }
@@ -562,4 +590,21 @@ export function initTroopPower(): void {
       t12Button.addEventListener('click', () => t12Picker.open(loadout, t12Button))
     }
   }
+
+  onGenerationChange((generation) => {
+    const preset = getGenerationPreset(generation)
+    if (!preset) return
+
+    for (const [side, controller] of sideControllers) {
+      const lineup = getGenerationLineup(preset, side === 'right' ? 'right' : 'left')
+      controller.applyLoadout(preset.totalTroops, lineup.ratio)
+    }
+
+    for (const loadout of loadouts.values()) {
+      loadout.tier = preset.tier
+      loadout.fc = preset.fc
+      loadout.t12 = 0
+      renderLoadout(loadout)
+    }
+  })
 }

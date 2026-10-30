@@ -1,10 +1,12 @@
 import { fillHeroVisual } from '../components/hero-visual'
+import { onGenerationChange } from '../lib/generations'
 import {
   filterHeroes,
   formatHeroGeneration,
   getAllHeroes,
   getTroopTypeLabel,
   getTroopTypeShortLabel,
+  isHeroAvailable,
   type Hero,
 } from '../lib/heroes'
 
@@ -24,6 +26,7 @@ function slotKey(side: Side, index: number): string {
 export function initJoiners(): void {
   const section = document.querySelector<HTMLElement>('[data-joiners]')
   if (!section) return
+  const root: HTMLElement = section
 
   const toggle = section.querySelector<HTMLButtonElement>('[data-joiners-toggle]')
   const content = section.querySelector<HTMLElement>('[data-joiners-content]')
@@ -60,9 +63,9 @@ export function initJoiners(): void {
   const sideText: HTMLElement = pickerSide
   const search: HTMLInputElement = searchElement
   const options: HTMLElement = optionsElement
-  const allHeroes = getAllHeroes()
   const selections = new Map<string, Hero>()
   let activeSlot: HTMLButtonElement | null = null
+  let maxGeneration: number | null = null
 
   function currentSelection(): Hero | null {
     if (!activeSlot) return null
@@ -177,7 +180,7 @@ export function initJoiners(): void {
 
   function renderOptions(): void {
     const query = search.value
-    const heroes = filterHeroes(allHeroes, query)
+    const heroes = filterHeroes(getAllHeroes(maxGeneration), query)
     const current = currentSelection()
     const nodes: HTMLElement[] = []
 
@@ -209,10 +212,29 @@ export function initJoiners(): void {
     search.focus()
   }
 
+  function applyGeneration(generation: number): void {
+    maxGeneration = generation
+
+    for (const slot of root.querySelectorAll<HTMLButtonElement>('[data-joiner-slot]')) {
+      const side = slot.dataset['joinerSide'] as Side
+      const index = Number(slot.dataset['joinerIndex'])
+      const key = slotKey(side, index)
+      const current = selections.get(key)
+      if (current && !isHeroAvailable(current, generation)) {
+        selections.delete(key)
+      }
+      renderSlot(slot)
+    }
+
+    if (dialog.open) renderOptions()
+  }
+
   for (const slot of section.querySelectorAll<HTMLButtonElement>('[data-joiner-slot]')) {
     renderSlot(slot)
     slot.addEventListener('click', () => openPicker(slot))
   }
+
+  onGenerationChange(applyGeneration)
 
   closeButton.addEventListener('click', closePicker)
   search.addEventListener('input', () => {

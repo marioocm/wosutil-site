@@ -1,5 +1,13 @@
 import {
+  getGenerationLineup,
+  getGenerationPreset,
+  onGenerationChange,
+} from '../lib/generations'
+import { COMBAT_STATS, composeSideStats } from '../lib/hero-stats'
+import { getHeroById, TROOP_TYPES } from '../lib/heroes'
+import {
   compareStatBonuses,
+  formatStatBonus,
   normalizeStatBonus,
   sanitizeStatBonusInput,
   type StatComparison,
@@ -60,7 +68,40 @@ function updateSummary(table: HTMLElement, summary: HTMLElement): void {
 export function initStatBonuses(): void {
   const table = document.querySelector<HTMLElement>('[data-stat-bonuses]')
   if (!table) return
+  const root: HTMLElement = table
   const summary = document.getElementById('stat-bonuses-summary')
+
+  function applyGeneration(generation: number): void {
+    const preset = getGenerationPreset(generation)
+    if (!preset) return
+
+    for (const side of ['left', 'right'] as const) {
+      const lineup = getGenerationLineup(preset, side)
+      const heroes = TROOP_TYPES.flatMap(({ id }) => {
+        const hero = getHeroById(lineup.heroes[id])
+        return hero ? [hero] : []
+      })
+      const panel = composeSideStats(preset.baseStat, heroes, side)
+
+      for (const { id: type } of TROOP_TYPES) {
+        for (const stat of COMBAT_STATS) {
+          const input = root.querySelector<HTMLInputElement>(
+            `#stat-${type}-${stat}-${side}`,
+          )
+          if (!input) continue
+          input.value = formatStatBonus(panel[type][stat])
+          resizeInput(input)
+        }
+      }
+    }
+
+    for (const row of root.querySelectorAll<HTMLElement>('[data-stat-row]')) {
+      updateRow(row)
+    }
+    if (summary) updateSummary(root, summary)
+  }
+
+  onGenerationChange(applyGeneration)
 
   table.addEventListener('input', (event) => {
     if (!(event.target instanceof HTMLInputElement)) return

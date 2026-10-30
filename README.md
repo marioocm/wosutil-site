@@ -1,6 +1,6 @@
 # WoS Util Site
 
-Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator (Hero Comparison, Joiners, Troop Power and Stats Bonuses).
+Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator (generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses).
 
 Live site: [marioocm.github.io/wosutil-site](https://marioocm.github.io/wosutil-site/)
 

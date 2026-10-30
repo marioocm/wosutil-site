@@ -98,12 +98,25 @@ function compareHeroes(a: Hero, b: Hero): number {
   return a.name.localeCompare(b.name)
 }
 
-export function getAllHeroes(): Hero[] {
-  return [...HEROES].sort(compareHeroes)
+export function isHeroAvailable(hero: Hero, maxGeneration: number | null): boolean {
+  return maxGeneration === null || hero.generation === null || hero.generation <= maxGeneration
 }
 
-export function getHeroesByType(type: TroopType): Hero[] {
-  return HEROES.filter((hero) => hero.type === type).sort(compareHeroes)
+export function getAllHeroes(maxGeneration: number | null = null): Hero[] {
+  return HEROES.filter((hero) => isHeroAvailable(hero, maxGeneration)).sort(compareHeroes)
+}
+
+export function getHeroesByType(
+  type: TroopType,
+  maxGeneration: number | null = null,
+): Hero[] {
+  return HEROES.filter(
+    (hero) => hero.type === type && isHeroAvailable(hero, maxGeneration),
+  ).sort(compareHeroes)
+}
+
+export function getHeroById(id: string): Hero | null {
+  return HEROES.find((hero) => hero.id === id) ?? null
 }
 
 function normalizeSearch(value: string): string {

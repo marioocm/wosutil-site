@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
+import { GENERATIONS } from '../lib/generations'
 import { TROOP_TYPES } from '../lib/heroes'
 import { STAT_BONUSES } from '../lib/stat-bonuses'
 import {
@@ -41,6 +42,8 @@ const joinerTileClass =
   'relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-sm border border-line bg-background transition-colors group-hover:border-line-strong group-hover:bg-tint/40 group-active:bg-tint/60'
 const joinerCaptionClass =
   'line-clamp-2 min-h-[1.75rem] w-full break-words text-center text-[10px] leading-tight text-ink-muted sm:min-h-[2rem] sm:text-micro'
+const generationOptionClass =
+  'flex min-h-[3.5rem] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border border-line bg-background px-2 py-2 text-center transition-colors hover:border-line-strong hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 const JOINER_SIDES = [
   { id: 'left', label: 'Left' },
@@ -56,9 +59,128 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
   active="simulator"
 >
   <main
-    class="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
+    class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
   >
-    <div class="mx-auto flex w-full max-w-[34rem] flex-col gap-4">
+    <div
+      class="mx-auto grid w-full max-w-[78rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)_minmax(0,1fr)] lg:items-start lg:gap-6"
+    >
+      <aside class="w-full lg:sticky lg:top-24">
+        <section
+          id="generation-preset"
+          class="w-full rounded-card border border-line bg-paper p-5"
+          aria-labelledby="generation-preset-title"
+          data-generation-preset
+        >
+          <h2
+            id="generation-preset-title"
+            class="text-p1 font-medium tracking-[-0.01em]"
+          >
+            For simplicity:
+          </h2>
+          <p
+            id="generation-label"
+            class="mt-3 text-p3 leading-snug text-ink-muted"
+          >
+            Choose your current Generation
+          </p>
+          <button
+            type="button"
+            data-generation-trigger
+            data-selected="false"
+            aria-haspopup="dialog"
+            aria-controls="generation-picker"
+            aria-label="Choose your current Generation"
+            class="group mt-2 flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm border border-line bg-background px-3 py-2 text-left font-primary text-p2 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <span data-generation-value class="min-w-0 truncate text-ink-muted">
+              Select generation
+            </span>
+            <svg
+              viewBox="0 0 16 16"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
+            >
+              <path d="m4 6 4 4 4-4"></path>
+            </svg>
+          </button>
+          <p class="mt-3 text-micro leading-snug text-ink-muted">
+            Loads that era's troops, heroes and stats, and hides newer heroes.
+          </p>
+
+          <dialog
+            id="generation-picker"
+            class="generation-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+            aria-labelledby="generation-picker-title"
+          >
+            <div class="flex max-h-[inherit] flex-col">
+              <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+                <div class="min-w-0">
+                  <h3
+                    id="generation-picker-title"
+                    class="text-p1 font-medium tracking-[-0.01em]"
+                  >
+                    Choose your current Generation
+                  </h3>
+                  <p class="text-micro text-ink-muted">
+                    Loads that era's meta loadout
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  data-generation-close
+                  class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  aria-label="Close"
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m4 4 8 8M12 4l-8 8"></path>
+                  </svg>
+                </button>
+              </div>
+              <div
+                data-generation-options
+                class="grid min-h-0 flex-1 grid-cols-3 content-start gap-1.5 overflow-y-auto overscroll-contain p-3"
+              >
+                {
+                  GENERATIONS.map((preset) => (
+                    <button
+                      type="button"
+                      class={generationOptionClass}
+                      data-generation-option={preset.generation}
+                      data-selected="false"
+                      aria-pressed="false"
+                    >
+                      <span class="font-primary text-p2 font-medium leading-none tabular-nums">
+                        Gen {preset.generation}
+                      </span>
+                      <span class="font-mono text-[10px] leading-none text-ink-muted">
+                        T{preset.tier} · FC{preset.fc}
+                      </span>
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+          </dialog>
+        </section>
+      </aside>
+
+      <div class="flex w-full max-w-[34rem] flex-col gap-4 justify-self-center">
       <section
         id="hero-comparison"
         class="w-full rounded-card border border-line bg-paper p-5"
@@ -709,40 +831,44 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
 
         <p id="stat-bonuses-summary" class="sr-only" aria-live="polite" aria-atomic="true"></p>
       </section>
+      </div>
 
-      <section
-        id="simulation"
-        class="w-full rounded-card border border-line bg-paper p-5"
-        aria-labelledby="simulation-title"
-        data-simulation
-      >
-        <h2 id="simulation-title" class="sr-only">Simulation</h2>
+      <div class="w-full lg:sticky lg:top-24">
+        <section
+          id="simulation"
+          class="w-full rounded-card border border-line bg-paper p-5"
+          aria-labelledby="simulation-title"
+          data-simulation
+        >
+          <h2 id="simulation-title" class="sr-only">Simulation</h2>
 
-        <div class="flex justify-center">
-          <button
-            type="button"
-            data-simulate
-            aria-controls="simulation-result"
-            class="inline-flex min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Simulate
-          </button>
-        </div>
+          <div class="flex justify-center">
+            <button
+              type="button"
+              data-simulate
+              aria-controls="simulation-result"
+              class="inline-flex min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              Simulate
+            </button>
+          </div>
 
-        <textarea
-          id="simulation-result"
-          data-simulate-result
-          readonly
-          rows="6"
-          placeholder="Simulation results will appear here."
-          aria-label="Simulation result"
-          class="mt-4 w-full resize-y rounded-sm border border-line bg-background px-3 py-2 font-mono text-caption leading-relaxed text-ink transition-colors placeholder:text-ink-subtle/60 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
-        ></textarea>
-      </section>
+          <textarea
+            id="simulation-result"
+            data-simulate-result
+            readonly
+            rows="6"
+            placeholder="Simulation results will appear here."
+            aria-label="Simulation result"
+            class="mt-4 w-full resize-y rounded-sm border border-line bg-background px-3 py-2 font-mono text-caption leading-relaxed text-ink transition-colors placeholder:text-ink-subtle/60 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+          ></textarea>
+        </section>
+      </div>
     </div>
   </main>
 
   <script>
+    import { initGenerationPreset } from '../scripts/generation-preset'
     import { initHeroComparison } from '../scripts/hero-comparison'
     import { initJoiners } from '../scripts/joiners'
     import { initSimulation } from '../scripts/simulate'
@@ -754,5 +880,6 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     initTroopPower()
     initStatBonuses()
     initSimulation()
+    initGenerationPreset()
   </script>
 </SiteLayout>

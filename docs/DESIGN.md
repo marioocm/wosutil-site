@@ -127,6 +127,11 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Header height: two rows on mobile (44px brand row + 40px nav row); one
   `56px` row from `sm`.
 - Countdown main grid on desktop: two columns, callers left, timer/queue right.
+- Simulator on desktop: a centered three-column grid with a flexible left
+  column holding the sticky generation card, the 34rem card column in the
+  center and the sticky Simulation card on the right, so the cards stay
+  visually centered. Below `lg` it stacks with the generation card first and
+  the Simulation card last.
 - Mobile order: timer and controls first, callers below.
 - Vertical rhythm: `gap-8`/`gap-10`; panels use `gap-4`.
 
@@ -194,6 +199,24 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - When a call is due while the timer runs, the row inverts to `--ink` /
   `--background`. No color-coded flash.
 
+### Generation preset
+
+- Outlined --paper card in a left sidebar (sticky on desktop): the `For
+  simplicity:` heading, a muted `Choose your current Generation` label and a
+  full-width outlined trigger showing `Select generation` or the chosen `Gen N`
+  with a chevron. A short muted line explains that it loads the era loadout and
+  hides newer heroes.
+- The trigger opens a paper `<dialog>` picker with a dark translucent backdrop,
+  a close control and native Escape handling. Options are large buttons in a
+  three-column grid, one per Gen 1–17, showing `Gen N` and its `T·FC`; the
+  current generation is selected. Arrow keys, Home and End move through them.
+- Choosing a generation applies a complete era preset: total troops, tier/FC,
+  the A1 attack lineup on the left, the D1 defense lineup on the right, their
+  ratios, and the Stats Bonuses panel. No joiners are preset. The preset
+  overwrites manual values every time the generation changes.
+- Both hero pickers hide heroes newer than the selected generation; epics stay
+  selectable. Joiners from newer generations are cleared.
+
 ### Hero Comparison
 
 - Outlined --paper card with a centered “Hero Comparison” title.
@@ -204,10 +227,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   tile with the hero's portrait, keep the troop-type abbreviation in a small paper
   chip and show the hero name below. Portraits are hotlinked from the Whiteout
   Survival Wiki; if they fail to load, the hero's initials remain.
-- Clicking a slot opens a native `<dialog>` picker filtered to that troop type.
-  A leading None option clears the slot. Heroes are ordered newest generation
-  first, with epics last. Each option shows a small portrait avatar, the hero name
-  and `Gen N` / `Epic`.
+- Clicking a slot opens a native `<dialog>` picker filtered to that troop type
+  and to the selected generation. A leading None option clears the slot. Heroes
+  are ordered newest generation first, with epics last. Each option shows a small
+  portrait avatar, the hero name and `Gen N` / `Epic`.
 - The picker is a paper panel with a hairline border, a dark translucent backdrop,
   a close control and native Escape handling. No shadows.
 
@@ -222,10 +245,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   a plus and a muted “Select” caption; selected slots fill with the hero portrait,
   a small INF/LAN/MAR chip and the hero name.
 - Clicking a slot opens a native `<dialog>` picker with a search field and a
-  scrollable list of every combat hero. With no query the list stays ordered by
-  generation, newest first and epics last; the search filters by name. A leading
-  None option clears the slot. The picker uses the same paper panel, backdrop and
-  close control as Hero Comparison.
+  scrollable list of every combat hero available at the selected generation. With
+  no query the list stays ordered by generation, newest first and epics last; the
+  search filters by name. A leading None option clears the slot. The picker uses
+  the same paper panel, backdrop and close control as Hero Comparison.
 
 ### Troop Power
 
@@ -266,7 +289,16 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   (hover/focus adds a tint and an ink ring).
 - The higher side is `--positive`, the lower side `--negative`. Equal values or rows
   with a missing side stay in `--ink`.
+- Selecting a generation fills the twelve rows for both sides with that era's
+  base plus the meta lineup contributions and side-gated widgets. Values remain
+  editable afterwards.
 - Rows are separated by hairlines, never zebra stripes.
+
+### Simulation
+
+- Outlined --paper card in the right sidebar (sticky on desktop): a centered
+  inverted `Simulate` button and a read-only result textarea below it.
+- Below `lg` the card follows Stats Bonuses.
 
 ### Footer
 

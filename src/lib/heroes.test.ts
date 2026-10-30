@@ -4,11 +4,13 @@ import {
   filterHeroes,
   formatHeroGeneration,
   getAllHeroes,
+  getHeroById,
   getHeroesByType,
   getTroopTypeLabel,
   getTroopTypeShortLabel,
   heroInitials,
   HEROES,
+  isHeroAvailable,
   TROOP_TYPES,
 } from './heroes'
 
@@ -83,6 +85,30 @@ describe('getHeroesByType', () => {
     for (const type of TROOP_TYPES) {
       expect(getHeroesByType(type.id).every((hero) => hero.type === type.id)).toBe(true)
     }
+  })
+})
+
+describe('isHeroAvailable', () => {
+  it('treats epics as always available and caps legendaries by generation', () => {
+    const ahmose = getHeroById('ahmose')
+    const sergey = getHeroById('sergey')
+    expect(ahmose).not.toBeNull()
+    expect(sergey).not.toBeNull()
+    expect(isHeroAvailable(ahmose!, 3)).toBe(false)
+    expect(isHeroAvailable(ahmose!, 4)).toBe(true)
+    expect(isHeroAvailable(sergey!, 1)).toBe(true)
+  })
+})
+
+describe('generation-capped lookups', () => {
+  it('hides newer legendaries while keeping epics selectable', () => {
+    const infantry = getHeroesByType('infantry', 3)
+    expect(infantry.some((hero) => hero.name === 'Ahmose')).toBe(false)
+    expect(infantry.some((hero) => hero.name === 'Sergey')).toBe(true)
+
+    const all = getAllHeroes(3)
+    expect(all.every((hero) => hero.generation === null || hero.generation <= 3)).toBe(true)
+    expect(all.some((hero) => hero.generation === 4)).toBe(false)
   })
 })
 

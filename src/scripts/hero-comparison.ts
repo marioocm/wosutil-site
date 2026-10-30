@@ -1,8 +1,15 @@
 import { fillHeroVisual } from '../components/hero-visual'
 import {
+  getGenerationLineup,
+  getGenerationPreset,
+  onGenerationChange,
+} from '../lib/generations'
+import {
   formatHeroGeneration,
+  getHeroById,
   getHeroesByType,
   getTroopTypeLabel,
+  isHeroAvailable,
   type Hero,
   type TroopType,
 } from '../lib/heroes'
@@ -13,6 +20,8 @@ const OPTION_CLASS =
   'flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left transition-colors hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 const selections = new Map<string, Hero>()
+
+let maxGeneration: number | null = null
 
 function slotKey(type: TroopType, side: Side): string {
   return `${type}:${side}`
@@ -106,6 +115,7 @@ function createNoneOption(onSelect: () => void): HTMLButtonElement {
 export function initHeroComparison(): void {
   const section = document.querySelector<HTMLElement>('[data-hero-comparison]')
   if (!section) return
+  const root: HTMLElement = section
 
   const dialog = section.querySelector<HTMLDialogElement>('#hero-picker')
   const title = section.querySelector<HTMLElement>('#hero-picker-title')
@@ -138,6 +148,31 @@ export function initHeroComparison(): void {
     closePicker()
   }
 
+  function applyGeneration(generation: number): void {
+    maxGeneration = generation
+    const preset = getGenerationPreset(generation)
+
+    for (const slot of root.querySelectorAll<HTMLButtonElement>('[data-hero-slot]')) {
+      const type = slot.dataset['heroType'] as TroopType
+      const side = slot.dataset['heroSide'] as Side
+      const key = slotKey(type, side)
+      const current = selections.get(key)
+
+      if (current && !isHeroAvailable(current, generation)) {
+        selections.delete(key)
+      }
+
+      if (preset) {
+        const hero = getHeroById(getGenerationLineup(preset, side).heroes[type])
+        if (hero && isHeroAvailable(hero, generation)) {
+          selections.set(key, hero)
+        }
+      }
+
+      renderSlot(slot)
+    }
+  }
+
   function openPicker(slot: HTMLButtonElement): void {
     if (!dialog || !title || !sideText || !options) return
 
@@ -150,7 +185,7 @@ export function initHeroComparison(): void {
     sideText.textContent = sideLabel(side)
     options.replaceChildren(
       createNoneOption(clearSelection),
-      ...getHeroesByType(type).map((hero) =>
+      ...getHeroesByType(type, maxGeneration).map((hero) =>
         createHeroOption(hero, current?.id === hero.id, selectHero),
       ),
     )
@@ -170,6 +205,8 @@ export function initHeroComparison(): void {
     renderSlot(slot)
     slot.addEventListener('click', () => openPicker(slot))
   }
+
+  onGenerationChange(applyGeneration)
 
   closeButton.addEventListener('click', closePicker)
   options.addEventListener('keydown', (event) => {

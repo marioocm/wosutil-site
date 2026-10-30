@@ -134,13 +134,19 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .hero-picker::backdrop,
 .troop-picker::backdrop,
-.joiner-picker::backdrop {
+.joiner-picker::backdrop,
+.generation-picker::backdrop {
   background: rgb(11 9 7 / 0.45);
 }
 
-[data-troop-option][data-selected="true"] {
+[data-troop-option][data-selected="true"],
+[data-generation-option][data-selected="true"] {
   border-color: var(--ink);
   background: var(--tint);
+}
+
+[data-generation-trigger][data-selected="true"] [data-generation-value] {
+  color: var(--ink);
 }
 
 [data-hero-selected="true"] [data-hero-tile] {
