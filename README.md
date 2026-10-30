@@ -58,7 +58,7 @@ pnpm preview     # preview the production build
 
 ## Deployment
 
-GitHub Actions builds and publishes `dist/` to GitHub Pages on `main`. The Astro `base`/`site` are derived from `GITHUB_REPOSITORY`, so project pages and forks work without editing the config; override them with `BASE_PATH`/`SITE_URL` if needed. The root URL redirects to `/countdown/`.
+GitHub Actions builds and publishes `dist/` to GitHub Pages on `main`. The Astro `base`/`site` are derived from `GITHUB_REPOSITORY`, so project pages and forks work without editing the config; override them with `BASE_PATH`/`SITE_URL` if needed. The root URL redirects to `/simulator/`.
 
 ## Design and contributing
 

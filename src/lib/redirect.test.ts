@@ -1,49 +1,49 @@
 import { describe, expect, it } from 'vitest'
-import { countdownRedirectPaths, isCountdownPage } from './redirect'
+import { defaultRedirectPaths, isDefaultPage } from './redirect'
 
-describe('countdownRedirectPaths', () => {
-  it('returns the countdown path under the repository base for project-site paths', () => {
-    expect(countdownRedirectPaths('/wosutil-site/error/')).toEqual([
-      '/wosutil-site/error/countdown/',
-      '/wosutil-site/countdown/',
-      '/countdown/',
+describe('defaultRedirectPaths', () => {
+  it('returns the simulator path under the repository base for project-site paths', () => {
+    expect(defaultRedirectPaths('/wosutil-site/error/')).toEqual([
+      '/wosutil-site/error/simulator/',
+      '/wosutil-site/simulator/',
+      '/simulator/',
     ])
   })
 
   it('falls back to the root for root-level paths', () => {
-    expect(countdownRedirectPaths('/error/')).toEqual(['/error/countdown/', '/countdown/'])
+    expect(defaultRedirectPaths('/error/')).toEqual(['/error/simulator/', '/simulator/'])
   })
 
   it('handles the site root itself', () => {
-    expect(countdownRedirectPaths('/wosutil-site/')).toEqual(['/wosutil-site/countdown/', '/countdown/'])
+    expect(defaultRedirectPaths('/wosutil-site/')).toEqual(['/wosutil-site/simulator/', '/simulator/'])
   })
 
   it('walks up from deeply nested paths', () => {
-    expect(countdownRedirectPaths('/wosutil-site/a/b/error/')).toEqual([
-      '/wosutil-site/a/b/error/countdown/',
-      '/wosutil-site/a/b/countdown/',
-      '/wosutil-site/a/countdown/',
-      '/wosutil-site/countdown/',
-      '/countdown/',
+    expect(defaultRedirectPaths('/wosutil-site/a/b/error/')).toEqual([
+      '/wosutil-site/a/b/error/simulator/',
+      '/wosutil-site/a/b/simulator/',
+      '/wosutil-site/a/simulator/',
+      '/wosutil-site/simulator/',
+      '/simulator/',
     ])
   })
 
-  it('returns the root countdown path for an empty pathname', () => {
-    expect(countdownRedirectPaths('')).toEqual(['/countdown/'])
+  it('returns the root simulator path for an empty pathname', () => {
+    expect(defaultRedirectPaths('')).toEqual(['/simulator/'])
   })
 
   it('does not produce protocol-relative URLs', () => {
-    expect(countdownRedirectPaths('/')).toEqual(['/countdown/'])
+    expect(defaultRedirectPaths('/')).toEqual(['/simulator/'])
   })
 })
 
-describe('isCountdownPage', () => {
-  it('detects the countdown page marker', () => {
-    expect(isCountdownPage('<main id="countdown">…</main>')).toBe(true)
+describe('isDefaultPage', () => {
+  it('detects the simulator page marker', () => {
+    expect(isDefaultPage('<main id="simulator">.</main>')).toBe(true)
   })
 
   it('rejects pages without the marker', () => {
-    expect(isCountdownPage('<title>WoS Util</title>')).toBe(false)
-    expect(isCountdownPage('')).toBe(false)
+    expect(isDefaultPage('<title>WoS Util</title>')).toBe(false)
+    expect(isDefaultPage('')).toBe(false)
   })
 })
