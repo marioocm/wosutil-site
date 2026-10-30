@@ -14,15 +14,14 @@ describe('isTheme', () => {
 })
 
 describe('resolveInitialTheme', () => {
-  it('prefers a stored preference over the system setting', () => {
-    expect(resolveInitialTheme('light', true)).toBe('light')
-    expect(resolveInitialTheme('dark', false)).toBe('dark')
+  it('keeps a stored preference', () => {
+    expect(resolveInitialTheme('light')).toBe('light')
+    expect(resolveInitialTheme('dark')).toBe('dark')
   })
 
-  it('follows the system setting when nothing is stored', () => {
-    expect(resolveInitialTheme(null, true)).toBe('dark')
-    expect(resolveInitialTheme(null, false)).toBe('light')
-    expect(resolveInitialTheme('invalid', true)).toBe('dark')
+  it('defaults to dark when nothing valid is stored', () => {
+    expect(resolveInitialTheme(null)).toBe('dark')
+    expect(resolveInitialTheme('invalid')).toBe('dark')
   })
 })
 

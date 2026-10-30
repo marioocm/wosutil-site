@@ -345,9 +345,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 ## Theme behavior
 
-- Default follows `prefers-color-scheme`.
-- The top-right toggle overrides and persists to `localStorage`
-  (`wosutil:theme`).
+- Dark is the default; the system `prefers-color-scheme` is ignored.
+- Only the top-right toggle switches to light, and it persists to
+  `localStorage` (`wosutil:theme`).
 - Every page runs a tiny inline script before CSS to set the initial class and
   `color-scheme`, avoiding a flash of the wrong theme.
 - `src/lib/theme.ts` owns resolution, persistence and the toggle listener. The
