@@ -5,8 +5,10 @@ import { STAT_BONUSES } from '../lib/stat-bonuses'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_RATIO,
+  DEFAULT_TROOP_T12_SKILL,
   DEFAULT_TROOP_TIER,
   TROOP_FC_LEVELS,
+  TROOP_T12_SKILL_NAMES,
   TROOP_TIERS,
   formatTroopPercent,
 } from '../lib/troop-power'
@@ -385,6 +387,17 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
 
                       <button
                         type="button"
+                        class="w-full cursor-pointer rounded-xs border border-line bg-background px-1 py-0.5 text-center font-mono text-[10px] font-medium leading-tight tabular-nums text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/40 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        data-troop-t12-slot
+                        aria-haspopup="dialog"
+                        aria-controls="troop-t12-picker"
+                        aria-label={`${side.label} ${type.label} ${TROOP_T12_SKILL_NAMES[type.id]} level`}
+                      >
+                        <span data-troop-t12-value>Lv {DEFAULT_TROOP_T12_SKILL}</span>
+                      </button>
+
+                      <button
+                        type="button"
                         class="troop-fc-badge absolute z-20 flex cursor-pointer items-center justify-center rounded-full transition-shadow hover:ring-2 hover:ring-ink/20 focus-visible:ring-2 focus-visible:ring-ink/30"
                         data-troop-fc-slot
                         aria-haspopup="dialog"
@@ -571,6 +584,43 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
               </button>
             </div>
             <div data-troop-fc-options class="grid grid-cols-4 gap-1.5 p-3"></div>
+          </div>
+        </dialog>
+
+        <dialog
+          id="troop-t12-picker"
+          class="troop-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="troop-t12-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="troop-t12-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  T12 skill level
+                </h3>
+                <p data-troop-t12-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-troop-picker-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div data-troop-t12-options class="grid grid-cols-5 gap-1.5 p-3"></div>
           </div>
         </dialog>
       </section>

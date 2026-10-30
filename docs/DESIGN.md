@@ -240,6 +240,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Tier and FC are chosen in paper `<dialog>` pickers with dark translucent
   backdrops, a close control and native Escape handling. Options are large
   buttons in a four-column grid, with the current value selected.
+- A T12 troop also shows a compact `Lv N` box directly below its tile. It opens
+  the T12 skill picker, titled with the troop's skill name (Indomitable Wall,
+  Meridian Phalanx or Starfire) and current level, with options from 0 to 24 in a
+  five-column grid. The box hides again for T1–T11 troops.
 - Below the tiles, one horizontal ratio bar is split into three monochrome tinted
   segments and shows each troop type's share as a percentage inside its third.
   Two dividers adjust Infantry/Lancer and Lancer/Marksman; dragging the middle

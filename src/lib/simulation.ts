@@ -1,6 +1,10 @@
 import { TROOP_TYPES, type TroopType } from './heroes'
 import { STAT_BONUSES } from './stat-bonuses'
-import { DEFAULT_TROOP_FC, DEFAULT_TROOP_TIER } from './troop-power'
+import {
+  DEFAULT_TROOP_FC,
+  DEFAULT_TROOP_T12_SKILL,
+  DEFAULT_TROOP_TIER,
+} from './troop-power'
 
 export type SimulatorSide = 'left' | 'right'
 
@@ -8,6 +12,7 @@ export interface TroopLoadout {
   tier: number
   fc: number
   count: number
+  t12: number
 }
 
 export interface SimulatorSideState {
@@ -100,7 +105,6 @@ export interface SimulationResult {
 
 export const SIMULATION_SEEDS = 256
 export const SKILL_LEVEL = 5
-export const T12_LEVEL = 5
 
 const STAT_NAMES = ['attack', 'defense', 'lethality', 'health'] as const
 
@@ -154,10 +158,15 @@ function readSide(root: ParentNode, side: SimulatorSide): SimulatorSideState {
       card?.querySelector<HTMLElement>('[data-troop-fc-value]')?.textContent,
       DEFAULT_TROOP_FC,
     )
+    const t12 = parseLabeledInt(
+      card?.querySelector<HTMLElement>('[data-troop-t12-value]')?.textContent,
+      DEFAULT_TROOP_T12_SKILL,
+    )
     troops[id] = {
       tier: Math.min(Math.max(tier, 1), 12),
       fc: Math.min(Math.max(fc, 0), 10),
       count: parseCount(card?.querySelector<HTMLInputElement>('input[data-troop-count]')?.value),
+      t12: Math.min(Math.max(t12, 0), 24),
     }
   }
 
@@ -219,9 +228,9 @@ function buildSide(side: SimulatorSideState, name: string): EngineSide {
       mark: statRow(side, 'marksman'),
     },
     t12: {
-      infantry: T12_LEVEL,
-      lancer: T12_LEVEL,
-      marksman: T12_LEVEL,
+      infantry: side.troops.infantry.t12,
+      lancer: side.troops.lancer.t12,
+      marksman: side.troops.marksman.t12,
     },
   }
 }

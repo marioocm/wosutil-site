@@ -1,8 +1,12 @@
+import type { TroopType } from '../lib/heroes'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_RATIO,
+  DEFAULT_TROOP_T12_SKILL,
   DEFAULT_TROOP_TIER,
   TROOP_FC_LEVELS,
+  TROOP_T12_SKILL_NAMES,
+  TROOP_T12_SKILL_LEVELS,
   TROOP_TIERS,
   allocateTroopCounts,
   formatTroopPercent,
@@ -55,15 +59,19 @@ function setSliderAttributes(
 interface TroopLoadout {
   tier: number
   fc: number
+  t12: number
   tierButton: HTMLButtonElement
   fcButton: HTMLButtonElement
+  t12Button: HTMLButtonElement
   tierLabel: HTMLElement
   fcValue: HTMLElement
+  t12Value: HTMLElement
   sideLabel: string
+  typeId: TroopType
   typeLabel: string
 }
 
-type LoadoutField = 'tier' | 'fc'
+type LoadoutField = 'tier' | 'fc' | 't12'
 
 interface LoadoutPickerConfig {
   dialog: HTMLDialogElement
@@ -74,6 +82,8 @@ interface LoadoutPickerConfig {
   field: LoadoutField
   values: readonly number[]
   format: (value: number) => string
+  title: (loadout: TroopLoadout) => string
+  columns: number
 }
 
 const PICKER_OPTION_CLASS =
@@ -82,6 +92,8 @@ const PICKER_OPTION_CLASS =
 function renderLoadout(loadout: TroopLoadout): void {
   loadout.tierLabel.textContent = `T${loadout.tier}`
   loadout.fcValue.textContent = String(loadout.fc)
+  loadout.t12Value.textContent = `Lv ${loadout.t12}`
+  loadout.t12Button.hidden = loadout.tier !== 12
   loadout.tierButton.setAttribute(
     'aria-label',
     `${loadout.sideLabel} ${loadout.typeLabel} tier, T${loadout.tier}`,
@@ -90,18 +102,38 @@ function renderLoadout(loadout: TroopLoadout): void {
     'aria-label',
     `${loadout.sideLabel} ${loadout.typeLabel} fire crystal level, FC${loadout.fc}`,
   )
+  loadout.t12Button.setAttribute(
+    'aria-label',
+    `${loadout.sideLabel} ${loadout.typeLabel} ${TROOP_T12_SKILL_NAMES[loadout.typeId]} level, Lv ${loadout.t12}`,
+  )
 }
 
 function createLoadoutPicker(config: LoadoutPickerConfig): {
   open: (loadout: TroopLoadout, trigger: HTMLElement) => void
 } {
-  const { dialog, titleElement, sideElement, options, closeButton, field, values, format } =
-    config
+  const {
+    dialog,
+    titleElement,
+    sideElement,
+    options,
+    closeButton,
+    field,
+    values,
+    format,
+    title,
+    columns,
+  } = config
   let active: TroopLoadout | null = null
   let trigger: HTMLElement | null = null
 
+  function currentValue(loadout: TroopLoadout): number {
+    if (field === 'tier') return loadout.tier
+    if (field === 'fc') return loadout.fc
+    return loadout.t12
+  }
+
   function renderOptions(loadout: TroopLoadout): void {
-    const current = field === 'tier' ? loadout.tier : loadout.fc
+    const current = currentValue(loadout)
     options.replaceChildren(
       ...values.map((value) => {
         const selected = value === current
@@ -115,7 +147,8 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
         button.addEventListener('click', () => {
           if (!active) return
           if (field === 'tier') active.tier = value
-          else active.fc = value
+          else if (field === 'fc') active.fc = value
+          else active.t12 = value
           renderLoadout(active)
           dialog.close()
         })
@@ -127,10 +160,7 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
   function open(loadout: TroopLoadout, newTrigger: HTMLElement): void {
     active = loadout
     trigger = newTrigger
-    titleElement.textContent =
-      field === 'tier'
-        ? `Select ${loadout.typeLabel} tier`
-        : `Select ${loadout.typeLabel} FC level`
+    titleElement.textContent = title(loadout)
     sideElement.textContent = `${loadout.sideLabel} side`
     renderOptions(loadout)
     dialog.showModal()
@@ -160,7 +190,6 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
     const index = items.indexOf(focused)
     if (index === -1) return
 
-    const columns = 4
     let next: number | null = null
     if (event.key === 'ArrowRight') next = Math.min(index + 1, items.length - 1)
     else if (event.key === 'ArrowLeft') next = Math.max(index - 1, 0)
@@ -430,6 +459,14 @@ export function initTroopPower(): void {
     '#troop-fc-picker [data-troop-picker-close]',
   )
 
+  const t12Dialog = section.querySelector<HTMLDialogElement>('#troop-t12-picker')
+  const t12Title = section.querySelector<HTMLElement>('#troop-t12-picker-title')
+  const t12Side = section.querySelector<HTMLElement>('[data-troop-t12-picker-side]')
+  const t12Options = section.querySelector<HTMLElement>('[data-troop-t12-options]')
+  const t12Close = section.querySelector<HTMLButtonElement>(
+    '#troop-t12-picker [data-troop-picker-close]',
+  )
+
   const tierPicker =
     tierDialog && tierTitle && tierSide && tierOptions && tierClose
       ? createLoadoutPicker({
@@ -441,6 +478,8 @@ export function initTroopPower(): void {
           field: 'tier',
           values: TROOP_TIERS,
           format: (value) => `T${value}`,
+          title: (loadout) => `Select ${loadout.typeLabel} tier`,
+          columns: 4,
         })
       : null
 
@@ -455,24 +494,60 @@ export function initTroopPower(): void {
           field: 'fc',
           values: TROOP_FC_LEVELS,
           format: (value) => `FC${value}`,
+          title: (loadout) => `Select ${loadout.typeLabel} FC level`,
+          columns: 4,
+        })
+      : null
+
+  const t12Picker =
+    t12Dialog && t12Title && t12Side && t12Options && t12Close
+      ? createLoadoutPicker({
+          dialog: t12Dialog,
+          titleElement: t12Title,
+          sideElement: t12Side,
+          options: t12Options,
+          closeButton: t12Close,
+          field: 't12',
+          values: TROOP_T12_SKILL_LEVELS,
+          format: (value) => `Lv ${value}`,
+          title: (loadout) =>
+            `${TROOP_T12_SKILL_NAMES[loadout.typeId]} Level: ${loadout.t12}`,
+          columns: 5,
         })
       : null
 
   for (const card of section.querySelectorAll<HTMLElement>('[data-troop-type]')) {
     const tierButton = card.querySelector<HTMLButtonElement>('[data-troop-tier-slot]')
     const fcButton = card.querySelector<HTMLButtonElement>('[data-troop-fc-slot]')
+    const t12Button = card.querySelector<HTMLButtonElement>('[data-troop-t12-slot]')
     const tierLabel = card.querySelector<HTMLElement>('[data-troop-tier-label]')
     const fcValue = card.querySelector<HTMLElement>('[data-troop-fc-value]')
-    if (!tierButton || !fcButton || !tierLabel || !fcValue) continue
+    const t12Value = card.querySelector<HTMLElement>('[data-troop-t12-value]')
+    const typeId = card.dataset['troopType'] as TroopType | undefined
+    if (
+      !tierButton ||
+      !fcButton ||
+      !t12Button ||
+      !tierLabel ||
+      !fcValue ||
+      !t12Value ||
+      !typeId
+    ) {
+      continue
+    }
 
     const loadout: TroopLoadout = {
       tier: DEFAULT_TROOP_TIER,
       fc: DEFAULT_TROOP_FC,
+      t12: DEFAULT_TROOP_T12_SKILL,
       tierButton,
       fcButton,
+      t12Button,
       tierLabel,
       fcValue,
+      t12Value,
       sideLabel: card.dataset['troopSideLabel'] ?? 'Left',
+      typeId,
       typeLabel: card.dataset['troopTypeLabel'] ?? 'Troop',
     }
     renderLoadout(loadout)
@@ -482,6 +557,9 @@ export function initTroopPower(): void {
     }
     if (fcPicker) {
       fcButton.addEventListener('click', () => fcPicker.open(loadout, fcButton))
+    }
+    if (t12Picker) {
+      t12Button.addEventListener('click', () => t12Picker.open(loadout, t12Button))
     }
   }
 }

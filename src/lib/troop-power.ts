@@ -1,3 +1,5 @@
+import type { TroopType } from './heroes'
+
 export type TroopRatio = readonly [number, number, number]
 
 export type TroopRatioControl = 'infantry-lancer' | 'lancer' | 'lancer-marksman'
@@ -15,9 +17,19 @@ export const TROOP_TIERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const
 
 export const TROOP_FC_LEVELS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
 
+export const TROOP_T12_SKILL_LEVELS = Array.from({ length: 25 }, (_, level) => level)
+
 export const DEFAULT_TROOP_TIER = 12
 
 export const DEFAULT_TROOP_FC = 10
+
+export const DEFAULT_TROOP_T12_SKILL = 0
+
+export const TROOP_T12_SKILL_NAMES: Record<TroopType, string> = {
+  infantry: 'Indomitable Wall',
+  lancer: 'Meridian Phalanx',
+  marksman: 'Starfire',
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)

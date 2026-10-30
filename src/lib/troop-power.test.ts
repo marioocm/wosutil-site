@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_RATIO,
+  DEFAULT_TROOP_T12_SKILL,
   DEFAULT_TROOP_TIER,
   TROOP_FC_LEVELS,
+  TROOP_T12_SKILL_LEVELS,
+  TROOP_T12_SKILL_NAMES,
   TROOP_TIERS,
   allocateTroopCounts,
   formatTroopCount,
@@ -33,6 +36,18 @@ describe('troop tier options', () => {
     expect(TROOP_FC_LEVELS.at(-1)).toBe(10)
     expect(DEFAULT_TROOP_TIER).toBe(12)
     expect(DEFAULT_TROOP_FC).toBe(10)
+  })
+
+  it('lists T12 skill levels 0-24 with the skill names per troop type', () => {
+    expect(TROOP_T12_SKILL_LEVELS[0]).toBe(0)
+    expect(TROOP_T12_SKILL_LEVELS.at(-1)).toBe(24)
+    expect(TROOP_T12_SKILL_LEVELS).toHaveLength(25)
+    expect(DEFAULT_TROOP_T12_SKILL).toBe(0)
+    expect(TROOP_T12_SKILL_NAMES).toEqual({
+      infantry: 'Indomitable Wall',
+      lancer: 'Meridian Phalanx',
+      marksman: 'Starfire',
+    })
   })
 })
 

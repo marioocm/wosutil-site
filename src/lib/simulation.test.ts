@@ -4,7 +4,6 @@ import {
   formatSimulationResult,
   SIMULATION_SEEDS,
   SKILL_LEVEL,
-  T12_LEVEL,
   validateSimulatorState,
   type SimulatorState,
 } from './simulation'
@@ -15,9 +14,9 @@ function state(overrides: Partial<SimulatorState> = {}): SimulatorState {
       heroes: { infantry: 'Ahmose', lancer: 'Reina', marksman: 'Lynn' },
       joiners: ['Jessie', null, null, null],
       troops: {
-        infantry: { tier: 12, fc: 10, count: 1000 },
-        lancer: { tier: 11, fc: 8, count: 2000 },
-        marksman: { tier: 10, fc: 0, count: 3000 },
+        infantry: { tier: 12, fc: 10, count: 1000, t12: 24 },
+        lancer: { tier: 11, fc: 8, count: 2000, t12: 7 },
+        marksman: { tier: 10, fc: 0, count: 3000, t12: 0 },
       },
       stats: {
         'infantry-attack': 100,
@@ -30,9 +29,9 @@ function state(overrides: Partial<SimulatorState> = {}): SimulatorState {
       heroes: {},
       joiners: [],
       troops: {
-        infantry: { tier: 12, fc: 10, count: 500 },
-        lancer: { tier: 12, fc: 10, count: 0 },
-        marksman: { tier: 12, fc: 10, count: 0 },
+        infantry: { tier: 12, fc: 10, count: 500, t12: 5 },
+        lancer: { tier: 12, fc: 10, count: 0, t12: 5 },
+        marksman: { tier: 12, fc: 10, count: 0, t12: 5 },
       },
       stats: {},
     },
@@ -61,9 +60,9 @@ describe('buildEngineCase', () => {
       mark: [0, 0, 0, 0],
     })
     expect(engine.attacker.t12).toEqual({
-      infantry: T12_LEVEL,
-      lancer: T12_LEVEL,
-      marksman: T12_LEVEL,
+      infantry: 24,
+      lancer: 7,
+      marksman: 0,
     })
     expect(engine.defender.troops).toEqual({
       infantry: { tier: 12, fc: 10, count: 500 },
@@ -92,9 +91,9 @@ describe('validateSimulatorState', () => {
           right: {
             ...state().right,
             troops: {
-              infantry: { tier: 12, fc: 10, count: 0 },
-              lancer: { tier: 12, fc: 10, count: 0 },
-              marksman: { tier: 12, fc: 10, count: 0 },
+              infantry: { tier: 12, fc: 10, count: 0, t12: 5 },
+              lancer: { tier: 12, fc: 10, count: 0, t12: 5 },
+              marksman: { tier: 12, fc: 10, count: 0, t12: 5 },
             },
           },
         }),
