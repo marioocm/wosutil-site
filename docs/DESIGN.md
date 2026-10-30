@@ -297,8 +297,34 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Simulation
 
 - Outlined --paper card in the right sidebar (sticky on desktop): a centered
-  inverted `Simulate` button and a read-only result textarea below it.
-- Below `lg` the card follows Stats Bonuses.
+  inverted `Simulate` button and a muted status line. Results stay hidden until
+  a run succeeds. Below `lg` the card follows Stats Bonuses.
+- The results render inside the Simulation card below the status line, with a
+  smooth scroll on success. The card drops its sticky behavior once a result
+  exists so the full report can scroll.
+- Container queries keep the report legible in the narrow sidebar: under
+  `12rem` the Total Troops and average-survivor rows stack their centered label
+  above the two side values and the triggered headers shorten to `Trig.`;
+  above `12rem` they use the left-value / centered-label / right-value layout
+  and the full `Triggered` header.
+- `Battle Overview`: centered section title, then a compact winrate split with
+  each side's label and percentage at its end of a two-segment monochrome bar,
+  followed by Total Troops and average-survivor rows in three centered columns
+  like Stats Bonuses.
+- `Battle Details`: centered title with the Joiners-style chevron button at the
+  right. It starts collapsed and expands with the same height animation into a
+  five-column table with a narrow spacer between the two triggered columns.
+  Each troop class keeps its three fixed hero-skill slots (missing hero/skill
+  slots stay in place with a dash), then lists that class's troop skills from
+  the API, aligned across both sides by skill name; a skill missing on one side
+  leaves the opposite cell empty with a dash. A dash marks an empty slot or a
+  skill the engine did not report, which is distinct from a reported zero.
+  Reported activations show one decimal (the mean over seeds). Three mirrored
+  rows below show average survivors for INF, LAN and MAR. The bottom of the card
+  shows the mean rounds with the min/max, then the seeds/elapsed metadata.
+- The winrate bar uses neutral ink tints only and mono numerals for the
+  percentages. Run metadata (seeds and elapsed time) and warnings sit below the
+  sections in small muted text.
 
 ### Footer
 

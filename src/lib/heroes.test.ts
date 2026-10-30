@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { HERO_IMAGES } from './hero-images'
+import { HERO_SKILLS } from './hero-skills'
 import {
   filterHeroes,
   formatHeroGeneration,
   getAllHeroes,
   getHeroById,
+  getHeroByName,
   getHeroesByType,
   getTroopTypeLabel,
   getTroopTypeShortLabel,
@@ -33,6 +35,28 @@ describe('HERO_IMAGES', () => {
     for (const image of Object.values(HERO_IMAGES)) {
       expect(image).toMatch(/^https:\/\//)
     }
+  })
+})
+
+describe('HERO_SKILLS', () => {
+  it('lists S1-S3 names for every hero the engine supports', () => {
+    for (const hero of HEROES) {
+      const slots = HERO_SKILLS[hero.id]
+      if (hero.id === 'gina') {
+        expect(slots).toBeUndefined()
+        continue
+      }
+      expect(slots?.length).toBeGreaterThan(0)
+      expect(slots?.length).toBeLessThanOrEqual(3)
+    }
+  })
+})
+
+describe('getHeroByName', () => {
+  it('matches display names ignoring case and surrounding spaces', () => {
+    expect(getHeroByName('  molly ')?.id).toBe('molly')
+    expect(getHeroByName('Lumak Bokan')?.id).toBe('lumak-bokan')
+    expect(getHeroByName('Nobody')).toBeNull()
   })
 })
 

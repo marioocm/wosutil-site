@@ -1,4 +1,5 @@
-import { TROOP_TYPES, type TroopType } from './heroes'
+import { HERO_SKILLS } from './hero-skills'
+import { getHeroByName, TROOP_TYPES, type TroopType } from './heroes'
 import { STAT_BONUSES } from './stat-bonuses'
 import {
   DEFAULT_TROOP_FC,
@@ -64,6 +65,7 @@ export interface SkillActivation {
   kind: 'hero' | 'troop'
   owner: string
   skill: string
+  slot?: string
   source: string
   activations_mean: number
   activations_per_round: number
@@ -242,24 +244,205 @@ export function buildEngineCase(state: SimulatorState): EngineCase {
   }
 }
 
-function survivors(summary: SimulationSideSummary): string {
-  return TROOP_TYPES.map(
-    (type, index) =>
-      `${type.shortLabel} ${(summary.survivors_mean[index] ?? 0).toFixed(1)}`,
-  ).join(' / ')
+export interface BattleSkillRow {
+  label: string
+  activations: number | null
 }
 
-function signed(value: number): string {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(4)}`
+interface HeroActivations {
+  bySkill: Map<string, number>
+  bySlot: Map<string, number>
 }
 
-export function formatSimulationResult(result: SimulationResult): string {
-  return [
-    `Engine ${result.engine_version} · API ${result.api_version} · ${result.seeds} seeds · ${result.threads} threads · ${result.elapsed_ms.toFixed(1)} ms`,
-    `ATT  ${survivors(result.att)} · ${(result.att.rate_mean * 100).toFixed(1)}% left · wipe ${(result.att.wipe_rate * 100).toFixed(1)}%`,
-    `DEF  ${survivors(result.def)} · ${(result.def.rate_mean * 100).toFixed(1)}% left · wipe ${(result.def.wipe_rate * 100).toFixed(1)}%`,
-    `Margin ${signed(result.margin.mean)} (p10 ${signed(result.margin.p10)}, p50 ${signed(result.margin.p50)}, p90 ${signed(result.margin.p90)})`,
-    `ATT win ${(result.att_win_rate * 100).toFixed(1)}% · rounds ${result.rounds.mean.toFixed(1)} (${result.rounds.min}-${result.rounds.max})`,
-    ...(result.warnings?.length ? [`Warnings: ${result.warnings.join('; ')}`] : []),
-  ].join('\n')
+function indexSkillActivations(skills: readonly SkillActivation[]): Map<string, HeroActivations> {
+  const index = new Map<string, HeroActivations>()
+  for (const skill of skills) {
+    if (skill.kind !== 'hero') continue
+    const owner = skill.owner.toLowerCase()
+    const entry = index.get(owner) ?? { bySkill: new Map(), bySlot: new Map() }
+    entry.bySkill.set(skill.skill.toLowerCase(), skill.activations_mean)
+    if (skill.slot) entry.bySlot.set(skill.slot.toUpperCase(), skill.activations_mean)
+    index.set(owner, entry)
+  }
+  return index
+}
+
+interface HeroSkillSlots {
+  names: readonly (string | null)[]
+  known: boolean
+}
+
+function heroSkillSlots(hero: string): HeroSkillSlots {
+  const entry = getHeroByName(hero)
+  const slots = entry ? HERO_SKILLS[entry.id] : undefined
+  return {
+    names: [slots?.[0] ?? null, slots?.[1] ?? null, slots?.[2] ?? null],
+    known: Boolean(slots && slots.length > 0),
+  }
+}
+
+export function buildSkillRows(
+  heroes: Partial<Record<TroopType, string>>,
+  skills: readonly SkillActivation[],
+): BattleSkillRow[] {
+  const index = indexSkillActivations(skills)
+  return TROOP_TYPES.flatMap(({ id }) => {
+    const hero = heroes[id]
+    if (!hero) {
+      return [
+        { label: '', activations: null },
+        { label: '', activations: null },
+        { label: '', activations: null },
+      ]
+    }
+
+    const activations = index.get(hero.toLowerCase())
+    const { names, known } = heroSkillSlots(hero)
+    return names.map((skillName, slotIndex) => {
+      const slot = `S${slotIndex + 1}`
+      const labeled = !known || skillName !== null
+      const value = labeled
+        ? activations?.bySlot.get(slot) ??
+          (skillName ? activations?.bySkill.get(skillName.toLowerCase()) : undefined) ??
+          activations?.bySkill.get(slot.toLowerCase()) ??
+          null
+        : null
+      return { label: labeled ? `${hero} ${slot}` : '', activations: value }
+    })
+  })
+}
+
+export interface BattleSkillRowPair {
+  kind: 'hero' | 'troop'
+  left: BattleSkillRow
+  right: BattleSkillRow
+}
+
+export interface BattleSkillSide {
+  heroes: Partial<Record<TroopType, string>>
+  skills: readonly SkillActivation[]
+}
+
+const TROOP_SKILL_ORDER: Record<TroopType, readonly string[]> = {
+  infantry: ['MasterBrawler', 'BandsOfSteel', 'CrystalShield', 'BodyOfLight', 'IndomitableWall'],
+  lancer: ['Charge', 'Ambusher', 'CrystalLance', 'IncandescentField', 'MeridianPhalanx'],
+  marksman: ['RangedStrike', 'Volley', 'CrystalGunpowder', 'FlameCharge', 'Starfire'],
+}
+
+interface TroopSkillActivation {
+  name: string
+  activations: number
+}
+
+function troopTypeFromOwner(owner: string): TroopType | null {
+  const prefix = 'troopskills:'
+  const normalized = owner.trim().toLowerCase()
+  if (!normalized.startsWith(prefix)) return null
+  const type = normalized.slice(prefix.length)
+  return TROOP_TYPES.find(({ id }) => id === type)?.id ?? null
+}
+
+function indexTroopActivations(
+  skills: readonly SkillActivation[],
+): Map<TroopType, Map<string, TroopSkillActivation>> {
+  const index = new Map<TroopType, Map<string, TroopSkillActivation>>()
+  for (const skill of skills) {
+    if (skill.kind !== 'troop') continue
+    const type = troopTypeFromOwner(skill.owner)
+    if (!type) continue
+    const byName = index.get(type) ?? new Map<string, TroopSkillActivation>()
+    byName.set(skill.skill.toLowerCase(), {
+      name: skill.skill,
+      activations: skill.activations_mean,
+    })
+    index.set(type, byName)
+  }
+  return index
+}
+
+function formatTroopSkillName(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .trim()
+}
+
+function orderedTroopSkills(
+  type: TroopType,
+  left: ReadonlyMap<string, TroopSkillActivation>,
+  right: ReadonlyMap<string, TroopSkillActivation>,
+): TroopSkillActivation[] {
+  const union = new Map<string, TroopSkillActivation>()
+  for (const [key, value] of left) union.set(key, value)
+  for (const [key, value] of right) if (!union.has(key)) union.set(key, value)
+
+  const ordered: TroopSkillActivation[] = []
+  for (const name of TROOP_SKILL_ORDER[type]) {
+    const key = name.toLowerCase()
+    const value = union.get(key)
+    if (!value) continue
+    ordered.push(value)
+    union.delete(key)
+  }
+  ordered.push(...[...union.values()].sort((a, b) => a.name.localeCompare(b.name)))
+  return ordered
+}
+
+export function buildBattleSkillRows(
+  left: BattleSkillSide,
+  right: BattleSkillSide,
+): BattleSkillRowPair[] {
+  const leftHeroRows = buildSkillRows(left.heroes, left.skills)
+  const rightHeroRows = buildSkillRows(right.heroes, right.skills)
+  const leftTroops = indexTroopActivations(left.skills)
+  const rightTroops = indexTroopActivations(right.skills)
+  const rows: BattleSkillRowPair[] = []
+
+  TROOP_TYPES.forEach(({ id }, classIndex) => {
+    for (let slot = 0; slot < 3; slot += 1) {
+      const index = classIndex * 3 + slot
+      rows.push({
+        kind: 'hero',
+        left: leftHeroRows[index] ?? { label: '', activations: null },
+        right: rightHeroRows[index] ?? { label: '', activations: null },
+      })
+    }
+
+    const leftMap = leftTroops.get(id)
+    const rightMap = rightTroops.get(id)
+    if (!leftMap && !rightMap) return
+
+    for (const troop of orderedTroopSkills(id, leftMap ?? new Map(), rightMap ?? new Map())) {
+      const key = troop.name.toLowerCase()
+      const leftEntry = leftMap?.get(key)
+      const rightEntry = rightMap?.get(key)
+      rows.push({
+        kind: 'troop',
+        left: leftEntry
+          ? { label: formatTroopSkillName(leftEntry.name), activations: leftEntry.activations }
+          : { label: '', activations: null },
+        right: rightEntry
+          ? { label: formatTroopSkillName(rightEntry.name), activations: rightEntry.activations }
+          : { label: '', activations: null },
+      })
+    }
+  })
+
+  return rows
+}
+
+const COUNT_FORMAT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+
+export function formatBattleCount(value: number): string {
+  return Number.isFinite(value) ? COUNT_FORMAT.format(Math.max(0, Math.round(value))) : '–'
+}
+
+export function formatWinRate(value: number): string {
+  const rate = Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : 0
+  return `${(rate * 100).toFixed(1)}%`
+}
+
+export function formatActivations(value: number | null): string {
+  if (value === null) return '–'
+  return Number.isFinite(value) ? value.toFixed(1) : '–'
 }

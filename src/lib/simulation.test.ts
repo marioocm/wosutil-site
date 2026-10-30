@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildBattleSkillRows,
   buildEngineCase,
-  formatSimulationResult,
+  buildSkillRows,
+  formatActivations,
+  formatBattleCount,
+  formatWinRate,
   SIMULATION_SEEDS,
   SKILL_LEVEL,
   validateSimulatorState,
   type SimulatorState,
+  type SkillActivation,
 } from './simulation'
 
 function state(overrides: Partial<SimulatorState> = {}): SimulatorState {
@@ -102,43 +107,188 @@ describe('validateSimulatorState', () => {
   })
 })
 
-describe('formatSimulationResult', () => {
-  it('renders the distribution summary', () => {
-    const text = formatSimulationResult({
-      api_version: '1',
-      engine_version: '0.1.0',
-      elapsed_ms: 67.3,
-      seeds: 256,
-      threads: 8,
-      initial: { att: 6000, def: 500 },
-      att: {
-        survivors_mean: [93.2, 0, 0],
-        survivors_p10: [0, 0, 0],
-        survivors_p50: [93.2, 0, 0],
-        survivors_p90: [93.2, 0, 0],
-        total_mean: 93.2,
-        rate_mean: 0.3727,
-        wipe_rate: 0,
+function activation(overrides: Partial<SkillActivation>): SkillActivation {
+  return {
+    side: 'att',
+    kind: 'hero',
+    owner: 'Jeronimo',
+    skill: 's1',
+    source: 'att|Jeronimo|Jeronimo.s1',
+    activations_mean: 0,
+    activations_per_round: 0,
+    kills_mean: 0,
+    ...overrides,
+  }
+}
+
+function troopActivation(
+  owner: string,
+  skill: string,
+  activations_mean: number,
+): SkillActivation {
+  return activation({
+    kind: 'troop',
+    owner,
+    skill,
+    source: `att|${owner}|${owner}.${skill}`,
+    activations_mean,
+  })
+}
+
+const EMPTY_CLASS_ROWS = [
+  { label: '', activations: null },
+  { label: '', activations: null },
+  { label: '', activations: null },
+]
+
+describe('buildSkillRows', () => {
+  it('keeps three slots per class and maps reported skill names', () => {
+    const rows = buildSkillRows({ infantry: 'Jeronimo', lancer: 'Molly' }, [
+      activation({
+        owner: 'Jeronimo',
+        skill: 'BattleManifesto',
+        activations_mean: 12.4,
+      }),
+      activation({ owner: 'jeronimo', skill: 'Swordmentor', activations_mean: 5 }),
+      activation({
+        kind: 'troop',
+        owner: 'TroopSkills:Infantry',
+        skill: 'CrystalShield',
+        activations_mean: 100,
+      }),
+      activation({
+        owner: 'Molly',
+        skill: 'CallingOfTheStorm',
+        activations_mean: 0,
+      }),
+    ])
+    expect(rows).toEqual([
+      { label: 'Jeronimo S1', activations: 12.4 },
+      { label: 'Jeronimo S2', activations: 5 },
+      { label: 'Jeronimo S3', activations: null },
+      { label: 'Molly S1', activations: 0 },
+      { label: 'Molly S2', activations: null },
+      { label: 'Molly S3', activations: null },
+      ...EMPTY_CLASS_ROWS,
+    ])
+  })
+
+  it('keeps missing classes in their three empty slots', () => {
+    const rows = buildSkillRows({ lancer: 'Molly' }, [])
+    expect(rows).toEqual([
+      ...EMPTY_CLASS_ROWS,
+      { label: 'Molly S1', activations: null },
+      { label: 'Molly S2', activations: null },
+      { label: 'Molly S3', activations: null },
+      ...EMPTY_CLASS_ROWS,
+    ])
+  })
+
+  it('uses the slot field when the API provides it', () => {
+    const rows = buildSkillRows({ infantry: 'Jeronimo' }, [
+      activation({ owner: 'Jeronimo', skill: 'Unknown', slot: 'S3', activations_mean: 7 }),
+    ])
+    expect(rows[2]).toEqual({ label: 'Jeronimo S3', activations: 7 })
+  })
+
+  it('leaves slots without a known skill empty', () => {
+    const rows = buildSkillRows({ lancer: 'Jessie' }, [
+      activation({ owner: 'Jessie', skill: 'StandOfArms', activations_mean: 4 }),
+    ])
+    expect(rows.slice(3, 6)).toEqual([
+      { label: 'Jessie S1', activations: 4 },
+      { label: 'Jessie S2', activations: null },
+      { label: '', activations: null },
+    ])
+  })
+
+  it('leaves S3 empty for heroes without a third skill', () => {
+    const rows = buildSkillRows({ infantry: 'Sergey' }, [])
+    expect(rows.slice(0, 3)).toEqual([
+      { label: 'Sergey S1', activations: null },
+      { label: 'Sergey S2', activations: null },
+      { label: '', activations: null },
+    ])
+  })
+
+  it('falls back to three slots for heroes without a skill table', () => {
+    const rows = buildSkillRows({ marksman: 'Gina' }, [])
+    expect(rows.slice(6, 9)).toEqual([
+      { label: 'Gina S1', activations: null },
+      { label: 'Gina S2', activations: null },
+      { label: 'Gina S3', activations: null },
+    ])
+  })
+})
+
+describe('buildBattleSkillRows', () => {
+  it('inserts troop skills below each class and aligns both sides', () => {
+    const rows = buildBattleSkillRows(
+      {
+        heroes: { infantry: 'Sergey', lancer: 'Gordon', marksman: 'Hendrik' },
+        skills: [
+          troopActivation('TroopSkills:infantry', 'CrystalShield', 10.5),
+          troopActivation('TroopSkills:infantry', 'MasterBrawler', 2),
+          troopActivation('TroopSkills:lancer', 'Charge', 5),
+        ],
       },
-      def: {
-        survivors_mean: [0, 0, 0],
-        survivors_p10: [0, 0, 0],
-        survivors_p50: [0, 0, 0],
-        survivors_p90: [0, 0, 0],
-        total_mean: 0,
-        rate_mean: 0,
-        wipe_rate: 1,
+      {
+        heroes: { infantry: 'Gatot', lancer: 'Sonya', marksman: 'Bradley' },
+        skills: [
+          troopActivation('TroopSkills:infantry', 'MasterBrawler', 3),
+          troopActivation('TroopSkills:infantry', 'CrystalShield', 12),
+        ],
       },
-      margin: { mean: 0.3727, p10: 0.3516, p50: 0.3722, p90: 0.3944 },
-      att_win_rate: 1,
-      rounds: { mean: 330.6, min: 322, max: 338, p50: 331 },
-      warnings: ['Unknown hero ignored by the engine: Gina'],
+    )
+
+    expect(rows.map((row) => `${row.kind}:${row.left.label}:${row.right.label}`)).toEqual([
+      'hero:Sergey S1:Gatot S1',
+      'hero:Sergey S2:Gatot S2',
+      'hero::Gatot S3',
+      'troop:Master Brawler:Master Brawler',
+      'troop:Crystal Shield:Crystal Shield',
+      'hero:Gordon S1:Sonya S1',
+      'hero:Gordon S2:Sonya S2',
+      'hero:Gordon S3:Sonya S3',
+      'troop:Charge:',
+      'hero:Hendrik S1:Bradley S1',
+      'hero:Hendrik S2:Bradley S2',
+      'hero:Hendrik S3:Bradley S3',
+    ])
+    expect(rows[3]?.left.activations).toBe(2)
+    expect(rows[3]?.right.activations).toBe(3)
+    expect(rows[4]?.left.activations).toBe(10.5)
+    expect(rows[4]?.right.activations).toBe(12)
+    expect(rows[8]?.left.activations).toBe(5)
+    expect(rows[8]?.right.activations).toBeNull()
+  })
+
+  it('keeps a right-only troop skill aligned with an empty left slot', () => {
+    const rows = buildBattleSkillRows(
+      { heroes: {}, skills: [] },
+      {
+        heroes: {},
+        skills: [troopActivation('TroopSkills:marksman', 'Volley', 7.5)],
+      },
+    )
+
+    expect(rows[9]).toEqual({
+      kind: 'troop',
+      left: { label: '', activations: null },
+      right: { label: 'Volley', activations: 7.5 },
     })
-    expect(text).toContain('Engine 0.1.0')
-    expect(text).toContain('256 seeds')
-    expect(text).toContain('INF 93.2 / LAN 0.0 / MAR 0.0')
-    expect(text).toContain('Margin +0.3727')
-    expect(text).toContain('ATT win 100.0%')
-    expect(text).toContain('Warnings: Unknown hero ignored by the engine: Gina')
+  })
+})
+
+describe('battle result formatting', () => {
+  it('formats counts, win rates and missing activations', () => {
+    expect(formatBattleCount(1234.6)).toBe('1,235')
+    expect(formatBattleCount(-3)).toBe('0')
+    expect(formatWinRate(0.556)).toBe('55.6%')
+    expect(formatWinRate(2)).toBe('100.0%')
+    expect(formatActivations(null)).toBe('–')
+    expect(formatActivations(0)).toBe('0.0')
+    expect(formatActivations(12.44)).toBe('12.4')
+    expect(formatActivations(12.46)).toBe('12.5')
   })
 })

@@ -127,6 +127,11 @@ function normalizeSearch(value: string): string {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
+export function getHeroByName(name: string): Hero | null {
+  const normalized = normalizeSearch(name)
+  return HEROES.find((hero) => normalizeSearch(hero.name) === normalized) ?? null
+}
+
 export function filterHeroes(heroes: readonly Hero[], query: string): Hero[] {
   const normalized = normalizeSearch(query)
   if (normalized === '') return [...heroes]
