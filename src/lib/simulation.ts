@@ -446,3 +446,37 @@ export function formatActivations(value: number | null): string {
   if (value === null) return '–'
   return Number.isFinite(value) ? value.toFixed(1) : '–'
 }
+
+export interface SimulationFailure {
+  kind: 'timeout' | 'rate-limit' | 'network' | 'api'
+  detail?: string
+  retryAfterSeconds?: number | null
+}
+
+export interface SimulationFailureContext {
+  apiBase?: string
+  localApi?: boolean
+}
+
+export function formatSimulationFailure(
+  failure: SimulationFailure,
+  context: SimulationFailureContext = {},
+): string {
+  switch (failure.kind) {
+    case 'timeout':
+      return 'The simulation timed out. Try again.'
+    case 'rate-limit': {
+      const seconds = failure.retryAfterSeconds
+      if (seconds !== undefined && seconds !== null && seconds > 0) {
+        return `Too many simulations at once. Try again in ${seconds} ${seconds === 1 ? 'second' : 'seconds'}.`
+      }
+      return 'Too many simulations at once. Wait 10 seconds and try again.'
+    }
+    case 'network':
+      return context.localApi && context.apiBase
+        ? `Could not reach the simulation engine at ${context.apiBase}. Is it running?`
+        : 'The simulation service is busy or unreachable. Wait a few seconds and try again.'
+    case 'api':
+      return failure.detail ? `Simulation failed: ${failure.detail}` : 'Simulation failed. Try again.'
+  }
+}
