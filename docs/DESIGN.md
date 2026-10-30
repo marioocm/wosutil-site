@@ -203,9 +203,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Outlined --paper card in a left sidebar (sticky on desktop): the `For
   simplicity:` heading, a muted `Choose your current Generation` label and a
-  full-width outlined trigger showing `Select generation` or the chosen `Gen N`
-  with a chevron. A short muted line explains that it loads the era loadout and
-  hides newer heroes.
+  full-width outlined trigger showing `All Gens` by default or the chosen
+  `Gen N` with a chevron. A short muted line explains that it loads the era
+  loadout and hides newer heroes.
 - The trigger opens a paper `<dialog>` picker with a dark translucent backdrop,
   a close control and native Escape handling. Options are large buttons in a
   three-column grid, one per Gen 1–17, showing `Gen N` and its `T·FC`; the
