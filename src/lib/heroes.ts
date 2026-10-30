@@ -78,7 +78,6 @@ export const HEROES: readonly Hero[] = [
   { id: 'lumak-bokan', name: 'Lumak Bokan', type: 'lancer', generation: null },
   { id: 'ling-xue', name: 'Ling Xue', type: 'lancer', generation: null },
   { id: 'bahiti', name: 'Bahiti', type: 'marksman', generation: null },
-  { id: 'gina', name: 'Gina', type: 'marksman', generation: null },
   { id: 'seo-yoon', name: 'Seo-yoon', type: 'marksman', generation: null },
   { id: 'jasser', name: 'Jasser', type: 'marksman', generation: null },
 ]

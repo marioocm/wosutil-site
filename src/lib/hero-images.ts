@@ -106,7 +106,6 @@ export const HERO_IMAGES: Readonly<Record<string, string>> = {
     'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/12/%E5%87%8C%E9%9B%AA350.jpg',
   bahiti:
     'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/bahiti.png',
-  gina: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/Gina.png',
   'seo-yoon':
     'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/10/2.jpg',
   jasser:

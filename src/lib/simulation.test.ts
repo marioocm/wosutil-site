@@ -211,12 +211,12 @@ describe('buildSkillRows', () => {
     ])
   })
 
-  it('falls back to three slots for heroes without a skill table', () => {
-    const rows = buildSkillRows({ marksman: 'Gina' }, [])
+  it('falls back to three slots for unknown hero names', () => {
+    const rows = buildSkillRows({ marksman: 'Unknown' }, [])
     expect(rows.slice(6, 9)).toEqual([
-      { label: 'Gina S1', activations: null },
-      { label: 'Gina S2', activations: null },
-      { label: 'Gina S3', activations: null },
+      { label: 'Unknown S1', activations: null },
+      { label: 'Unknown S2', activations: null },
+      { label: 'Unknown S3', activations: null },
     ])
   })
 })
