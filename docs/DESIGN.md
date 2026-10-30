@@ -8,9 +8,9 @@ typography and deliberately minimal chrome.
 
 ## Principles
 
-1. **Monochrome.** Ink, paper and neutral tints only. No decorative color accents
-   in the current build. If a future feature needs semantic color (success, danger),
-   add it as a token and use it only for that meaning.
+1. **Monochrome by default.** Ink, paper and neutral tints only. Semantic color is
+   reserved for the Stats Bonuses comparison: green for the higher side, red for the
+   lower side, through `--positive` / `--negative`. No decorative accents.
 2. **Warm, printed feel.** The canvas is warm cream, not pure white; text is warm
    near-black, not pure black.
 3. **Quiet structure.** Cards are defined by 1px hairlines, not shadows.
@@ -57,6 +57,8 @@ Semantic CSS variables live in `src/styles/theme.css`. Light values are defined 
 | `--line-strong` | `rgba(11,9,7,.38)`   | Emphasized borders            |
 | `--invert`      | `#3c3a39`            | Inverted surfaces (Play)      |
 | `--invert-fg`   | `#fefcf5`            | Text on inverted surfaces     |
+| `--positive`    | `#2e6b4f`            | Higher stat bonus             |
+| `--negative`    | `#a13b35`            | Lower stat bonus              |
 
 ### Dark
 
@@ -72,15 +74,18 @@ Semantic CSS variables live in `src/styles/theme.css`. Light values are defined 
 | `--line-strong` | `rgba(255,252,246,.35)`|
 | `--invert`      | `#f4f0e6`              |
 | `--invert-fg`   | `#171412`              |
+| `--positive`    | `#86c9a0`              |
+| `--negative`    | `#f0a19b`              |
 
 Both themes must keep body text at WCAG AA contrast. The current values pass for
 normal text; verify again if tokens change.
 
-### Optional semantic accents
+### Semantic accents
 
-The system does not use accent colors today. If one becomes necessary (e.g. a
-destructive action), add a dedicated token and scope it to that semantic meaning
-instead of reintroducing a palette. Keep it rare.
+Green and red are the only accents in the system. They are limited to the Stats
+Bonuses comparison: `--positive` marks the higher value and `--negative` the lower
+one. Ties, empty sides and invalid input stay neutral. Do not reuse these tokens for
+unrelated actions, labels or backgrounds.
 
 ---
 
@@ -122,6 +127,11 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Header height: two rows on mobile (44px brand row + 40px nav row); one
   `56px` row from `sm`.
 - Countdown main grid on desktop: two columns, callers left, timer/queue right.
+- Simulator on desktop: a centered three-column grid with a flexible left
+  column holding the sticky generation card, the 34rem card column in the
+  center and the sticky Simulation card on the right, so the cards stay
+  visually centered. Below `lg` it stacks with the generation card first and
+  the Simulation card last.
 - Mobile order: timer and controls first, callers below.
 - Vertical rhythm: `gap-8`/`gap-10`; panels use `gap-4`.
 
@@ -189,6 +199,133 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - When a call is due while the timer runs, the row inverts to `--ink` /
   `--background`. No color-coded flash.
 
+### Generation preset
+
+- Outlined --paper card in a left sidebar (sticky on desktop): the `For
+  simplicity:` heading, a muted `Choose your current Generation` label and a
+  full-width outlined trigger showing `All Gens` by default or the chosen
+  `Gen N` with a chevron. A short muted line explains that it loads the era
+  loadout and hides newer heroes.
+- The trigger opens a paper `<dialog>` picker with a dark translucent backdrop,
+  a close control and native Escape handling. Options are large buttons in a
+  three-column grid, one per Gen 1–17, showing `Gen N` and its `T·FC`; the
+  current generation is selected. Arrow keys, Home and End move through them.
+- Choosing a generation applies a complete era preset: total troops, tier/FC,
+  the A1 attack lineup on the left, the D1 defense lineup on the right, their
+  ratios, and the Stats Bonuses panel. No joiners are preset. The preset
+  overwrites manual values every time the generation changes.
+- Both hero pickers hide heroes newer than the selected generation; epics stay
+  selectable. Joiners from newer generations are cleared.
+
+### Hero Comparison
+
+- Outlined --paper card with a centered “Hero Comparison” title.
+- Three symmetric rows with square slots pinned to the left and right card sides.
+  There is no center label: each slot shows its troop-type abbreviation — INF, LAN
+  or MAR — with a small bare plus/initials indicator beneath.
+- Empty slots show the plus and a muted “Select” caption. Selected slots fill the
+  tile with the hero's portrait, keep the troop-type abbreviation in a small paper
+  chip and show the hero name below. Portraits are hotlinked from the Whiteout
+  Survival Wiki; if they fail to load, the hero's initials remain.
+- Clicking a slot opens a native `<dialog>` picker filtered to that troop type
+  and to the selected generation. A leading None option clears the slot. Heroes
+  are ordered newest generation first, with epics last. Each option shows a small
+  portrait avatar, the hero name and `Gen N` / `Epic`.
+- The picker is a paper panel with a hairline border, a dark translucent backdrop,
+  a close control and native Escape handling. No shadows.
+
+### Joiners
+
+- Outlined --paper card with a centered “Joiners” title and a small outlined
+  chevron button at the right. The card starts collapsed, showing only the title
+  row; the button expands or collapses the content and updates
+  `aria-expanded` / `aria-label`. The height animates over 220ms; reduced-motion
+  users get an instant toggle.
+- Two symmetric 2×2 grids of smaller square slots, one per side. Empty slots show
+  a plus and a muted “Select” caption; selected slots fill with the hero portrait,
+  a small INF/LAN/MAR chip and the hero name.
+- Clicking a slot opens a native `<dialog>` picker with a search field and a
+  scrollable list of every combat hero available at the selected generation. With
+  no query the list stays ordered by generation, newest first and epics last; the
+  search filters by name. A leading None option clears the slot. The picker uses
+  the same paper panel, backdrop and close control as Hero Comparison.
+
+### Troop Power
+
+- Outlined --paper card with a centered “Troop Power” title.
+- Two symmetric sides. Each side has a centered “Total Troops” input, then three
+  square INF/LAN/MAR tiles in the hero-slot style. The whole tile selects the
+  troop tier (T1–T12); a grayscale hexagon badge overlapping its top-right corner
+  selects the fire crystal level (FC0–FC10) and shows the number inside. The
+  troop count sits below the tile in an editable field (a dash until data is
+  entered). Editing a count makes the total the sum of the three and derives the
+  ratio; editing the total or ratio reallocates the counts.
+- Tier and FC are chosen in paper `<dialog>` pickers with dark translucent
+  backdrops, a close control and native Escape handling. Options are large
+  buttons in a four-column grid, with the current value selected.
+- A T12 troop also shows a compact `Lv N` box directly below its tile. It opens
+  the T12 skill picker, titled with the troop's skill name (Indomitable Wall,
+  Meridian Phalanx or Starfire) and current level, with options from 0 to 24 in a
+  five-column grid. The box hides again for T1–T11 troops.
+- Below the tiles, one horizontal ratio bar is split into three monochrome tinted
+  segments and shows each troop type's share as a percentage inside its third.
+  Two dividers adjust Infantry/Lancer and Lancer/Marksman; dragging the middle
+  Lancer segment transfers troops between Infantry and Marksman while keeping
+  Lancer fixed. Dragging is relative, so a click focuses without changing the
+  ratio; arrow keys step 1%.
+- Handles use ink bars with a soft ink ring on hover/focus. Segment fills use
+  neutral tints only; no semantic accent color is introduced.
+
+### Stats Bonuses table
+
+- Outlined --paper card with a centered “Stats Bonuses” title.
+- Three-column table: left-side values centered in their column, the stat name
+  centered in the middle, and right-side values centered in their column.
+- The twelve rows follow the game order: Infantry / Lancer / Marksman × Attack /
+  Defense / Lethality / Health.
+- Values are percentage inputs with at most two decimals; extra decimals are blocked
+  while typing and values are normalized to two decimals on blur. The number and its
+  `%` suffix stay together, centered as one unit. The field is borderless by default
+  (hover/focus adds a tint and an ink ring).
+- The higher side is `--positive`, the lower side `--negative`. Equal values or rows
+  with a missing side stay in `--ink`.
+- Selecting a generation fills the twelve rows for both sides with that era's
+  base plus the meta lineup contributions and side-gated widgets. Values remain
+  editable afterwards.
+- Rows are separated by hairlines, never zebra stripes.
+
+### Simulation
+
+- Outlined --paper card in the right sidebar (sticky on desktop): a centered
+  inverted `Simulate` button and a muted status line. Results stay hidden until
+  a run succeeds. Below `lg` the card follows Stats Bonuses.
+- The results render inside the Simulation card below the status line, with a
+  smooth scroll on success. The card drops its sticky behavior once a result
+  exists so the full report can scroll.
+- Container queries keep the report legible in the narrow sidebar: under
+  `12rem` the Total Troops and average-survivor rows stack their centered label
+  above the two side values and the triggered headers shorten to `Trig.`;
+  above `12rem` they use the left-value / centered-label / right-value layout
+  and the full `Triggered` header.
+- `Battle Overview`: centered section title, then a compact winrate split with
+  each side's label and percentage at its end of a two-segment monochrome bar,
+  followed by Total Troops and average-survivor rows in three centered columns
+  like Stats Bonuses.
+- `Battle Details`: centered title with the Joiners-style chevron button at the
+  right. It starts collapsed and expands with the same height animation into a
+  five-column table with a narrow spacer between the two triggered columns.
+  Each troop class keeps its three fixed hero-skill slots (missing hero/skill
+  slots stay in place with a dash), then lists that class's troop skills from
+  the API, aligned across both sides by skill name; a skill missing on one side
+  leaves the opposite cell empty with a dash. A dash marks an empty slot or a
+  skill the engine did not report, which is distinct from a reported zero.
+  Reported activations show one decimal (the mean over seeds). Three mirrored
+  rows below show average survivors for INF, LAN and MAR. The bottom of the card
+  shows the mean rounds with the min/max, then the seeds/elapsed metadata.
+- The winrate bar uses neutral ink tints only and mono numerals for the
+  percentages. Run metadata (seeds and elapsed time) and warnings sit below the
+  sections in small muted text.
+
 ### Footer
 
 - Centered GitHub link only. No secondary tagline.
@@ -221,7 +358,7 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ## Avoid
 
 - Large radii, pill buttons or rounded-full chrome.
-- Colored accents, decorative dots or color-coded rows.
+- Decorative color accents or color-coded rows outside the Stats Bonuses comparison.
 - Shadows on cards; use hairline borders.
 - Extra labels, slash-prefixed eyebrows, taglines or repeated titles.
 - New proprietary fonts or copied brand assets.

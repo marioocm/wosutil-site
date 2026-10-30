@@ -1,6 +1,6 @@
 # WoS Util Site
 
-Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator (in development).
+Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator (generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses).
 
 Live site: [marioocm.github.io/wosutil-site](https://marioocm.github.io/wosutil-site/)
 
@@ -22,6 +22,20 @@ pnpm dev
 
 The dev server runs at `http://localhost:4321/`.
 
+## Simulator API
+
+The simulator page calls the `wosutil-sim` engine API. The local default is
+`http://localhost:8000`; run the API with `docker compose up -d --build` in the
+sibling `wosutil-sim` repository.
+
+- Local override without rebuilding: `?api=http://192.168.1.50:8000`.
+- Build-time override: copy `.env.example` to `.env` and set `PUBLIC_SIM_API`.
+- Production: set the repository variable `PUBLIC_SIM_API` (Settings → Secrets
+  and variables → Actions → Variables). The value is public and ends up in the
+  browser bundle, so never put secrets in a `PUBLIC_*` variable.
+- The API must be HTTPS when the site is served over HTTPS (GitHub Pages), and
+  its origin must be allowed in the API's `WOS_CORS_ORIGINS`.
+
 ## Checks
 
 ```sh
@@ -35,8 +49,8 @@ pnpm preview     # preview the production build
 
 - `src/pages/` — routes: countdown, simulator, 404 and `robots.txt`.
 - `src/layouts/` — document shell (`BaseLayout`) and site chrome (`SiteLayout`).
-- `src/components/` — static header/footer and the countdown widgets.
-- `src/scripts/` — browser behavior: countdown island and header chrome.
+- `src/components/` — static header/footer, the countdown widgets and the shared hero visual helper.
+- `src/scripts/` — browser behavior: countdown island, header chrome, hero picker, joiner picker, troop ratio and the simulator stat table.
 - `src/lib/` — shared logic and types, with Vitest tests.
 - `src/styles/` — Tailwind entry and design tokens.
 - `public/` — `.nojekyll` (required for Astro's `_astro/` assets on Pages) and favicon.

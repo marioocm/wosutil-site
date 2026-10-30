@@ -30,6 +30,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+        env:
+          PUBLIC_SIM_API: ${{ vars.PUBLIC_SIM_API }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

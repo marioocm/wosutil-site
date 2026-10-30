@@ -1,18 +1,1112 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
+import { GENERATIONS } from '../lib/generations'
+import { TROOP_TYPES } from '../lib/heroes'
+import { STAT_BONUSES } from '../lib/stat-bonuses'
+import {
+  DEFAULT_TROOP_FC,
+  DEFAULT_TROOP_RATIO,
+  DEFAULT_TROOP_T12_SKILL,
+  DEFAULT_TROOP_TIER,
+  TROOP_FC_LEVELS,
+  TROOP_T12_SKILL_NAMES,
+  TROOP_TIERS,
+  formatTroopPercent,
+} from '../lib/troop-power'
+
+const TROOP_POWER_SIDES = [
+  { id: 'left', label: 'Left' },
+  { id: 'right', label: 'Right' },
+] as const
+
+const initialFirstDivider = DEFAULT_TROOP_RATIO[0] ?? 0
+const initialSecondDivider = initialFirstDivider + (DEFAULT_TROOP_RATIO[1] ?? 0)
+const initialMarksman = DEFAULT_TROOP_RATIO[2] ?? 0
+const initialInfantryText = formatTroopPercent(initialFirstDivider)
+const initialLancerText = formatTroopPercent(DEFAULT_TROOP_RATIO[1] ?? 0)
+const initialMarksmanText = formatTroopPercent(initialMarksman)
+
+const inputClass =
+  'w-[4ch] min-w-0 max-w-full p-0 text-center font-mono text-caption tabular-nums text-inherit placeholder:text-ink-subtle/60 focus:outline-none sm:text-p2'
+const valueClass =
+  'flex cursor-text items-center justify-center gap-0.5 rounded-sm px-0.5 py-1 text-ink transition-colors hover:bg-tint/40 focus-within:bg-tint/40 focus-within:ring-2 focus-within:ring-ink/10 sm:gap-1 sm:px-1.5'
+const heroSlotClass =
+  'group flex w-16 cursor-pointer flex-col items-center gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:w-20'
+const heroTileClass =
+  'relative flex aspect-square w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-sm border border-line bg-background transition-colors group-hover:border-line-strong group-hover:bg-tint/40 group-active:bg-tint/60'
+const heroCaptionClass =
+  'min-h-[1.5rem] w-full break-words text-center text-micro leading-tight text-ink-muted'
+const joinerSlotClass =
+  'group flex w-14 cursor-pointer flex-col items-center gap-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:w-16'
+const joinerTileClass =
+  'relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-sm border border-line bg-background transition-colors group-hover:border-line-strong group-hover:bg-tint/40 group-active:bg-tint/60'
+const joinerCaptionClass =
+  'line-clamp-2 min-h-[1.75rem] w-full break-words text-center text-[10px] leading-tight text-ink-muted sm:min-h-[2rem] sm:text-micro'
+const generationOptionClass =
+  'flex min-h-[3.5rem] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border border-line bg-background px-2 py-2 text-center transition-colors hover:border-line-strong hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
+
+const JOINER_SIDES = [
+  { id: 'left', label: 'Left' },
+  { id: 'right', label: 'Right' },
+] as const
+
+const JOINER_INDEXES = [1, 2, 3, 4] as const
 ---
 
 <SiteLayout
   title="WoS Util · Battle Simulator"
-  description="WoS Util battle simulator for Whiteout Survival, in development."
+  description="WoS Util battle simulator for Whiteout Survival: set troop power, compare heroes and stat bonuses for both sides."
   active="simulator"
 >
   <main
-    class="mx-auto flex w-full max-w-[1440px] flex-1 items-center justify-center px-4 py-16 sm:px-6 lg:px-10 xl:px-[100px]"
+    class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
   >
-    <div class="flex max-w-[34rem] flex-col gap-2 text-center">
-      <h1 class="text-h4 font-medium tracking-[-0.01em]">Battle simulator</h1>
-      <p class="text-p3 text-ink-muted">In development.</p>
+    <div
+      class="mx-auto grid w-full max-w-[78rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)_minmax(0,1fr)] lg:items-start lg:gap-6"
+    >
+      <aside class="w-full lg:sticky lg:top-24">
+        <section
+          id="generation-preset"
+          class="w-full rounded-card border border-line bg-paper p-5"
+          aria-labelledby="generation-preset-title"
+          data-generation-preset
+        >
+          <h2
+            id="generation-preset-title"
+            class="text-p1 font-medium tracking-[-0.01em]"
+          >
+            For simplicity:
+          </h2>
+          <p
+            id="generation-label"
+            class="mt-3 text-p3 leading-snug text-ink-muted"
+          >
+            Choose your current Generation
+          </p>
+          <button
+            type="button"
+            data-generation-trigger
+            data-selected="false"
+            aria-haspopup="dialog"
+            aria-controls="generation-picker"
+            aria-label="Choose your current Generation: All Gens"
+            class="group mt-2 flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm border border-line bg-background px-3 py-2 text-left font-primary text-p2 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <span data-generation-value class="min-w-0 truncate">
+              All Gens
+            </span>
+            <svg
+              viewBox="0 0 16 16"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
+            >
+              <path d="m4 6 4 4 4-4"></path>
+            </svg>
+          </button>
+          <p class="mt-3 text-micro leading-snug text-ink-muted">
+            Loads that era's troops, heroes and stats, and hides newer heroes.
+          </p>
+
+          <dialog
+            id="generation-picker"
+            class="generation-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+            aria-labelledby="generation-picker-title"
+          >
+            <div class="flex max-h-[inherit] flex-col">
+              <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+                <div class="min-w-0">
+                  <h3
+                    id="generation-picker-title"
+                    class="text-p1 font-medium tracking-[-0.01em]"
+                  >
+                    Choose your current Generation
+                  </h3>
+                  <p class="text-micro text-ink-muted">
+                    Loads that era's meta loadout
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  data-generation-close
+                  class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  aria-label="Close"
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m4 4 8 8M12 4l-8 8"></path>
+                  </svg>
+                </button>
+              </div>
+              <div
+                data-generation-options
+                class="grid min-h-0 flex-1 grid-cols-3 content-start gap-1.5 overflow-y-auto overscroll-contain p-3"
+              >
+                {
+                  GENERATIONS.map((preset) => (
+                    <button
+                      type="button"
+                      class={generationOptionClass}
+                      data-generation-option={preset.generation}
+                      data-selected="false"
+                      aria-pressed="false"
+                    >
+                      <span class="font-primary text-p2 font-medium leading-none tabular-nums">
+                        Gen {preset.generation}
+                      </span>
+                      <span class="font-mono text-[10px] leading-none text-ink-muted">
+                        T{preset.tier} · FC{preset.fc}
+                      </span>
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+          </dialog>
+        </section>
+      </aside>
+
+      <div class="flex w-full max-w-[34rem] flex-col gap-4 justify-self-center">
+      <section
+        id="hero-comparison"
+        class="w-full rounded-card border border-line bg-paper p-5 pb-3"
+        aria-labelledby="hero-comparison-title"
+        data-hero-comparison
+      >
+        <h2
+          id="hero-comparison-title"
+          class="text-center text-p1 font-medium tracking-[-0.01em]"
+        >
+          Hero Comparison
+        </h2>
+
+        <div class="mt-4 flex flex-col">
+          {
+            TROOP_TYPES.map((type, index) => (
+              <div
+                class:list={[
+                  'flex items-start justify-between gap-4 py-3',
+                  index > 0 && 'border-t border-line',
+                  index === TROOP_TYPES.length - 1 && 'pb-0',
+                ]}
+              >
+                <button
+                  type="button"
+                  class={heroSlotClass}
+                  data-hero-slot
+                  data-hero-type={type.id}
+                  data-hero-side="left"
+                  data-hero-selected="false"
+                  aria-haspopup="dialog"
+                  aria-controls="hero-picker"
+                >
+                  <span class={heroTileClass} data-hero-tile>
+                    <span
+                      class="text-caption font-medium text-ink-muted"
+                      data-hero-type-label>{type.shortLabel}</span>
+                    <span
+                      class="flex items-center justify-center text-p1 font-medium leading-none text-ink-muted"
+                      data-hero-visual>+</span
+                    >
+                  </span>
+                  <span class={heroCaptionClass} data-hero-caption>Select</span>
+                  <span class="sr-only">{type.label} hero for the left side</span>
+                </button>
+
+                <button
+                  type="button"
+                  class={heroSlotClass}
+                  data-hero-slot
+                  data-hero-type={type.id}
+                  data-hero-side="right"
+                  data-hero-selected="false"
+                  aria-haspopup="dialog"
+                  aria-controls="hero-picker"
+                >
+                  <span class={heroTileClass} data-hero-tile>
+                    <span
+                      class="text-caption font-medium text-ink-muted"
+                      data-hero-type-label>{type.shortLabel}</span>
+                    <span
+                      class="flex items-center justify-center text-p1 font-medium leading-none text-ink-muted"
+                      data-hero-visual>+</span
+                    >
+                  </span>
+                  <span class={heroCaptionClass} data-hero-caption>Select</span>
+                  <span class="sr-only">{type.label} hero for the right side</span>
+                </button>
+              </div>
+            ))
+          }
+        </div>
+
+        <dialog
+          id="hero-picker"
+          class="hero-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="hero-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="hero-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  Select hero
+                </h3>
+                <p data-hero-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-hero-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div
+              data-hero-options
+              class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
+            >
+            </div>
+          </div>
+        </dialog>
+      </section>
+
+      <section
+        id="joiners"
+        class="w-full rounded-card border border-line bg-paper p-5"
+        aria-labelledby="joiners-title"
+        data-joiners
+      >
+        <div class="relative flex items-center justify-center">
+          <h2 id="joiners-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
+            Joiners
+          </h2>
+          <button
+            type="button"
+            data-joiners-toggle
+            aria-expanded="false"
+            aria-controls="joiners-content"
+            aria-label="Show joiners"
+            title="Show joiners"
+            class="absolute right-0 top-1/2 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <svg
+              data-joiners-icon
+              class="transition-transform duration-200"
+              viewBox="0 0 16 16"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m4 6 4 4 4-4"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div
+          id="joiners-content"
+          class="joiners-content"
+          data-joiners-content
+          data-expanded="false"
+          aria-hidden="true"
+          inert
+        >
+          <div class="joiners-content-inner">
+            <div class="grid grid-cols-2 gap-4 pt-4">
+            {
+              JOINER_SIDES.map((side) => (
+              <div
+                class:list={[
+                  'grid grid-cols-2 gap-2',
+                  side.id === 'left' ? 'justify-self-start' : 'justify-self-end',
+                ]}
+                role="group"
+                aria-label={`${side.label} side joiners`}
+                data-joiner-side={side.id}
+              >
+                {JOINER_INDEXES.map((index) => (
+                  <button
+                    type="button"
+                    class={joinerSlotClass}
+                    data-joiner-slot
+                    data-joiner-side={side.id}
+                    data-joiner-index={index}
+                    data-joiner-selected="false"
+                    aria-haspopup="dialog"
+                    aria-controls="joiner-picker"
+                  >
+                    <span class={joinerTileClass} data-joiner-tile aria-hidden="true">
+                      <span
+                        class="absolute left-0.5 top-0.5 z-[1] rounded-xs bg-paper px-0.5 text-[9px] leading-tight text-ink-muted"
+                        data-joiner-type
+                        hidden
+                      ></span>
+                      <span
+                        class="flex items-center justify-center text-p2 font-medium leading-none text-ink-muted"
+                        data-joiner-visual
+                      >
+                        +
+                      </span>
+                    </span>
+                    <span class={joinerCaptionClass} data-joiner-caption>Select</span>
+                    <span class="sr-only">
+                      {`Select joiner ${index} for the ${side.label.toLowerCase()} side`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ))
+          }
+        </div>
+
+        <dialog
+          id="joiner-picker"
+          class="joiner-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="joiner-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="joiner-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  Select joiner
+                </h3>
+                <p data-joiner-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-joiner-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="border-b border-line px-4 py-3">
+              <input
+                type="search"
+                data-joiner-search
+                placeholder="Search heroes"
+                aria-label="Search heroes"
+                autocomplete="off"
+                spellcheck="false"
+                class="w-full rounded-sm border border-line bg-background px-3 py-2 font-primary text-p2 text-ink transition-colors placeholder:text-ink-subtle focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+              />
+            </div>
+            <div
+              data-joiner-options
+              class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
+            >
+            </div>
+          </div>
+        </dialog>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="troop-power"
+        class="w-full rounded-card border border-line bg-paper p-5"
+        aria-labelledby="troop-power-title"
+        data-troop-power
+      >
+        <h2 id="troop-power-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
+          Troop Power
+        </h2>
+
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4">
+          {
+            TROOP_POWER_SIDES.map((side) => (
+              <div
+                class="flex min-w-0 flex-col gap-3"
+                role="group"
+                aria-label={`${side.label} side troop power`}
+                data-troop-power-side={side.id}
+              >
+                <label class="flex flex-col items-center gap-1">
+                  <span class="text-micro text-ink-muted">Total Troops</span>
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="0"
+                    data-troop-total
+                    aria-label={`${side.label} total troops`}
+                    class="w-full max-w-[10rem] rounded-sm border border-line bg-background px-2 py-1.5 text-center font-mono text-caption tabular-nums text-ink transition-colors placeholder:text-ink-subtle/60 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10 sm:text-p2"
+                  />
+                </label>
+
+                <div class="grid grid-cols-3 gap-2 sm:gap-2.5">
+                  {TROOP_TYPES.map((type) => (
+                    <div
+                      class="relative flex min-w-0 flex-col items-center gap-1"
+                      data-troop-type={type.id}
+                      data-troop-side-label={side.label}
+                      data-troop-type-label={type.label}
+                    >
+                      <button
+                        type="button"
+                        class="relative flex aspect-square w-full cursor-pointer items-end justify-center rounded-sm border border-line bg-background p-0 pb-1 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:items-center sm:pb-0"
+                        data-troop-tier-slot
+                        aria-haspopup="dialog"
+                        aria-controls="troop-tier-picker"
+                        aria-label={`${side.label} ${type.label} tier`}
+                      >
+                        <span
+                          class="pointer-events-none absolute left-1 top-1 text-[10px] font-medium leading-none text-ink-muted"
+                          aria-hidden="true"
+                        >
+                          {type.shortLabel}
+                        </span>
+                        <span
+                          class="pointer-events-none font-primary text-p1 font-medium leading-none tabular-nums text-ink"
+                          data-troop-tier-label
+                          aria-hidden="true"
+                        >
+                          T{DEFAULT_TROOP_TIER}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="w-full cursor-pointer rounded-xs border border-line bg-background px-1 py-0.5 text-center font-mono text-[10px] font-medium leading-tight tabular-nums text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/40 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        data-troop-t12-slot
+                        aria-haspopup="dialog"
+                        aria-controls="troop-t12-picker"
+                        aria-label={`${side.label} ${type.label} ${TROOP_T12_SKILL_NAMES[type.id]} level`}
+                      >
+                        <span data-troop-t12-value>Lv {DEFAULT_TROOP_T12_SKILL}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="troop-fc-badge absolute z-20 flex cursor-pointer items-center justify-center rounded-full transition-shadow hover:ring-2 hover:ring-ink/20 focus-visible:ring-2 focus-visible:ring-ink/30"
+                        data-troop-fc-slot
+                        aria-haspopup="dialog"
+                        aria-controls="troop-fc-picker"
+                        aria-label={`${side.label} ${type.label} fire crystal level`}
+                      >
+                        <span class="troop-fc-hex pointer-events-none" aria-hidden="true">
+                          <span class="troop-fc-value" data-troop-fc-value>
+                            {DEFAULT_TROOP_FC}
+                          </span>
+                        </span>
+                      </button>
+
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        spellcheck="false"
+                        placeholder="—"
+                        data-troop-count
+                        aria-label={`${side.label} ${type.label} troop count`}
+                        class="w-full min-w-0 rounded-xs bg-transparent px-0.5 py-0.5 text-center font-mono text-[10px] leading-tight tabular-nums text-ink-muted transition-colors placeholder:text-ink-muted/60 hover:bg-tint/40 focus:bg-tint/40 focus:text-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  class="troop-ratio-track"
+                  role="group"
+                  aria-label={`${side.label} troop ratio`}
+                  data-troop-ratio-track
+                >
+                  <span
+                    class="troop-ratio-fill troop-ratio-fill-infantry"
+                    aria-hidden="true"
+                    data-troop-ratio-fill="infantry"
+                    style={`left: 0%; width: ${initialFirstDivider}%`}
+                  ></span>
+                  <span
+                    class="troop-ratio-fill troop-ratio-fill-lancer"
+                    aria-hidden="true"
+                    data-troop-ratio-fill="lancer"
+                    style={`left: ${initialFirstDivider}%; width: ${DEFAULT_TROOP_RATIO[1] ?? 0}%`}
+                  ></span>
+                  <span
+                    class="troop-ratio-fill troop-ratio-fill-marksman"
+                    aria-hidden="true"
+                    data-troop-ratio-fill="marksman"
+                    style={`left: ${initialSecondDivider}%; width: ${initialMarksman}%`}
+                  ></span>
+
+                  <div class="troop-ratio-labels" aria-hidden="true">
+                    <span data-troop-share>{initialInfantryText}</span>
+                    <span data-troop-share>{initialLancerText}</span>
+                    <span data-troop-share>{initialMarksmanText}</span>
+                  </div>
+
+                  <div
+                    role="slider"
+                    tabindex="0"
+                    aria-orientation="horizontal"
+                    aria-label={`${side.label} Infantry and Lancer divider`}
+                    aria-valuemin="0"
+                    aria-valuemax={Math.round(initialSecondDivider)}
+                    aria-valuenow={Math.round(initialFirstDivider)}
+                    aria-valuetext={`Infantry ${initialInfantryText}, Lancer ${initialLancerText}`}
+                    aria-keyshortcuts="ArrowLeft ArrowRight"
+                    title="Drag to adjust Infantry and Lancer. Click, then use ←/→ for 1% steps."
+                    class="troop-ratio-handle"
+                    data-troop-ratio-control="infantry-lancer"
+                    style={`left: ${initialFirstDivider}%`}
+                  >
+                    <span></span>
+                  </div>
+                  <div
+                    role="slider"
+                    tabindex="0"
+                    aria-orientation="horizontal"
+                    aria-label={`${side.label} Lancer segment; keep Lancer fixed and transfer between Infantry and Marksman`}
+                    aria-valuemin="0"
+                    aria-valuemax={Math.round(100 - (DEFAULT_TROOP_RATIO[1] ?? 0))}
+                    aria-valuenow={Math.round(initialFirstDivider)}
+                    aria-valuetext={`Infantry ${initialInfantryText}, Lancer fixed at ${initialLancerText}, Marksman ${initialMarksmanText}`}
+                    aria-keyshortcuts="ArrowLeft ArrowRight"
+                    title="Drag to keep Lancer fixed. Click, then use ←/→ to transfer 1% between Infantry and Marksman."
+                    class="troop-ratio-segment"
+                    data-troop-ratio-control="lancer"
+                    style={`left: ${initialFirstDivider}%; width: ${DEFAULT_TROOP_RATIO[1] ?? 0}%`}
+                  >
+                    <span class="troop-ratio-grip" aria-hidden="true"></span>
+                  </div>
+                  <div
+                    role="slider"
+                    tabindex="0"
+                    aria-orientation="horizontal"
+                    aria-label={`${side.label} Lancer and Marksman divider`}
+                    aria-valuemin={Math.round(initialFirstDivider)}
+                    aria-valuemax="100"
+                    aria-valuenow={Math.round(initialSecondDivider)}
+                    aria-valuetext={`Lancer ${initialLancerText}, Marksman ${initialMarksmanText}`}
+                    aria-keyshortcuts="ArrowLeft ArrowRight"
+                    title="Drag to adjust Lancer and Marksman. Click, then use ←/→ for 1% steps."
+                    class="troop-ratio-handle"
+                    data-troop-ratio-control="lancer-marksman"
+                    style={`left: ${initialSecondDivider}%`}
+                  >
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <dialog
+          id="troop-tier-picker"
+          class="troop-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="troop-tier-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="troop-tier-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  Select tier
+                </h3>
+                <p data-troop-tier-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-troop-picker-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div data-troop-tier-options class="grid grid-cols-4 gap-1.5 p-3"></div>
+          </div>
+        </dialog>
+
+        <dialog
+          id="troop-fc-picker"
+          class="troop-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="troop-fc-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="troop-fc-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  Select FC level
+                </h3>
+                <p data-troop-fc-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-troop-picker-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div data-troop-fc-options class="grid grid-cols-4 gap-1.5 p-3"></div>
+          </div>
+        </dialog>
+
+        <dialog
+          id="troop-t12-picker"
+          class="troop-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="troop-t12-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="troop-t12-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  T12 skill level
+                </h3>
+                <p data-troop-t12-picker-side class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-troop-picker-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div data-troop-t12-options class="grid grid-cols-5 gap-1.5 p-3"></div>
+          </div>
+        </dialog>
+      </section>
+
+      <section
+        class="w-full rounded-card border border-line bg-paper p-5 pb-1"
+        aria-labelledby="stat-bonuses-title"
+      >
+        <h2 id="stat-bonuses-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
+          Stats Bonuses
+        </h2>
+
+        <table
+          class="mt-4 w-full table-fixed border-collapse"
+          aria-labelledby="stat-bonuses-title"
+          data-stat-bonuses
+        >
+          <colgroup>
+            <col />
+            <col class="w-[clamp(6.5rem,32vw,10rem)]" />
+            <col />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col"><span class="sr-only">Left</span></th>
+              <th scope="col"><span class="sr-only">Stat</span></th>
+              <th scope="col"><span class="sr-only">Right</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              STAT_BONUSES.map((stat, index) => (
+                <tr data-stat-row>
+                  <td
+                    class:list={[
+                      'py-1',
+                      index > 0 && 'border-t border-line',
+                      index === STAT_BONUSES.length - 1 && 'pb-0',
+                    ]}
+                  >
+                    <label class={valueClass} data-stat-value="left">
+                      <input
+                        id={`stat-${stat.id}-left`}
+                        type="text"
+                        inputmode="decimal"
+                        placeholder="0.00"
+                        autocomplete="off"
+                        spellcheck="false"
+                        data-stat-side="left"
+                        aria-label={`Left ${stat.label} percentage`}
+                        class={inputClass}
+                      />
+                      <span
+                        class="shrink-0 font-mono text-caption opacity-60 sm:text-p2"
+                        aria-hidden="true">%</span
+                      >
+                    </label>
+                  </td>
+                  <th
+                    scope="row"
+                    class:list={[
+                      'py-1.5 text-center text-p3 font-medium leading-tight',
+                      index > 0 && 'border-t border-line',
+                      index === STAT_BONUSES.length - 1 && 'pb-0',
+                    ]}
+                  >
+                    {stat.label}
+                  </th>
+                  <td
+                    class:list={[
+                      'py-1',
+                      index > 0 && 'border-t border-line',
+                      index === STAT_BONUSES.length - 1 && 'pb-0',
+                    ]}
+                  >
+                    <label class={valueClass} data-stat-value="right">
+                      <input
+                        id={`stat-${stat.id}-right`}
+                        type="text"
+                        inputmode="decimal"
+                        placeholder="0.00"
+                        autocomplete="off"
+                        spellcheck="false"
+                        data-stat-side="right"
+                        aria-label={`Right ${stat.label} percentage`}
+                        class={inputClass}
+                      />
+                      <span
+                        class="shrink-0 font-mono text-caption opacity-60 sm:text-p2"
+                        aria-hidden="true">%</span
+                      >
+                    </label>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+
+        <p id="stat-bonuses-summary" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+      </section>
+      </div>
+
+      <div class="w-full lg:sticky lg:top-24" data-simulation-shell>
+        <section
+          id="simulation"
+          class="w-full rounded-card border border-line bg-paper p-5"
+          aria-labelledby="simulation-title"
+          data-simulation
+        >
+          <h2 id="simulation-title" class="sr-only">Simulation</h2>
+
+          <div class="flex justify-center">
+            <button
+              type="button"
+              data-simulate
+              aria-controls="simulation-result"
+              class="inline-flex min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              Simulate
+            </button>
+          </div>
+
+          <p
+            data-simulate-status
+            role="status"
+            aria-live="polite"
+            class="mt-3 text-center text-micro leading-snug text-ink-muted"
+          ></p>
+
+          <section
+            id="simulation-result"
+            data-simulation-result
+            aria-label="Simulation result"
+            class="simulation-result mt-4 scroll-mt-24 border-t border-line pt-4"
+            hidden
+          >
+            <section aria-labelledby="battle-overview-title">
+              <h3
+                id="battle-overview-title"
+                class="text-center text-p1 font-medium tracking-[-0.01em]"
+              >
+                Battle Overview
+              </h3>
+
+              <div class="mt-3 flex items-center gap-2.5">
+                <div class="shrink-0 leading-tight">
+                  <span class="block text-[10px] text-ink-muted">Left</span>
+                  <span
+                    data-battle-winrate-left
+                    class="block font-mono text-caption tabular-nums"
+                  ></span>
+                </div>
+                <div
+                  class="flex h-2.5 min-w-0 flex-1 overflow-hidden rounded-xs border border-line bg-background"
+                  aria-hidden="true"
+                >
+                  <span
+                    data-battle-winrate-left-bar
+                    class="h-full bg-ink/80"
+                    style="width: 50%"></span>
+                  <span
+                    data-battle-winrate-right-bar
+                    class="h-full bg-ink/20"
+                    style="width: 50%"></span>
+                </div>
+                <div class="shrink-0 text-right leading-tight">
+                  <span class="block text-[10px] text-ink-muted">Right</span>
+                  <span
+                    data-battle-winrate-right
+                    class="block font-mono text-caption tabular-nums"
+                  ></span>
+                </div>
+              </div>
+
+              <div class="mt-4 border-t border-line pt-2">
+                <div class="battle-stat-row py-1">
+                  <span
+                    data-battle-total-left
+                    class="battle-stat-left font-mono text-caption tabular-nums"
+                  ></span>
+                  <span class="battle-stat-label text-center text-[10px] text-ink-muted">
+                    Total Troops
+                  </span>
+                  <span
+                    data-battle-total-right
+                    class="battle-stat-right font-mono text-caption tabular-nums"
+                  ></span>
+                </div>
+                <div class="battle-stat-row py-1">
+                  <span
+                    data-battle-survivors-left
+                    class="battle-stat-left font-mono text-caption tabular-nums"
+                  ></span>
+                  <span class="battle-stat-label text-center text-[10px] text-ink-muted">
+                    Avg Survivors
+                  </span>
+                  <span
+                    data-battle-survivors-right
+                    class="battle-stat-right font-mono text-caption tabular-nums"
+                  ></span>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="mt-4 border-t border-line pt-3"
+              aria-labelledby="battle-details-title"
+              data-battle-details
+            >
+              <div class="relative flex items-center justify-center">
+                <h3
+                  id="battle-details-title"
+                  class="battle-details-title text-center font-medium tracking-[-0.01em]"
+                >
+                  Battle Details
+                </h3>
+                <button
+                  type="button"
+                  data-battle-details-toggle
+                  aria-expanded="false"
+                  aria-controls="battle-details-content"
+                  aria-label="Show battle details"
+                  title="Show battle details"
+                  class="battle-details-toggle absolute right-0 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  <svg
+                    data-battle-details-icon
+                    class="transition-transform duration-200"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m4 6 4 4 4-4"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <div
+                id="battle-details-content"
+                class="battle-details-content"
+                data-battle-details-content
+                data-expanded="false"
+                aria-hidden="true"
+                inert
+              >
+                <div class="battle-details-content-inner">
+                  <div class="pt-3">
+                    <table class="w-full table-fixed border-collapse">
+                      <colgroup>
+                        <col />
+                        <col class="battle-triggered-col" />
+                        <col class="battle-spacer-col" />
+                        <col class="battle-triggered-col" />
+                        <col />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th
+                            scope="col"
+                            class="pb-1 text-left text-[10px] font-medium text-ink-subtle"
+                          >
+                            Skill
+                          </th>
+                          <th
+                            scope="col"
+                            aria-label="Triggered activations"
+                            class="battle-triggered-header pb-1 text-center font-medium text-ink-subtle"
+                          >
+                            <span class="battle-triggered-full" aria-hidden="true">Triggered</span>
+                            <span class="battle-triggered-short" aria-hidden="true">Trig.</span>
+                          </th>
+                          <th scope="col" class="pb-1" aria-hidden="true"></th>
+                          <th
+                            scope="col"
+                            aria-label="Triggered activations"
+                            class="battle-triggered-header pb-1 text-center font-medium text-ink-subtle"
+                          >
+                            <span class="battle-triggered-full" aria-hidden="true">Triggered</span>
+                            <span class="battle-triggered-short" aria-hidden="true">Trig.</span>
+                          </th>
+                          <th
+                            scope="col"
+                            class="pb-1 text-right text-[10px] font-medium text-ink-subtle"
+                          >
+                            Skill
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody data-battle-skills-body></tbody>
+                    </table>
+                  </div>
+
+                  <div class="border-t border-line pt-3">
+                    <p class="text-center text-[10px] text-ink-muted">Avg Survivors</p>
+                    <div class="mt-1">
+                      {
+                        TROOP_TYPES.map((type, index) => (
+                          <div
+                            class:list={[
+                              'grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-baseline gap-2 py-1',
+                              index > 0 && 'border-t border-line',
+                            ]}
+                            data-battle-survivor-row={type.id}
+                          >
+                            <span
+                              data-battle-survivor-left
+                              class="battle-survivor-value text-center font-mono tabular-nums"
+                            />
+                            <span class="text-center text-[10px] text-ink-muted">
+                              {type.shortLabel}
+                            </span>
+                            <span
+                              data-battle-survivor-right
+                              class="battle-survivor-value text-center font-mono tabular-nums"
+                            />
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <p
+              data-simulate-rounds
+              class="mt-3 text-center font-mono text-[10px] leading-snug tabular-nums text-ink-muted"
+            ></p>
+            <p
+              data-simulate-meta
+              class="mt-1 text-center text-[10px] leading-snug text-ink-subtle"
+            ></p>
+            <p
+              data-simulate-warnings
+              class="mt-1 text-center text-[10px] leading-snug text-ink-muted"
+              hidden
+            ></p>
+          </section>
+        </section>
+      </div>
     </div>
   </main>
+
+  <script>
+    import { initGenerationPreset } from '../scripts/generation-preset'
+    import { initHeroComparison } from '../scripts/hero-comparison'
+    import { initJoiners } from '../scripts/joiners'
+    import { initSimulation } from '../scripts/simulate'
+    import { initStatBonuses } from '../scripts/stat-bonuses'
+    import { initTroopPower } from '../scripts/troop-power'
+
+    initHeroComparison()
+    initJoiners()
+    initTroopPower()
+    initStatBonuses()
+    initSimulation()
+    initGenerationPreset()
+  </script>
 </SiteLayout>
