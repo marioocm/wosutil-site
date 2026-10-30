@@ -17,18 +17,18 @@ describe('GENERATIONS', () => {
     )
   })
 
-  it('matches the era profile from HERO_META', () => {
+  it('matches the era profile', () => {
     expect(getGenerationPreset(1)).toMatchObject({
       tier: 10,
       fc: 0,
       baseStat: 200,
-      totalTroops: 300_000,
+      totalTroops: 800_000,
     })
     expect(getGenerationPreset(3)).toMatchObject({
       tier: 10,
       fc: 0,
       baseStat: 300,
-      totalTroops: 800_000,
+      totalTroops: 1_000_000,
     })
     expect(getGenerationPreset(4)).toMatchObject({
       tier: 10,

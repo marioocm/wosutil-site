@@ -211,9 +211,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   three-column grid, one per Gen 1–17, showing `Gen N` and its `T·FC`; the
   current generation is selected. Arrow keys, Home and End move through them.
 - Choosing a generation applies a complete era preset: total troops, tier/FC,
-  the A1 attack lineup on the left, the D1 defense lineup on the right, their
-  ratios, and the Stats Bonuses panel. No joiners are preset. The preset
-  overwrites manual values every time the generation changes.
+  the best counter attack lineup on the left, the best worst-case defense
+  lineup on the right, their ratios, and the Stats Bonuses panel. No joiners
+  are preset. The preset overwrites manual values every time the generation
+  changes.
 - Both hero pickers hide heroes newer than the selected generation; epics stay
   selectable. Joiners from newer generations are cleared.
 

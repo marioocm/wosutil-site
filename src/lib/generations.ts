@@ -27,14 +27,14 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     tier: 10,
     fc: 0,
     baseStat: 200,
-    totalTroops: 300_000,
+    totalTroops: 800_000,
     attack: {
       heroes: { infantry: 'jeronimo', lancer: 'molly', marksman: 'zinman' },
-      ratio: [56, 15, 29],
+      ratio: [55, 15, 30],
     },
     defense: {
       heroes: { infantry: 'jeronimo', lancer: 'molly', marksman: 'zinman' },
-      ratio: [54, 13, 33],
+      ratio: [46, 18, 36],
     },
   },
   {
@@ -42,10 +42,10 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     tier: 10,
     fc: 0,
     baseStat: 250,
-    totalTroops: 500_000,
+    totalTroops: 900_000,
     attack: {
       heroes: { infantry: 'jeronimo', lancer: 'philly', marksman: 'alonso' },
-      ratio: [40, 30, 30],
+      ratio: [49, 19, 32],
     },
     defense: {
       heroes: { infantry: 'flint', lancer: 'philly', marksman: 'zinman' },
@@ -57,14 +57,14 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     tier: 10,
     fc: 0,
     baseStat: 300,
-    totalTroops: 800_000,
+    totalTroops: 1_000_000,
     attack: {
       heroes: { infantry: 'jeronimo', lancer: 'mia', marksman: 'greg' },
-      ratio: [57, 12, 31],
+      ratio: [45, 15, 40],
     },
     defense: {
-      heroes: { infantry: 'logan', lancer: 'mia', marksman: 'greg' },
-      ratio: [55, 17, 28],
+      heroes: { infantry: 'logan', lancer: 'philly', marksman: 'greg' },
+      ratio: [56, 12, 32],
     },
   },
   {
@@ -74,12 +74,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 350,
     totalTroops: 1_250_000,
     attack: {
-      heroes: { infantry: 'jeronimo', lancer: 'mia', marksman: 'greg' },
-      ratio: [45, 19, 36],
+      heroes: { infantry: 'jeronimo', lancer: 'mia', marksman: 'lynn' },
+      ratio: [60, 7, 33],
     },
     defense: {
-      heroes: { infantry: 'logan', lancer: 'molly', marksman: 'lynn' },
-      ratio: [42, 12, 46],
+      heroes: { infantry: 'logan', lancer: 'philly', marksman: 'lynn' },
+      ratio: [50, 8, 42],
     },
   },
   {
@@ -89,12 +89,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 400,
     totalTroops: 1_300_000,
     attack: {
-      heroes: { infantry: 'logan', lancer: 'norah', marksman: 'greg' },
-      ratio: [42, 43, 15],
+      heroes: { infantry: 'jeronimo', lancer: 'mia', marksman: 'gwen' },
+      ratio: [50, 10, 40],
     },
     defense: {
-      heroes: { infantry: 'logan', lancer: 'norah', marksman: 'zinman' },
-      ratio: [40, 50, 10],
+      heroes: { infantry: 'logan', lancer: 'norah', marksman: 'lynn' },
+      ratio: [40, 26, 34],
     },
   },
   {
@@ -104,12 +104,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 450,
     totalTroops: 1_350_000,
     attack: {
-      heroes: { infantry: 'wu-ming', lancer: 'renee', marksman: 'greg' },
-      ratio: [58, 37, 5],
+      heroes: { infantry: 'wu-ming', lancer: 'mia', marksman: 'wayne' },
+      ratio: [54, 0, 46],
     },
     defense: {
-      heroes: { infantry: 'wu-ming', lancer: 'norah', marksman: 'wayne' },
-      ratio: [34, 25, 41],
+      heroes: { infantry: 'wu-ming', lancer: 'molly', marksman: 'wayne' },
+      ratio: [35, 0, 65],
     },
   },
   {
@@ -119,12 +119,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 500,
     totalTroops: 1_400_000,
     attack: {
-      heroes: { infantry: 'edith', lancer: 'gordon', marksman: 'bradley' },
-      ratio: [52, 29, 19],
+      heroes: { infantry: 'edith', lancer: 'mia', marksman: 'bradley' },
+      ratio: [44, 9, 47],
     },
     defense: {
-      heroes: { infantry: 'edith', lancer: 'norah', marksman: 'bradley' },
-      ratio: [52, 16, 32],
+      heroes: { infantry: 'edith', lancer: 'gordon', marksman: 'bradley' },
+      ratio: [59, 40, 1],
     },
   },
   {
@@ -134,12 +134,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 550,
     totalTroops: 1_450_000,
     attack: {
-      heroes: { infantry: 'edith', lancer: 'gordon', marksman: 'hendrik' },
-      ratio: [45, 20, 35],
+      heroes: { infantry: 'gatot', lancer: 'mia', marksman: 'hendrik' },
+      ratio: [36, 4, 60],
     },
     defense: {
-      heroes: { infantry: 'gatot', lancer: 'sonya', marksman: 'bradley' },
-      ratio: [42, 51, 7],
+      heroes: { infantry: 'gatot', lancer: 'sonya', marksman: 'zinman' },
+      ratio: [50, 50, 0],
     },
   },
   {
@@ -149,12 +149,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 600,
     totalTroops: 1_500_000,
     attack: {
-      heroes: { infantry: 'magnus', lancer: 'fred', marksman: 'hendrik' },
-      ratio: [49, 15, 36],
+      heroes: { infantry: 'magnus', lancer: 'mia', marksman: 'xura' },
+      ratio: [62, 3, 35],
     },
     defense: {
-      heroes: { infantry: 'magnus', lancer: 'fred', marksman: 'xura' },
-      ratio: [49, 13, 38],
+      heroes: { infantry: 'magnus', lancer: 'molly', marksman: 'xura' },
+      ratio: [46, 0, 54],
     },
   },
   {
@@ -164,12 +164,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 650,
     totalTroops: 1_550_000,
     attack: {
-      heroes: { infantry: 'gregory', lancer: 'mia', marksman: 'blanchette' },
-      ratio: [50, 5, 45],
+      heroes: { infantry: 'gregory', lancer: 'fred', marksman: 'blanchette' },
+      ratio: [38, 20, 42],
     },
     defense: {
-      heroes: { infantry: 'gregory', lancer: 'freya', marksman: 'xura' },
-      ratio: [38, 19, 43],
+      heroes: { infantry: 'gregory', lancer: 'freya', marksman: 'blanchette' },
+      ratio: [44, 23, 33],
     },
   },
   {
@@ -179,12 +179,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 700,
     totalTroops: 1_600_000,
     attack: {
-      heroes: { infantry: 'eleonora', lancer: 'fred', marksman: 'rufus' },
-      ratio: [53, 9, 38],
+      heroes: { infantry: 'eleonora', lancer: 'mia', marksman: 'rufus' },
+      ratio: [60, 13, 27],
     },
     defense: {
-      heroes: { infantry: 'eleonora', lancer: 'freya', marksman: 'rufus' },
-      ratio: [47, 7, 46],
+      heroes: { infantry: 'eleonora', lancer: 'molly', marksman: 'rufus' },
+      ratio: [58, 2, 40],
     },
   },
   {
@@ -194,12 +194,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 750,
     totalTroops: 1_650_000,
     attack: {
-      heroes: { infantry: 'hervor', lancer: 'karol', marksman: 'rufus' },
-      ratio: [57, 12, 31],
+      heroes: { infantry: 'hervor', lancer: 'karol', marksman: 'hendrik' },
+      ratio: [57, 23, 20],
     },
     defense: {
-      heroes: { infantry: 'hervor', lancer: 'freya', marksman: 'ligeia' },
-      ratio: [48, 8, 44],
+      heroes: { infantry: 'hervor', lancer: 'karol', marksman: 'ligeia' },
+      ratio: [61, 2, 37],
     },
   },
   {
@@ -210,11 +210,11 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     totalTroops: 1_700_000,
     attack: {
       heroes: { infantry: 'gisela', lancer: 'flora', marksman: 'vulcanus' },
-      ratio: [55, 10, 35],
+      ratio: [62, 13, 25],
     },
     defense: {
       heroes: { infantry: 'gisela', lancer: 'flora', marksman: 'vulcanus' },
-      ratio: [54, 11, 35],
+      ratio: [57, 8, 35],
     },
   },
   {
@@ -225,11 +225,11 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     totalTroops: 1_750_000,
     attack: {
       heroes: { infantry: 'elif', lancer: 'dominic', marksman: 'vulcanus' },
-      ratio: [43, 18, 39],
+      ratio: [47, 19, 34],
     },
     defense: {
-      heroes: { infantry: 'elif', lancer: 'dominic', marksman: 'cara' },
-      ratio: [36, 22, 42],
+      heroes: { infantry: 'elif', lancer: 'flora', marksman: 'cara' },
+      ratio: [52, 6, 42],
     },
   },
   {
@@ -239,12 +239,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 900,
     totalTroops: 1_800_000,
     attack: {
-      heroes: { infantry: 'hank', lancer: 'dominic', marksman: 'vulcanus' },
-      ratio: [44, 17, 39],
+      heroes: { infantry: 'elif', lancer: 'dominic', marksman: 'cara' },
+      ratio: [34, 26, 40],
     },
     defense: {
       heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'cara' },
-      ratio: [46, 47, 7],
+      ratio: [43, 14, 43],
     },
   },
   {
@@ -255,11 +255,11 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     totalTroops: 1_850_000,
     attack: {
       heroes: { infantry: 'seigel', lancer: 'ursar', marksman: 'viveca' },
-      ratio: [57, 35, 8],
+      ratio: [34, 21, 45],
     },
     defense: {
-      heroes: { infantry: 'seigel', lancer: 'ursar', marksman: 'cara' },
-      ratio: [30, 27, 43],
+      heroes: { infantry: 'seigel', lancer: 'ursar', marksman: 'aisling' },
+      ratio: [34, 17, 49],
     },
   },
   {
@@ -269,12 +269,12 @@ export const GENERATIONS: readonly GenerationPreset[] = [
     baseStat: 1000,
     totalTroops: 1_900_000,
     attack: {
-      heroes: { infantry: 'seigel', lancer: 'ursar', marksman: 'eleanor' },
-      ratio: [42, 12, 46],
+      heroes: { infantry: 'seigel', lancer: 'ursar', marksman: 'viveca' },
+      ratio: [46, 41, 13],
     },
     defense: {
-      heroes: { infantry: 'seigel', lancer: 'bertha', marksman: 'eleanor' },
-      ratio: [38, 18, 44],
+      heroes: { infantry: 'seigel', lancer: 'estrella', marksman: 'eleanor' },
+      ratio: [61, 2, 37],
     },
   },
 ]
