@@ -6,9 +6,8 @@ export function isTheme(value: string | null): value is Theme {
   return value === 'light' || value === 'dark'
 }
 
-export function resolveInitialTheme(stored: string | null, prefersDark: boolean): Theme {
-  if (isTheme(stored)) return stored
-  return prefersDark ? 'dark' : 'light'
+export function resolveInitialTheme(stored: string | null): Theme {
+  return isTheme(stored) ? stored : 'dark'
 }
 
 export function toggleTheme(theme: Theme): Theme {
@@ -18,6 +17,8 @@ export function toggleTheme(theme: Theme): Theme {
 export function applyTheme(theme: Theme, root: HTMLElement = document.documentElement): void {
   root.classList.toggle('dark', theme === 'dark')
   root.style.colorScheme = theme
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  if (meta) meta.content = theme === 'dark' ? '#151311' : '#fefcf5'
 }
 
 function readStoredTheme(): string | null {
@@ -37,8 +38,7 @@ function storeTheme(theme: Theme): void {
 }
 
 export function mountThemeToggle(button: HTMLButtonElement): void {
-  const media = window.matchMedia('(prefers-color-scheme: dark)')
-  let theme = resolveInitialTheme(readStoredTheme(), media.matches)
+  let theme = resolveInitialTheme(readStoredTheme())
 
   const sync = (): void => {
     const target = toggleTheme(theme)
@@ -54,13 +54,6 @@ export function mountThemeToggle(button: HTMLButtonElement): void {
     theme = toggleTheme(theme)
     applyTheme(theme)
     storeTheme(theme)
-    sync()
-  })
-
-  media.addEventListener('change', (event) => {
-    if (isTheme(readStoredTheme())) return
-    theme = resolveInitialTheme(null, event.matches)
-    applyTheme(theme)
     sync()
   })
 }

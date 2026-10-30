@@ -48,8 +48,7 @@ const fontCss = `
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#fefcf5" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#151311" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#151311" />
     <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
     <link rel="preload" href={instrumentSansLatin} as="font" type="font/woff2" crossorigin />
     <style is:inline set:html={fontCss}></style>
@@ -64,14 +63,13 @@ const fontCss = `
     <script is:inline>
       ;(() => {
         try {
-          const stored = localStorage.getItem('wosutil:theme')
-          const dark =
-            stored === 'dark' ||
-            (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          const dark = localStorage.getItem('wosutil:theme') !== 'light'
           document.documentElement.classList.toggle('dark', dark)
           document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
         } catch {
-          // Storage or matchMedia unavailable: keep the light default.
+          // Storage unavailable: keep the dark default.
+          document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = 'dark'
         }
       })()
     </script>
