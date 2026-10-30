@@ -196,6 +196,7 @@ export function initSimulation(): void {
     try {
       const response = await fetch(`${apiBase}/v1/simulate`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           case: buildEngineCase(state),
