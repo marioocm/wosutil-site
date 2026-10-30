@@ -194,6 +194,20 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - When a call is due while the timer runs, the row inverts to `--ink` /
   `--background`. No color-coded flash.
 
+### Hero Comparison
+
+- Outlined --paper card with a centered “Hero Comparison” title.
+- Three symmetric rows with square slots pinned to the left and right card sides.
+  There is no center label: each slot shows its troop-type abbreviation — INF, LAN
+  or MAR — with a small bare plus/initials indicator beneath.
+- Empty slots show the plus and a muted “Select” caption. Selected slots show the hero's initials and the hero name below.
+- Clicking a slot opens a native `<dialog>` picker filtered to that troop type.
+  A leading None option clears the slot. Heroes are ordered newest generation
+  first, with epics last. Each option shows a small avatar/initials, the hero name
+  and `Gen N` / `Epic`.
+- The picker is a paper panel with a hairline border, a dark translucent backdrop,
+  a close control and native Escape handling. No shadows.
+
 ### Stats Bonuses table
 
 - Outlined --paper card with a centered “Stats Bonuses” title.

@@ -123,3 +123,19 @@ input[type="number"]::-webkit-outer-spin-button {
 [data-stat-value][data-stat-state="lower"] {
   color: var(--negative);
 }
+
+.hero-picker::backdrop {
+  background: rgb(11 9 7 / 0.45);
+}
+
+[data-hero-selected="true"] [data-hero-tile] {
+  border-color: var(--line-strong);
+}
+
+[data-hero-selected="true"] [data-hero-caption] {
+  color: var(--ink);
+}
+
+[data-hero-selected="true"] [data-hero-visual] {
+  color: var(--ink);
+}
