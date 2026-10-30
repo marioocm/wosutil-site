@@ -1,5 +1,9 @@
 import { TROOP_TYPES } from '../lib/heroes'
 import {
+  pruneAttempts,
+  rateLimitWaitMs,
+} from '../lib/rate-limit'
+import {
   buildBattleSkillRows,
   buildEngineCase,
   formatActivations,
@@ -112,7 +116,17 @@ export function initSimulation(): void {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const numberFrames = new WeakMap<HTMLElement, number>()
   const numberValues = new WeakMap<HTMLElement, number>()
+  let recentAttempts: number[] = []
   let expanded = detailsContent.dataset['expanded'] === 'true'
+
+  function noteAttempt(): void {
+    const now = Date.now()
+    recentAttempts = [...pruneAttempts(recentAttempts, now), now]
+  }
+
+  function waitBeforeAttempt(): number {
+    return rateLimitWaitMs(recentAttempts, Date.now())
+  }
 
   function setNumber(
     element: HTMLElement,
@@ -193,8 +207,16 @@ export function initSimulation(): void {
       return formatSimulationFailure({ kind: 'timeout' })
     }
     if (error instanceof TypeError) {
+      recentAttempts = pruneAttempts(recentAttempts, Date.now())
+      const rapid = recentAttempts.length >= 3
+      const retryMs = rapid ? rateLimitWaitMs(recentAttempts, Date.now()) : 0
       return formatSimulationFailure(
-        { kind: 'network' },
+        rapid
+          ? {
+              kind: 'rate-limit',
+              retryAfterSeconds: retryMs > 0 ? Math.ceil(retryMs / 1000) : null,
+            }
+          : { kind: 'network' },
         { apiBase, localApi: isLocalApi(apiBase) },
       )
     }
@@ -292,6 +314,18 @@ export function initSimulation(): void {
       setStatus(problem)
       return
     }
+
+    const waitMs = waitBeforeAttempt()
+    if (waitMs > 0) {
+      setStatus(
+        formatSimulationFailure({
+          kind: 'rate-limit',
+          retryAfterSeconds: Math.ceil(waitMs / 1000),
+        }),
+      )
+      return
+    }
+    noteAttempt()
 
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), 120_000)
