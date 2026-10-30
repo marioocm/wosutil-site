@@ -183,7 +183,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
       <div class="flex w-full max-w-[34rem] flex-col gap-4 justify-self-center">
       <section
         id="hero-comparison"
-        class="w-full rounded-card border border-line bg-paper p-5"
+        class="w-full rounded-card border border-line bg-paper p-5 pb-3"
         aria-labelledby="hero-comparison-title"
         data-hero-comparison
       >
@@ -201,6 +201,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 class:list={[
                   'flex items-start justify-between gap-4 py-3',
                   index > 0 && 'border-t border-line',
+                  index === TROOP_TYPES.length - 1 && 'pb-0',
                 ]}
               >
                 <button
@@ -748,7 +749,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
       </section>
 
       <section
-        class="w-full rounded-card border border-line bg-paper p-5"
+        class="w-full rounded-card border border-line bg-paper p-5 pb-1"
         aria-labelledby="stat-bonuses-title"
       >
         <h2 id="stat-bonuses-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
@@ -776,7 +777,13 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
             {
               STAT_BONUSES.map((stat, index) => (
                 <tr data-stat-row>
-                  <td class:list={['py-1', index > 0 && 'border-t border-line']}>
+                  <td
+                    class:list={[
+                      'py-1',
+                      index > 0 && 'border-t border-line',
+                      index === STAT_BONUSES.length - 1 && 'pb-0',
+                    ]}
+                  >
                     <label class={valueClass} data-stat-value="left">
                       <input
                         id={`stat-${stat.id}-left`}
@@ -800,11 +807,18 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                     class:list={[
                       'py-1.5 text-center text-p3 font-medium leading-tight',
                       index > 0 && 'border-t border-line',
+                      index === STAT_BONUSES.length - 1 && 'pb-0',
                     ]}
                   >
                     {stat.label}
                   </th>
-                  <td class:list={['py-1', index > 0 && 'border-t border-line']}>
+                  <td
+                    class:list={[
+                      'py-1',
+                      index > 0 && 'border-t border-line',
+                      index === STAT_BONUSES.length - 1 && 'pb-0',
+                    ]}
+                  >
                     <label class={valueClass} data-stat-value="right">
                       <input
                         id={`stat-${stat.id}-right`}
