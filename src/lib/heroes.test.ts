@@ -18,14 +18,14 @@ import {
 
 describe('HEROES', () => {
   it('contains every legendary and epic combat hero', () => {
-    expect(HEROES).toHaveLength(61)
+    expect(HEROES).toHaveLength(60)
     expect(new Set(HEROES.map((hero) => hero.id)).size).toBe(HEROES.length)
   })
 
   it('splits the roster across the three troop types', () => {
     expect(getHeroesByType('infantry')).toHaveLength(19)
     expect(getHeroesByType('lancer')).toHaveLength(21)
-    expect(getHeroesByType('marksman')).toHaveLength(21)
+    expect(getHeroesByType('marksman')).toHaveLength(20)
   })
 })
 
@@ -42,10 +42,6 @@ describe('HERO_SKILLS', () => {
   it('lists S1-S3 names for every hero the engine supports', () => {
     for (const hero of HEROES) {
       const slots = HERO_SKILLS[hero.id]
-      if (hero.id === 'gina') {
-        expect(slots).toBeUndefined()
-        continue
-      }
       expect(slots?.length).toBeGreaterThan(0)
       expect(slots?.length).toBeLessThanOrEqual(3)
     }
