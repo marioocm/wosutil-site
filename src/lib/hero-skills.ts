@@ -1,11 +1,12 @@
 // S1-S3 skill names per hero, in engine definition order.
 // Generated from wosutil-sim reference/sim_rules/sim_heroes*.json.
 // Placeholder-only slots and the 4th (expedition) skill are excluded.
-export const HERO_SKILLS: Readonly<Record<string, readonly string[]>> = {
+// A null slot marks a non-combat placeholder, so Battle Details leaves it empty.
+export const HERO_SKILLS: Readonly<Record<string, readonly (string | null)[]>> = {
   natalia: ['WildlingRoar', 'QueenOfTheWild', 'CallOfTheWild'],
   jeronimo: ['BattleManifesto', 'Swordmentor', 'EXpertSwordsmanship'],
   molly: ['CallingOfTheStorm', 'IceDominion', 'YouthfulRage'],
-  zinman: ['Implacable', 'Bastionist', 'PositionalBattler'],
+  zinman: ['Implacable', null, 'PositionalBattler'],
   flint: ['Pyromaniac', 'BurningResolve', 'Immolation'],
   philly: ['VigorTactics', 'DosageBoost', 'NumbingSpores'],
   alonso: ['Onslaught', 'IronStrength', 'PoisonHarpoon'],

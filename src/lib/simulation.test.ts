@@ -211,6 +211,19 @@ describe('buildSkillRows', () => {
     ])
   })
 
+  it('leaves non-combat placeholder slots empty and keeps the next slot labeled', () => {
+    const rows = buildSkillRows({ marksman: 'Zinman' }, [
+      activation({ owner: 'Zinman', skill: 'Implacable', activations_mean: 4 }),
+      activation({ owner: 'Zinman', skill: 'Bastionist', activations_mean: 1 }),
+      activation({ owner: 'Zinman', skill: 'PositionalBattler', activations_mean: 2 }),
+    ])
+    expect(rows.slice(6, 9)).toEqual([
+      { label: 'Zinman S1', activations: 4 },
+      { label: '', activations: null },
+      { label: 'Zinman S3', activations: 2 },
+    ])
+  })
+
   it('falls back to three slots for unknown hero names', () => {
     const rows = buildSkillRows({ marksman: 'Unknown' }, [])
     expect(rows.slice(6, 9)).toEqual([
