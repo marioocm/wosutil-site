@@ -18,7 +18,7 @@ export function applyTheme(theme: Theme, root: HTMLElement = document.documentEl
   root.classList.toggle('dark', theme === 'dark')
   root.style.colorScheme = theme
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-  if (meta) meta.content = theme === 'dark' ? '#151311' : '#fefcf5'
+  if (meta) meta.content = theme === 'dark' ? '#151311' : '#f3eee3'
 }
 
 function readStoredTheme(): string | null {
