@@ -182,18 +182,21 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
-.simulation-result {
+.simulation-result,
+.optimise-ratio-results {
   container-type: inline-size;
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 220ms ease;
 }
 
-.simulation-result[data-expanded="true"] {
+.simulation-result[data-expanded="true"],
+.optimise-ratio-results[data-expanded="true"] {
   grid-template-rows: 1fr;
 }
 
-.simulation-result-inner {
+.simulation-result-inner,
+.optimise-ratio-results-inner {
   min-height: 0;
   overflow: clip;
   overflow-clip-margin: 6px;
@@ -517,10 +520,104 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
+.optimise-ratio-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 6px;
+}
+
+.optimise-ratio-header,
+.optimise-ratio-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+
+.optimise-ratio-header {
+  font-size: 9px;
+}
+
+.optimise-ratio-row {
+  border-top: 1px solid var(--line);
+  padding-block: 6px;
+  text-align: left;
+}
+
+.optimise-ratio-header > :first-child,
+.optimise-ratio-row > :first-child {
+  padding-left: 6px;
+}
+
+.optimise-ratio-header > :last-child,
+.optimise-ratio-row > :last-child {
+  padding-right: 6px;
+}
+
+.optimise-ratio-value {
+  font-size: 10px;
+}
+
+.optimise-ratio-metric {
+  font-size: 9px;
+}
+
+@container (min-width: 12rem) {
+  .optimise-ratio-table {
+    column-gap: 8px;
+  }
+
+  .optimise-ratio-header > :first-child,
+  .optimise-ratio-row > :first-child {
+    padding-left: 8px;
+  }
+
+  .optimise-ratio-header > :last-child,
+  .optimise-ratio-row > :last-child {
+    padding-right: 8px;
+  }
+
+  .optimise-ratio-header {
+    font-size: 10px;
+  }
+
+  .optimise-ratio-value {
+    font-size: 11px;
+  }
+
+  .optimise-ratio-metric {
+    font-size: 10px;
+  }
+}
+
+.optimise-ratio-thumb {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-optimise-toggle][data-side="right"] .optimise-ratio-thumb {
+  transform: translateX(100%);
+}
+
+[data-optimise-status]:empty {
+  display: none;
+}
+
+[data-optimise-option] {
+  color: var(--ink-muted);
+  transition: color 150ms ease;
+}
+
+[data-optimise-toggle][data-side="left"] [data-optimise-option="left"],
+[data-optimise-toggle][data-side="right"] [data-optimise-option="right"] {
+  color: var(--invert-fg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .joiners-content,
   .battle-details-content,
   .simulation-result,
+  .optimise-ratio-results,
+  .optimise-ratio-thumb,
   [data-battle-winrate-left-bar],
   [data-battle-winrate-right-bar] {
     transition: none;

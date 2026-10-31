@@ -848,7 +848,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
       </section>
       </div>
 
-      <div class="w-full lg:sticky lg:top-24" data-simulation-shell>
+      <div class="flex w-full flex-col gap-4 lg:sticky lg:top-24" data-simulation-shell>
         <section
           id="simulation"
           class="w-full rounded-card border border-line bg-paper p-5"
@@ -1094,6 +1094,111 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
             </div>
           </section>
         </section>
+
+        <section
+          id="optimise-ratio"
+          class="w-full rounded-card border border-line bg-paper p-5"
+          aria-label="Optimise Ratio"
+          data-optimise-ratio
+        >
+          <div class="flex justify-center">
+            <button
+              type="button"
+              data-optimise-ratio-button
+              class="inline-flex min-w-[8rem] cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-sm bg-invert px-3.5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              Optimise Ratio
+            </button>
+          </div>
+
+          <fieldset class="mt-3 flex justify-center">
+            <legend class="sr-only">Side to optimise</legend>
+            <div
+              class="relative grid w-[7.5rem] select-none grid-cols-2 rounded-sm border border-line bg-background p-0.5"
+              data-optimise-toggle
+              data-side="left"
+            >
+              <span
+                data-optimise-thumb
+                class="optimise-ratio-thumb pointer-events-none absolute bottom-0.5 left-0.5 top-0.5 w-[calc(50%_-_0.125rem)] rounded-xs bg-invert"
+                aria-hidden="true"></span>
+              <label class="relative z-10 cursor-pointer">
+                <input
+                  type="radio"
+                  name="optimise-ratio-side"
+                  value="left"
+                  class="peer sr-only"
+                  checked
+                />
+                <span
+                  data-optimise-option="left"
+                  class="flex h-full items-center justify-center rounded-xs px-2 py-1 text-center text-micro peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink"
+                >
+                  Left
+                </span>
+              </label>
+              <label class="relative z-10 cursor-pointer">
+                <input
+                  type="radio"
+                  name="optimise-ratio-side"
+                  value="right"
+                  class="peer sr-only"
+                />
+                <span
+                  data-optimise-option="right"
+                  class="flex h-full items-center justify-center rounded-xs px-2 py-1 text-center text-micro peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink"
+                >
+                  Right
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <p
+            data-optimise-status
+            role="status"
+            aria-live="polite"
+            class="mt-3 text-center text-[10px] leading-snug text-ink-muted"
+          ></p>
+
+          <div
+            data-optimise-results
+            class="optimise-ratio-results mt-4"
+            data-expanded="false"
+            hidden
+          >
+            <div class="optimise-ratio-results-inner border-t border-line pt-4">
+              <p
+                data-optimise-caption
+                class="text-[10px] uppercase tracking-[0.08em] text-ink-subtle"
+              ></p>
+
+              <div class="optimise-ratio-table mt-2">
+                <div class="optimise-ratio-header pb-1 text-ink-subtle">
+                  <span>Ratio</span>
+                  <span class="text-right">Win %</span>
+                  <span class="text-right">Margin</span>
+                </div>
+                <div data-optimise-rows class="contents"></div>
+              </div>
+
+              <p
+                data-optimise-warnings
+                class="mt-2 text-[10px] leading-snug text-ink-muted"
+                hidden
+              ></p>
+
+              <p class="mt-2 text-[10px] leading-snug text-ink-subtle">
+                Best row highlighted · Win % = seeds won · Margin = survivor-rate difference ·
+                Click to apply
+              </p>
+              <p
+                data-optimise-meta
+                class="mt-1 text-center font-mono text-[10px] leading-snug tabular-nums text-ink-muted"
+              ></p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </main>
@@ -1102,6 +1207,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     import { initGenerationPreset } from '../scripts/generation-preset'
     import { initHeroComparison } from '../scripts/hero-comparison'
     import { initJoiners } from '../scripts/joiners'
+    import { initOptimiseRatio } from '../scripts/optimise-ratio'
     import { initSimulation } from '../scripts/simulate'
     import { initStatBonuses } from '../scripts/stat-bonuses'
     import { initTroopPower } from '../scripts/troop-power'
@@ -1111,6 +1217,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     initTroopPower()
     initStatBonuses()
     initSimulation()
+    initOptimiseRatio()
     initGenerationPreset()
   </script>
 </SiteLayout>

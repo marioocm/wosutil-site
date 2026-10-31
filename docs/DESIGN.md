@@ -129,9 +129,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Countdown main grid on desktop: two columns, callers left, timer/queue right.
 - Simulator on desktop: a centered three-column grid with a flexible left
   column holding the sticky generation card, the 34rem card column in the
-  center and the sticky Simulation card on the right, so the cards stay
-  visually centered. Below `lg` it stacks with the generation card first and
-  the Simulation card last.
+  center and the sticky Simulation + Optimise Ratio cards on the right, so the
+  cards stay visually centered. Below `lg` it stacks with the generation card
+  first and the Simulation cards last.
 - Mobile order: timer and controls first, callers below.
 - Vertical rhythm: `gap-8`/`gap-10`; panels use `gap-4`.
 
@@ -330,6 +330,36 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - The winrate bar uses neutral ink tints only and mono numerals for the
   percentages. Run metadata (seeds and elapsed time) and warnings sit below the
   sections in small muted text.
+
+### Optimise Ratio
+
+- Outlined --paper card directly below the Simulation card in the right
+  sidebar: a centered inverted `Optimise Ratio` button and a two-segment
+  Left / Right toggle beneath it. Left is selected by default.
+- The toggle is a compact bordered track on `--background` (smaller than the
+  button, 12px labels) with 4px radius and two equal segments. A single white
+  thumb sits behind the labels and slides between them with the same 180ms
+  `cubic-bezier(0.22, 1, 0.36, 1)` motion as the header underline, moving only
+  when the selection changes. Native radios provide keyboard and
+  screen-reader behavior. Reduced-motion users get instant moves.
+- Pressing the button posts the current engine case to `/v1/optimize-ratio` for
+  the selected side. Results stay hidden until a run succeeds, then expand from
+  the button with the same 220ms height motion as the Simulation card. Repeat
+  runs update the panel in place; switching sides collapses it.
+- The panel starts with the optimised side, then a three-column table with the
+  ranked ratios (mono `inf:lan:mar`), the percentage of seeds won (`Win %`) and
+  the mean survivor-rate difference (`Margin`, signed). The ratios stay on the
+  left and the two metrics stay right-aligned; every cell keeps a small inline
+  inset from the row edges. The best row is tinted and the other values stay
+  muted; a short legend explains both columns and that rows are clickable. No
+  separate `Current` line. The run metadata (`256 seeds · 830 ms`) sits centered
+  at the bottom, like the Simulation card.
+- Rows are hairline-separated buttons; clicking one writes the three troop counts
+  to that side's Troop Power inputs and confirms it in the status line. No new
+  colors or shadows.
+- While the request runs the button is disabled and reads `Optimising...`; no
+  progress copy is shown. The small live status line below the toggle reports
+  any API error or confirms an applied ratio, and stays empty during a run.
 
 ### Footer
 

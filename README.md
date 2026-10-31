@@ -8,6 +8,7 @@ Live site: [marioocm.github.io/wosutil-site](https://marioocm.github.io/wosutil-
 
 - **Countdown:** duration-based timer, rally and enemy callers, call queue, shareable setup and UTC clock.
 - **Simulator:** generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses, plus Battle Overview and Battle Details from the `wosutil-sim` engine.
+- **Optimise Ratio:** sweeps one side's inf/lan/mar split on the engine and lists the best ratios; click a result to apply it to Troop Power.
 - Static Astro pages with scoped vanilla-TS scripts; the countdown needs no backend.
 
 ## Stack
@@ -48,6 +49,9 @@ sibling `wosutil-sim` repository.
   its origin must be allowed in the API's `WOS_CORS_ORIGINS`.
 - The API allows 5 simulations per 10s. The site mirrors that limit client-side
   and shows a friendly retry message when it is reached.
+- Optimise Ratio uses `POST /v1/optimize-ratio` with the same case and a
+  `side` (`att`/`def`); the response is the current split plus ranked
+  candidates. Clicking a candidate writes its counts into Troop Power.
 
 ## Checks
 

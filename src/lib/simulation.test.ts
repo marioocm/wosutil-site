@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   buildBattleSkillRows,
   buildEngineCase,
+  buildOptimizeCase,
   buildSkillRows,
+  engineSide,
   formatActivations,
   formatBattleCount,
   formatSimulationFailure,
   formatWinRate,
+  OPTIMIZE_RATIO_SEEDS,
   SIMULATION_SEEDS,
   SKILL_LEVEL,
   validateSimulatorState,
@@ -85,6 +88,24 @@ describe('buildEngineCase', () => {
 
   it('uses the API seed count', () => {
     expect(SIMULATION_SEEDS).toBe(256)
+    expect(OPTIMIZE_RATIO_SEEDS).toBe(256)
+  })
+})
+
+describe('buildOptimizeCase', () => {
+  it('keeps zero-count classes so the optimizer can use their tier/FC', () => {
+    const engine = buildOptimizeCase(state())
+    expect(engine.defender.troops).toEqual({
+      infantry: { tier: 12, fc: 10, count: 500 },
+      lancer: { tier: 12, fc: 10, count: 0 },
+      marksman: { tier: 12, fc: 10, count: 0 },
+    })
+    expect(engine.attacker.troops.marksman?.count).toBe(3000)
+  })
+
+  it('maps the UI side to the engine side', () => {
+    expect(engineSide('left')).toBe('att')
+    expect(engineSide('right')).toBe('def')
   })
 })
 
