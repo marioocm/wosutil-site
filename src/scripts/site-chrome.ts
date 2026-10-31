@@ -168,22 +168,27 @@ function setup(header: HTMLElement): void {
       if (hoveredLink) return
       moveIndicatorTo(activeLink, true)
     })
-
-    nav.addEventListener('click', (event) => {
-      if (event.defaultPrevented || event.button !== 0) return
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-      if (!(event.target instanceof Element)) return
-      const link = event.target.closest<HTMLAnchorElement>('a')
-      if (!link || !nav?.contains(link)) return
-      if (link.dataset.section === 'countdown') return
-      if (document.getElementById('app')?.dataset.page !== 'countdown') return
-      try {
-        sessionStorage.setItem(SHARE_EXIT_KEY, String(Date.now()))
-      } catch {
-        // Storage unavailable: skip the exit animation.
-      }
-    })
   }
+
+  header.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0) return
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (!(event.target instanceof Element)) return
+    const link = event.target.closest<HTMLAnchorElement>('a[data-section]')
+    if (!link || !header.contains(link)) return
+    const page = document.getElementById('app')?.dataset.page
+    const section = link.dataset.section
+    if (section === page) {
+      event.preventDefault()
+      return
+    }
+    if (section === 'countdown' || page !== 'countdown') return
+    try {
+      sessionStorage.setItem(SHARE_EXIT_KEY, String(Date.now()))
+    } catch {
+      // Storage unavailable: skip the exit animation.
+    }
+  })
 
   moveIndicatorTo(activeLink, false)
   updateShareShift()
