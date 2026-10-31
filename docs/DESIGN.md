@@ -43,20 +43,24 @@ Semantic CSS variables live in `src/styles/theme.css`. Light values are defined 
 `:root`, dark values in `.dark`. Components use the mapped Tailwind tokens
 (`--color-*`, via `@theme inline`), never raw hex values.
 
+Both themes keep the same depth relationship: `--paper` is lighter than `--bg`,
+and inset controls (hero tiles, inputs, ratio tracks) reuse `--bg` inside paper
+cards. Depth comes from that layering plus hairlines, never shadows.
+
 ### Light
 
 | Token           | Value                | Usage                         |
 | --------------- | -------------------- | ----------------------------- |
-| `--bg`          | `#fefcf5`            | Page canvas                   |
-| `--paper`       | `#fffcf6`            | Cards, header, footer         |
-| `--tint`        | `#eaeae2`            | Selected rows, subtle fills   |
+| `--bg`          | `#f3eee3`            | Page canvas                   |
+| `--paper`       | `#fdfaf2`            | Cards, header, footer         |
+| `--tint`        | `#e7e0d2`            | Selected rows, subtle fills   |
 | `--ink`         | `#3c3a39`            | Primary text, active controls |
-| `--ink-muted`   | `#6f6b67`            | Secondary text, icons         |
-| `--ink-subtle`  | `#767169`            | Placeholders, separators      |
-| `--line`        | `rgba(11,9,7,.12)`   | Hairline borders              |
-| `--line-strong` | `rgba(11,9,7,.38)`   | Emphasized borders            |
+| `--ink-muted`   | `#6a6660`            | Secondary text, icons         |
+| `--ink-subtle`  | `#6f6b63`            | Placeholders, separators      |
+| `--line`        | `rgba(11,9,7,.16)`   | Hairline borders              |
+| `--line-strong` | `rgba(11,9,7,.42)`   | Emphasized borders            |
 | `--invert`      | `#3c3a39`            | Inverted surfaces (Play)      |
-| `--invert-fg`   | `#fefcf5`            | Text on inverted surfaces     |
+| `--invert-fg`   | `#fdfaf2`            | Text on inverted surfaces     |
 | `--positive`    | `#2e6b4f`            | Higher stat bonus             |
 | `--negative`    | `#a13b35`            | Lower stat bonus              |
 

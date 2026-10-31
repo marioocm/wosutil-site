@@ -69,16 +69,16 @@
 }
 
 :root {
-  --bg: #fefcf5;
-  --paper: #fffcf6;
-  --tint: #eaeae2;
+  --bg: #f3eee3;
+  --paper: #fdfaf2;
+  --tint: #e7e0d2;
   --ink: #3c3a39;
-  --ink-muted: #6f6b67;
-  --ink-subtle: #767169;
-  --line: rgba(11, 9, 7, 0.12);
-  --line-strong: rgba(11, 9, 7, 0.38);
+  --ink-muted: #6a6660;
+  --ink-subtle: #6f6b63;
+  --line: rgba(11, 9, 7, 0.16);
+  --line-strong: rgba(11, 9, 7, 0.42);
   --invert: #3c3a39;
-  --invert-fg: #fefcf5;
+  --invert-fg: #fdfaf2;
   --positive: #2e6b4f;
   --negative: #a13b35;
   color-scheme: light;
