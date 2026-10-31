@@ -105,8 +105,48 @@ export interface SimulationResult {
   warnings?: string[]
 }
 
+export type EngineSideName = 'att' | 'def'
+
+export interface OptimizeRatioCandidate {
+  ratio: [number, number, number]
+  ratio_text: string
+  counts: Record<TroopType, number>
+  p_win: number
+  margin: number
+  own_rate: number
+  foe_rate: number
+  own_surv: number
+  foe_surv: number
+  wipe_rate: number
+  seeds: number
+  is_current?: boolean
+}
+
+export interface OptimizeRatioResult {
+  api_version: string
+  engine_version: string
+  git_sha?: string
+  elapsed_ms: number
+  side: EngineSideName
+  seeds: number
+  seed_base: string
+  step: number
+  initial: { att: number; def: number }
+  evaluated: number
+  current: OptimizeRatioCandidate
+  best: OptimizeRatioCandidate
+  results: OptimizeRatioCandidate[]
+  warnings?: string[]
+}
+
 export const SIMULATION_SEEDS = 256
+export const OPTIMIZE_RATIO_SEEDS = 256
+export const OPTIMIZE_RATIO_STEP = 5
 export const SKILL_LEVEL = 5
+
+export function engineSide(side: 'left' | 'right'): EngineSideName {
+  return side === 'left' ? 'att' : 'def'
+}
 
 const STAT_NAMES = ['attack', 'defense', 'lethality', 'health'] as const
 
@@ -204,7 +244,11 @@ function statRow(side: SimulatorSideState, type: TroopType): number[] {
   })
 }
 
-function buildSide(side: SimulatorSideState, name: string): EngineSide {
+function buildSide(
+  side: SimulatorSideState,
+  name: string,
+  includeEmpty = false,
+): EngineSide {
   const heroes = TROOP_TYPES.flatMap(({ id }) => {
     const hero = side.heroes[id]
     return hero ? [{ name: hero, s1: SKILL_LEVEL, s2: SKILL_LEVEL, s3: SKILL_LEVEL }] : []
@@ -215,7 +259,7 @@ function buildSide(side: SimulatorSideState, name: string): EngineSide {
   const troops: Partial<Record<TroopType, EngineTroopGroup>> = {}
   for (const { id } of TROOP_TYPES) {
     const loadout = side.troops[id]
-    if (loadout.count > 0) {
+    if (loadout.count > 0 || includeEmpty) {
       troops[id] = { tier: loadout.tier, fc: loadout.fc, count: loadout.count }
     }
   }
@@ -241,6 +285,13 @@ export function buildEngineCase(state: SimulatorState): EngineCase {
   return {
     attacker: buildSide(state.left, 'Left'),
     defender: buildSide(state.right, 'Right'),
+  }
+}
+
+export function buildOptimizeCase(state: SimulatorState): EngineCase {
+  return {
+    attacker: buildSide(state.left, 'Left', true),
+    defender: buildSide(state.right, 'Right', true),
   }
 }
 

@@ -342,7 +342,24 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   `cubic-bezier(0.22, 1, 0.36, 1)` motion as the header underline, moving only
   when the selection changes. Native radios provide keyboard and
   screen-reader behavior. Reduced-motion users get instant moves.
-- Both controls are visual placeholders for now; they trigger no action.
+- Pressing the button posts the current engine case to `/v1/optimize-ratio` for
+  the selected side. Results stay hidden until a run succeeds, then expand from
+  the button with the same 220ms height motion as the Simulation card. Repeat
+  runs update the panel in place; switching sides collapses it.
+- The panel starts with the optimised side, then a three-column table with the
+  ranked ratios (mono `inf:lan:mar`), the percentage of seeds won (`Win %`) and
+  the mean survivor-rate difference (`Margin`, signed). The ratios stay on the
+  left and the two metrics stay right-aligned; every cell keeps a small inline
+  inset from the row edges. The best row is tinted and the other values stay
+  muted; a short legend explains both columns and that rows are clickable. No
+  separate `Current` line. The run metadata (`256 seeds · 830 ms`) sits centered
+  at the bottom, like the Simulation card.
+- Rows are hairline-separated buttons; clicking one writes the three troop counts
+  to that side's Troop Power inputs and confirms it in the status line. No new
+  colors or shadows.
+- While the request runs the button is disabled and reads `Optimising...`; no
+  progress copy is shown. The small live status line below the toggle reports
+  any API error or confirms an applied ratio, and stays empty during a run.
 
 ### Footer
 
