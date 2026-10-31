@@ -517,10 +517,29 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
+.optimise-ratio-thumb {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-optimise-toggle][data-side="right"] .optimise-ratio-thumb {
+  transform: translateX(100%);
+}
+
+[data-optimise-option] {
+  color: var(--ink-muted);
+  transition: color 150ms ease;
+}
+
+[data-optimise-toggle][data-side="left"] [data-optimise-option="left"],
+[data-optimise-toggle][data-side="right"] [data-optimise-option="right"] {
+  color: var(--invert-fg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .joiners-content,
   .battle-details-content,
   .simulation-result,
+  .optimise-ratio-thumb,
   [data-battle-winrate-left-bar],
   [data-battle-winrate-right-bar] {
     transition: none;
