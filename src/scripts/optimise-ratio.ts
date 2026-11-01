@@ -1,6 +1,8 @@
+import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
 import {
   buildOptimizeCase,
+  createSeedBase,
   engineSide,
   formatSimulationFailure,
   OPTIMIZE_RATIO_SEEDS,
@@ -11,19 +13,11 @@ import {
   type OptimizeRatioResult,
 } from '../lib/simulation'
 
-const DEFAULT_API = 'http://localhost:8000'
-
 class OptimizeRequestError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'OptimizeRequestError'
   }
-}
-
-function resolveApiBase(): string {
-  const query = new URLSearchParams(window.location.search).get('api')
-  const configured = import.meta.env.PUBLIC_SIM_API
-  return (query || configured || DEFAULT_API).replace(/\/+$/, '')
 }
 
 function isLocalApi(base: string): boolean {
@@ -283,7 +277,7 @@ export function initOptimiseRatio(): void {
           case: buildOptimizeCase(state),
           side: engineSide(side),
           seeds: OPTIMIZE_RATIO_SEEDS,
-          seed_base: 'web',
+          seed_base: createSeedBase(),
           step: OPTIMIZE_RATIO_STEP,
           top: 10,
         }),

@@ -139,10 +139,16 @@ export interface OptimizeRatioResult {
   warnings?: string[]
 }
 
-export const SIMULATION_SEEDS = 256
+export const SIMULATION_SEEDS = 1024
 export const OPTIMIZE_RATIO_SEEDS = 256
 export const OPTIMIZE_RATIO_STEP = 5
 export const SKILL_LEVEL = 5
+
+export function createSeedBase(prefix = 'web'): string {
+  const stamp = Date.now().toString(36)
+  const random = Math.random().toString(36).slice(2, 8)
+  return `${prefix}-${stamp}-${random}`
+}
 
 export function engineSide(side: 'left' | 'right'): EngineSideName {
   return side === 'left' ? 'att' : 'def'

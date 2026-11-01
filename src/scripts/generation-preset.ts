@@ -1,12 +1,15 @@
 import {
   dispatchGenerationChange,
-  MAX_GENERATION,
-  MIN_GENERATION,
+  type GenerationPreset,
 } from '../lib/generations'
 
 const COLUMNS = 3
+const OPTION_CLASS =
+  'flex min-h-[3.5rem] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border border-line bg-background px-2 py-2 text-center transition-colors hover:border-line-strong hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
+const LABEL_CLASS = 'font-primary text-p2 font-medium leading-none tabular-nums'
+const META_CLASS = 'font-mono text-[10px] leading-none text-ink-muted'
 
-export function initGenerationPreset(): void {
+export function initGenerationPreset(presets: readonly GenerationPreset[]): void {
   const section = document.querySelector<HTMLElement>('[data-generation-preset]')
   if (!section) return
 
@@ -36,14 +39,41 @@ export function initGenerationPreset(): void {
     }
   }
 
+  function createOption(preset: GenerationPreset): HTMLButtonElement {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = OPTION_CLASS
+    button.dataset['generationOption'] = String(preset.generation)
+    button.dataset['selected'] = 'false'
+    button.setAttribute('aria-pressed', 'false')
+
+    const label = document.createElement('span')
+    label.className = LABEL_CLASS
+    label.textContent = `Gen ${preset.generation}`
+
+    const meta = document.createElement('span')
+    meta.className = META_CLASS
+    meta.textContent = `T${preset.tier} · FC${preset.fc}`
+
+    button.append(label, meta)
+    return button
+  }
+
+  if (presets.length === 0) {
+    const status = document.createElement('p')
+    status.className = 'col-span-3 px-1 py-2 text-micro leading-snug text-ink-muted'
+    status.textContent = 'Generation data unavailable.'
+    optionList.replaceChildren(status)
+    triggerButton.disabled = true
+    triggerButton.setAttribute('aria-label', 'Generation data unavailable')
+    return
+  }
+
+  triggerButton.disabled = false
+  optionList.replaceChildren(...presets.map(createOption))
+
   function selectGeneration(generation: number): void {
-    if (
-      !Number.isInteger(generation) ||
-      generation < MIN_GENERATION ||
-      generation > MAX_GENERATION
-    ) {
-      return
-    }
+    if (!presets.some((preset) => preset.generation === generation)) return
 
     selectedGeneration = generation
     valueElement.textContent = `Gen ${generation}`

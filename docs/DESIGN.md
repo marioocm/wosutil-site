@@ -212,13 +212,15 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   loadout and hides newer heroes.
 - The trigger opens a paper `<dialog>` picker with a dark translucent backdrop,
   a close control and native Escape handling. Options are large buttons in a
-  three-column grid, one per Gen 1–17, showing `Gen N` and its `T·FC`; the
-  current generation is selected. Arrow keys, Home and End move through them.
+  three-column grid, one per generation returned by the API, showing `Gen N`
+  and its `T·FC`; the current generation is selected. Arrow keys, Home and End
+  move through them. Presets come from the engine API; the trigger stays
+  disabled while they load and the options show `Generation data unavailable.`
+  if the request fails.
 - Choosing a generation applies a complete era preset: total troops, tier/FC,
-  the best counter attack lineup on the left, the best worst-case defense
-  lineup on the right, their ratios, and the Stats Bonuses panel. No joiners
-  are preset. The preset overwrites manual values every time the generation
-  changes.
+  the meta counter attack lineup on the left, the meta defense lineup on the
+  right, their ratios, and the Stats Bonuses panel. No joiners are preset. The
+  preset overwrites manual values every time the generation changes.
 - Both hero pickers hide heroes newer than the selected generation; epics stay
   selectable. Joiners from newer generations are cleared.
 
