@@ -1,76 +1,91 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  GENERATIONS,
-  getGenerationLineup,
   getGenerationPreset,
-  MAX_GENERATION,
-  MIN_GENERATION,
+  getGenerationPresets,
+  loadGenerationPresets,
+  parseGenerationPresets,
+  type GenerationPreset,
 } from './generations'
-import { getHeroById, TROOP_TYPES } from './heroes'
 
-describe('GENERATIONS', () => {
-  it('covers every generation from 1 to 17 in order', () => {
-    expect(MIN_GENERATION).toBe(1)
-    expect(MAX_GENERATION).toBe(17)
-    expect(GENERATIONS.map((preset) => preset.generation)).toEqual(
-      Array.from({ length: 17 }, (_, index) => index + 1),
-    )
+function preset(generation: number): GenerationPreset {
+  return {
+    generation,
+    tier: 12,
+    fc: 10,
+    baseStat: 900,
+    totalTroops: 1_800_000,
+    attack: {
+      heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'vulcanus' },
+      ratio: [51, 49, 0],
+    },
+    defense: {
+      heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'cara' },
+      ratio: [43, 13, 44],
+    },
+  }
+}
+
+function payload(generations: unknown[]): unknown {
+  return { generations }
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('parseGenerationPresets', () => {
+  it('sorts the API presets by generation', () => {
+    const parsed = parseGenerationPresets(payload([preset(2), preset(1)]))
+    expect(parsed.map((item) => item.generation)).toEqual([1, 2])
   })
 
-  it('matches the era profile', () => {
-    expect(getGenerationPreset(1)).toMatchObject({
-      tier: 10,
-      fc: 0,
-      baseStat: 200,
-      totalTroops: 800_000,
-    })
-    expect(getGenerationPreset(3)).toMatchObject({
-      tier: 10,
-      fc: 0,
-      baseStat: 300,
-      totalTroops: 1_000_000,
-    })
-    expect(getGenerationPreset(4)).toMatchObject({
-      tier: 10,
-      fc: 5,
-      baseStat: 350,
-      totalTroops: 1_250_000,
-    })
-    expect(getGenerationPreset(5)).toMatchObject({
-      tier: 11,
-      fc: 8,
-      baseStat: 400,
-      totalTroops: 1_300_000,
-    })
-    expect(getGenerationPreset(10)).toMatchObject({
-      tier: 12,
-      fc: 10,
-      baseStat: 650,
-      totalTroops: 1_550_000,
-    })
-    expect(getGenerationPreset(17)).toMatchObject({
-      tier: 12,
-      fc: 10,
-      baseStat: 1000,
-      totalTroops: 1_900_000,
-    })
-  })
-
-  it('uses only heroes available at that generation in both lineups', () => {
-    for (const preset of GENERATIONS) {
-      for (const side of ['left', 'right'] as const) {
-        const lineup = getGenerationLineup(preset, side)
-        const shares = lineup.ratio.reduce((sum, share) => sum + share, 0)
-        expect(shares).toBe(100)
-
-        for (const { id } of TROOP_TYPES) {
-          const hero = getHeroById(lineup.heroes[id])
-          expect(hero).not.toBeNull()
-          expect(hero?.type).toBe(id)
-          expect(hero?.generation).not.toBeNull()
-          expect(hero?.generation ?? 0).toBeLessThanOrEqual(preset.generation)
-        }
-      }
+  it('rejects ratios that do not add up to 100', () => {
+    const base = preset(1)
+    const invalid: GenerationPreset = {
+      ...base,
+      attack: { ...base.attack, ratio: [50, 49, 0] },
     }
+    expect(() => parseGenerationPresets(payload([invalid]))).toThrow(TypeError)
+  })
+
+  it('rejects duplicate generations', () => {
+    expect(() => parseGenerationPresets(payload([preset(1), preset(1)]))).toThrow(TypeError)
+  })
+
+  it('rejects an empty response', () => {
+    expect(() => parseGenerationPresets(payload([]))).toThrow(TypeError)
+  })
+})
+
+describe('loadGenerationPresets', () => {
+  it('fetches the presets and exposes them to the widgets', async () => {
+    const body = payload([preset(1), preset(2)])
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const loaded = await loadGenerationPresets('http://localhost:8000')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/v1/presets',
+      expect.objectContaining({ headers: { Accept: 'application/json' } }),
+    )
+    expect(loaded).toHaveLength(2)
+    expect(getGenerationPresets()).toHaveLength(2)
+    expect(getGenerationPreset(2)?.tier).toBe(12)
+  })
+
+  it('surfaces an API error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('missing', { status: 503 })),
+    )
+    await expect(loadGenerationPresets('http://localhost:8000')).rejects.toThrow(
+      'Preset API error 503',
+    )
   })
 })

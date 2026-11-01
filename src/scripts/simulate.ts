@@ -1,3 +1,4 @@
+import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
 import {
   pruneAttempts,
@@ -20,14 +21,7 @@ import {
   type SimulatorState,
 } from '../lib/simulation'
 
-const DEFAULT_API = 'http://localhost:8000'
 const NUMBER_TWEEN_MS = 260
-
-function resolveApiBase(): string {
-  const query = new URLSearchParams(window.location.search).get('api')
-  const configured = import.meta.env.PUBLIC_SIM_API
-  return (query || configured || DEFAULT_API).replace(/\/+$/, '')
-}
 
 function errorMessage(payload: unknown, status: number): string {
   if (payload && typeof payload === 'object' && 'detail' in payload) {

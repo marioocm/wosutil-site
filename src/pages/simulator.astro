@@ -1,6 +1,5 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
-import { GENERATIONS } from '../lib/generations'
 import { TROOP_TYPES } from '../lib/heroes'
 import { STAT_BONUSES } from '../lib/stat-bonuses'
 import {
@@ -42,8 +41,6 @@ const joinerTileClass =
   'relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-sm border border-line bg-background transition-colors group-hover:border-line-strong group-hover:bg-tint/40 group-active:bg-tint/60'
 const joinerCaptionClass =
   'line-clamp-2 min-h-[1.75rem] w-full break-words text-center text-[10px] leading-tight text-ink-muted sm:min-h-[2rem] sm:text-micro'
-const generationOptionClass =
-  'flex min-h-[3.5rem] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-sm border border-line bg-background px-2 py-2 text-center transition-colors hover:border-line-strong hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 const JOINER_SIDES = [
   { id: 'left', label: 'Left' },
@@ -91,7 +88,8 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
             aria-haspopup="dialog"
             aria-controls="generation-picker"
             aria-label="Choose your current Generation: All Gens"
-            class="group mt-2 flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm border border-line bg-background px-3 py-2 text-left font-primary text-p2 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            disabled
+            class="group mt-2 flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm border border-line bg-background px-3 py-2 text-left font-primary text-p2 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span data-generation-value class="min-w-0 truncate">
               All Gens
@@ -157,24 +155,9 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 data-generation-options
                 class="grid min-h-0 flex-1 grid-cols-3 content-start gap-1.5 overflow-y-auto overscroll-contain p-3"
               >
-                {
-                  GENERATIONS.map((preset) => (
-                    <button
-                      type="button"
-                      class={generationOptionClass}
-                      data-generation-option={preset.generation}
-                      data-selected="false"
-                      aria-pressed="false"
-                    >
-                      <span class="font-primary text-p2 font-medium leading-none tabular-nums">
-                        Gen {preset.generation}
-                      </span>
-                      <span class="font-mono text-[10px] leading-none text-ink-muted">
-                        T{preset.tier} · FC{preset.fc}
-                      </span>
-                    </button>
-                  ))
-                }
+                <p class="col-span-3 px-1 py-2 text-micro leading-snug text-ink-muted">
+                  Loading generations…
+                </p>
               </div>
             </div>
           </dialog>
@@ -1204,6 +1187,8 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
   </main>
 
   <script>
+    import { resolveApiBase } from '../lib/api'
+    import { loadGenerationPresets, type GenerationPreset } from '../lib/generations'
     import { initGenerationPreset } from '../scripts/generation-preset'
     import { initHeroComparison } from '../scripts/hero-comparison'
     import { initJoiners } from '../scripts/joiners'
@@ -1218,6 +1203,21 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     initStatBonuses()
     initSimulation()
     initOptimiseRatio()
-    initGenerationPreset()
+
+    async function loadPresets(): Promise<void> {
+      const controller = new AbortController()
+      const timeout = window.setTimeout(() => controller.abort(), 3000)
+      let presets: readonly GenerationPreset[] = []
+      try {
+        presets = await loadGenerationPresets(resolveApiBase(), controller.signal)
+      } catch (error) {
+        console.error('Failed to load generation presets', error)
+      } finally {
+        window.clearTimeout(timeout)
+      }
+      initGenerationPreset(presets)
+    }
+
+    void loadPresets()
   </script>
 </SiteLayout>

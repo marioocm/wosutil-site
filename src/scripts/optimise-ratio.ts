@@ -1,3 +1,4 @@
+import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
 import {
   buildOptimizeCase,
@@ -12,19 +13,11 @@ import {
   type OptimizeRatioResult,
 } from '../lib/simulation'
 
-const DEFAULT_API = 'http://localhost:8000'
-
 class OptimizeRequestError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'OptimizeRequestError'
   }
-}
-
-function resolveApiBase(): string {
-  const query = new URLSearchParams(window.location.search).get('api')
-  const configured = import.meta.env.PUBLIC_SIM_API
-  return (query || configured || DEFAULT_API).replace(/\/+$/, '')
 }
 
 function isLocalApi(base: string): boolean {
