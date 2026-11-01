@@ -1,6 +1,7 @@
 import { TROOP_TYPES } from '../lib/heroes'
 import {
   buildOptimizeCase,
+  createSeedBase,
   engineSide,
   formatSimulationFailure,
   OPTIMIZE_RATIO_SEEDS,
@@ -283,7 +284,7 @@ export function initOptimiseRatio(): void {
           case: buildOptimizeCase(state),
           side: engineSide(side),
           seeds: OPTIMIZE_RATIO_SEEDS,
-          seed_base: 'web',
+          seed_base: createSeedBase(),
           step: OPTIMIZE_RATIO_STEP,
           top: 10,
         }),

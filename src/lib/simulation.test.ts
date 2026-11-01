@@ -4,6 +4,7 @@ import {
   buildEngineCase,
   buildOptimizeCase,
   buildSkillRows,
+  createSeedBase,
   engineSide,
   formatActivations,
   formatBattleCount,
@@ -87,8 +88,17 @@ describe('buildEngineCase', () => {
   })
 
   it('uses the API seed count', () => {
-    expect(SIMULATION_SEEDS).toBe(256)
+    expect(SIMULATION_SEEDS).toBe(1024)
     expect(OPTIMIZE_RATIO_SEEDS).toBe(256)
+  })
+})
+
+describe('createSeedBase', () => {
+  it('builds a short web-prefixed seed base', () => {
+    const base = createSeedBase()
+    expect(base).toMatch(/^web-[a-z0-9]+-[a-z0-9]+$/)
+    expect(base.length).toBeLessThanOrEqual(64)
+    expect(createSeedBase('test').startsWith('test-')).toBe(true)
   })
 })
 

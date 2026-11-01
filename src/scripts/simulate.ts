@@ -6,6 +6,7 @@ import {
 import {
   buildBattleSkillRows,
   buildEngineCase,
+  createSeedBase,
   formatActivations,
   formatBattleCount,
   formatSimulationFailure,
@@ -342,7 +343,7 @@ export function initSimulation(): void {
         body: JSON.stringify({
           case: buildEngineCase(state),
           seeds: SIMULATION_SEEDS,
-          seed_base: 'web',
+          seed_base: createSeedBase(),
         }),
         signal: controller.signal,
       })
