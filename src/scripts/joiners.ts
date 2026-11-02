@@ -1,9 +1,10 @@
 import { fillHeroVisual } from '../components/hero-visual'
-import { onGenerationChange } from '../lib/generations'
+import { getGenerationLineup, getGenerationPreset, onGenerationChange } from '../lib/generations'
 import {
   filterHeroes,
   formatHeroGeneration,
   getAllHeroes,
+  getHeroById,
   getTroopTypeLabel,
   getTroopTypeShortLabel,
   isHeroAvailable,
@@ -214,13 +215,25 @@ export function initJoiners(): void {
 
   function applyGeneration(generation: number): void {
     maxGeneration = generation
+    const preset = getGenerationPreset(generation)
 
     for (const slot of root.querySelectorAll<HTMLButtonElement>('[data-joiner-slot]')) {
       const side = slot.dataset['joinerSide'] as Side
       const index = Number(slot.dataset['joinerIndex'])
       const key = slotKey(side, index)
       const current = selections.get(key)
-      if (current && !isHeroAvailable(current, generation)) {
+      const presetJoiners = preset ? getGenerationLineup(preset, side).joiners : []
+
+      if (presetJoiners.length > 0 && index <= presetJoiners.length) {
+        const hero = getHeroById(presetJoiners[index - 1] ?? '')
+        if (hero && isHeroAvailable(hero, generation)) {
+          selections.set(key, hero)
+        } else {
+          selections.delete(key)
+        }
+      } else if (presetJoiners.length > 0) {
+        selections.delete(key)
+      } else if (current && !isHeroAvailable(current, generation)) {
         selections.delete(key)
       }
       renderSlot(slot)
