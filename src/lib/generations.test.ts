@@ -17,10 +17,12 @@ function preset(generation: number): GenerationPreset {
     attack: {
       heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'vulcanus' },
       ratio: [51, 49, 0],
+      joiners: ['jessie', 'jasser', 'patrick', 'seo-yoon'],
     },
     defense: {
       heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'cara' },
       ratio: [43, 13, 44],
+      joiners: ['ling-xue', 'lumak-bokan', 'patrick'],
     },
   }
 }
@@ -54,6 +56,37 @@ describe('parseGenerationPresets', () => {
 
   it('rejects an empty response', () => {
     expect(() => parseGenerationPresets(payload([]))).toThrow(TypeError)
+  })
+
+  it('accepts old presets without joiners', () => {
+    const legacy = {
+      generation: 1,
+      tier: 12,
+      fc: 10,
+      baseStat: 900,
+      totalTroops: 1_800_000,
+      attack: {
+        heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'vulcanus' },
+        ratio: [51, 49, 0],
+      },
+      defense: {
+        heroes: { infantry: 'hank', lancer: 'estrella', marksman: 'cara' },
+        ratio: [43, 13, 44],
+      },
+    }
+    expect(parseGenerationPresets(payload([legacy]))[0]?.attack.joiners).toEqual([])
+  })
+
+  it('rejects more than four joiners', () => {
+    const base = preset(1)
+    const invalid = {
+      ...base,
+      attack: {
+        ...base.attack,
+        joiners: ['a', 'b', 'c', 'd', 'e'],
+      },
+    }
+    expect(() => parseGenerationPresets(payload([invalid]))).toThrow(TypeError)
   })
 })
 

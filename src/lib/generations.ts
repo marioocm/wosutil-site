@@ -3,6 +3,7 @@ import type { TroopType } from './heroes'
 export interface GenerationLineup {
   heroes: Record<TroopType, string>
   ratio: readonly [number, number, number]
+  joiners: readonly string[]
 }
 
 export interface GenerationPreset {
@@ -64,6 +65,20 @@ function readLineup(value: unknown, field: string): GenerationLineup {
     return hero
   }
 
+  const rawJoiners = value['joiners']
+  if (rawJoiners !== undefined && !Array.isArray(rawJoiners)) {
+    throw new TypeError(`Invalid generation ${field} joiners`)
+  }
+  const joiners = (rawJoiners ?? []).map((joiner) => {
+    if (typeof joiner !== 'string' || joiner.trim() === '') {
+      throw new TypeError(`Invalid generation ${field} joiner`)
+    }
+    return joiner
+  })
+  if (joiners.length > 4) {
+    throw new TypeError(`Invalid generation ${field} joiner count`)
+  }
+
   return {
     heroes: {
       infantry: readHero('infantry'),
@@ -71,6 +86,7 @@ function readLineup(value: unknown, field: string): GenerationLineup {
       marksman: readHero('marksman'),
     },
     ratio: [shares[0] ?? 0, shares[1] ?? 0, shares[2] ?? 0],
+    joiners,
   }
 }
 
