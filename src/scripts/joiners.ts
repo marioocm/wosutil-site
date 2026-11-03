@@ -31,6 +31,7 @@ export function initJoiners(): void {
 
   const toggle = section.querySelector<HTMLButtonElement>('[data-joiners-toggle]')
   const content = section.querySelector<HTMLElement>('[data-joiners-content]')
+  let setJoinersExpanded: ((next: boolean) => void) | null = null
   if (toggle && content) {
     const icon = toggle.querySelector<SVGElement>('[data-joiners-icon]')
     let expanded = content.dataset['expanded'] === 'true'
@@ -45,6 +46,7 @@ export function initJoiners(): void {
       toggle.title = next ? 'Hide joiners' : 'Show joiners'
       icon?.classList.toggle('rotate-180', next)
     }
+    setJoinersExpanded = setExpanded
     toggle.addEventListener('click', () => setExpanded(!expanded))
     setExpanded(expanded)
   }
@@ -216,6 +218,7 @@ export function initJoiners(): void {
   function applyGeneration(generation: number): void {
     maxGeneration = generation
     const preset = getGenerationPreset(generation)
+    let hasSelection = false
 
     for (const slot of root.querySelectorAll<HTMLButtonElement>('[data-joiner-slot]')) {
       const side = slot.dataset['joinerSide'] as Side
@@ -236,9 +239,11 @@ export function initJoiners(): void {
       } else if (current && !isHeroAvailable(current, generation)) {
         selections.delete(key)
       }
+      if (selections.has(key)) hasSelection = true
       renderSlot(slot)
     }
 
+    if (hasSelection) setJoinersExpanded?.(true)
     if (dialog.open) renderOptions()
   }
 
