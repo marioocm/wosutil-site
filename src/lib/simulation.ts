@@ -139,7 +139,7 @@ export interface OptimizeRatioResult {
   warnings?: string[]
 }
 
-export const SIMULATION_SEEDS = 1024
+export const SIMULATION_SEEDS = 4096
 export const OPTIMIZE_RATIO_SEEDS = 256
 export const OPTIMIZE_RATIO_STEP = 5
 export const SKILL_LEVEL = 5

@@ -88,7 +88,7 @@ describe('buildEngineCase', () => {
   })
 
   it('uses the API seed count', () => {
-    expect(SIMULATION_SEEDS).toBe(1024)
+    expect(SIMULATION_SEEDS).toBe(4096)
     expect(OPTIMIZE_RATIO_SEEDS).toBe(256)
   })
 })
