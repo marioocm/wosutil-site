@@ -10,7 +10,6 @@ export default defineConfig({
   srcDir: 'src-app',
   base: '/',
   outDir: 'dist-app',
-  trailingSlash: 'always',
   vite: {
     plugins: [tailwindcss()],
     server: {
