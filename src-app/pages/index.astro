@@ -1,0 +1,72 @@
+---
+import AppLayout from '../layouts/AppLayout.astro'
+import '../../src/styles/app.css'
+---
+
+<AppLayout title="WoS Util" description="WoS Util desktop automation console.">
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="app-brand">
+        <span class="app-wordmark">WoS Util</span>
+        <span id="connection" class="app-connection" data-state="connecting">Connecting…</span>
+      </div>
+      <label class="app-inline-field">
+        <span>Emulator</span>
+        <select id="emulator" class="app-select" aria-label="Emulator"></select>
+      </label>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="app-card" aria-labelledby="instances-title">
+      <div class="app-card-head">
+        <div>
+          <h1 id="instances-title" class="text-h4">Instances</h1>
+          <p id="tool-status" class="app-muted">Tool stopped</p>
+        </div>
+        <div class="app-actions">
+          <label id="limit-field" class="app-inline-field">
+            <span>Emulators</span>
+            <input id="limit" class="app-input app-input--number" type="number" min="1" max="20" step="1" />
+          </label>
+          <button id="refresh" class="app-button" type="button">Refresh</button>
+          <button id="start" class="app-button app-button--primary" type="button">Start tool</button>
+          <button id="stop" class="app-button app-button--outline hidden" type="button">Stop tool</button>
+        </div>
+      </div>
+
+      <ul id="instances" class="app-list" aria-label="Emulator instances"></ul>
+      <p id="empty" class="app-empty hidden">No emulator instances detected.</p>
+    </section>
+
+    <section class="app-card" aria-labelledby="log-title">
+      <div class="app-card-head">
+        <h2 id="log-title" class="text-p1 font-medium tracking-[-0.01em]">Log</h2>
+      </div>
+      <div id="log" class="app-log" role="log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <dialog id="dialog" class="app-dialog">
+    <h2 id="dialog-title" class="text-p1 font-medium"></h2>
+    <p id="dialog-text" class="app-dialog-text"></p>
+    <form method="dialog" class="app-dialog-actions">
+      <button class="app-button app-button--primary" type="submit">OK</button>
+    </form>
+  </dialog>
+
+  <template id="instance-template">
+    <li class="app-row">
+      <input class="app-check" type="checkbox" />
+      <span class="app-row-name"></span>
+      <select class="app-select app-row-profile" aria-label="Profile"></select>
+      <span class="app-row-status"></span>
+    </li>
+  </template>
+
+  <script>
+    import { initApp } from '../../src/scripts/app'
+
+    initApp()
+  </script>
+</AppLayout>

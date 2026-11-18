@@ -1,0 +1,42 @@
+---
+import { fontCss, primaryFontUrl } from '../../src/layouts/fonts'
+import '../../src/styles/global.css'
+
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#151311" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href={primaryFontUrl} as="font" type="font/woff2" crossorigin />
+    <style is:inline set:html={fontCss}></style>
+    <title>{title}</title>
+    <meta name="robots" content="noindex" />
+    <script is:inline>
+      ;(() => {
+        try {
+          const dark = localStorage.getItem('wosutil:theme') !== 'light'
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch {
+          // Storage unavailable: keep the dark default.
+          document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = 'dark'
+        }
+      })()
+    </script>
+  </head>
+  <body class="font-primary bg-background text-ink antialiased">
+    <slot />
+  </body>
+</html>

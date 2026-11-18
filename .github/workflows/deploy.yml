@@ -32,6 +32,8 @@ jobs:
       - run: pnpm build
         env:
           PUBLIC_SIM_API: ${{ vars.PUBLIC_SIM_API }}
+      - run: pnpm build:app
+      - run: pnpm package:ui
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

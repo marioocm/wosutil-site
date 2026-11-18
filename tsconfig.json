@@ -6,6 +6,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": [".astro/types.d.ts", "src/**/*", "astro.config.ts"],
+  "include": [".astro/types.d.ts", "src/**/*", "src-app/**/*", "astro.config.ts", "astro.app.config.ts"],
   "exclude": ["dist"]
 }

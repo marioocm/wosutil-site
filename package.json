@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:app": "astro build --config astro.app.config.ts",
+    "package:ui": "node scripts/package-ui.mjs",
     "preview": "astro preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

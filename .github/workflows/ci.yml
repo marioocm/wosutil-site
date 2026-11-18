@@ -21,3 +21,5 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm build:app
+      - run: pnpm package:ui
