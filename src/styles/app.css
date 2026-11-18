@@ -1,0 +1,320 @@
+/* Desktop shell classes. Tokens come from styles/theme.css. */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 1040px;
+  height: 56px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.app-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.app-wordmark {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.app-connection {
+  font-size: var(--text-micro);
+  color: var(--ink-subtle);
+}
+
+.app-connection[data-state='live'] {
+  color: var(--ink-muted);
+}
+
+.app-connection[data-state='error'] {
+  color: var(--ink-muted);
+}
+
+.app-main {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  padding: 20px;
+}
+
+.app-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-muted {
+  margin-top: 4px;
+  font-size: var(--text-p3);
+  color: var(--ink-muted);
+}
+
+.app-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-micro);
+  color: var(--ink-muted);
+}
+
+.app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-button);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.app-button:hover {
+  background: var(--tint);
+}
+
+.app-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.app-button:active {
+  background: transparent;
+  opacity: 0.7;
+}
+
+.app-button:disabled {
+  border-color: var(--line);
+  color: var(--ink-muted);
+  cursor: default;
+  opacity: 0.4;
+}
+
+.app-button--primary {
+  border-color: var(--invert);
+  background: var(--invert);
+  color: var(--invert-fg);
+}
+
+.app-button--primary:hover {
+  background: var(--invert);
+  opacity: 0.85;
+}
+
+.app-button--primary:active {
+  background: var(--invert);
+  opacity: 0.7;
+}
+
+.app-input,
+.app-select {
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-p3);
+}
+
+.app-input {
+  padding: 0 10px;
+  text-align: center;
+}
+
+.app-input--number {
+  width: 4rem;
+}
+
+.app-select {
+  padding: 0 8px;
+  font-family: var(--font-primary);
+}
+
+.app-input:focus,
+.app-select:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+.app-select:disabled,
+.app-input:disabled {
+  opacity: 0.4;
+}
+
+.app-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.app-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.app-row:hover {
+  border-color: var(--line-strong);
+  background: var(--tint);
+}
+
+.app-check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.app-check:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.app-row-name {
+  font-size: var(--text-p3);
+}
+
+.app-row-profile {
+  width: 12rem;
+}
+
+.app-row-status {
+  margin-left: auto;
+  font-size: var(--text-micro);
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.app-empty {
+  margin-top: 16px;
+  font-size: var(--text-p3);
+  color: var(--ink-subtle);
+}
+
+.app-log {
+  max-height: 18rem;
+  margin-top: 12px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.app-log-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-log-time {
+  color: var(--ink-subtle);
+}
+
+.app-log-level {
+  color: var(--ink-subtle);
+}
+
+.app-dialog {
+  width: calc(100% - 2rem);
+  max-width: 30rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 20px;
+}
+
+.app-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.app-dialog-text {
+  margin-top: 10px;
+  font-size: var(--text-p3);
+  color: var(--ink-muted);
+  white-space: pre-wrap;
+}
+
+.app-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+@media (max-width: 639px) {
+  .app-header-inner {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .app-main {
+    padding: 16px;
+  }
+
+  .app-row {
+    flex-wrap: wrap;
+  }
+
+  .app-row-status {
+    width: 100%;
+    margin-left: 0;
+    text-align: left;
+  }
+}

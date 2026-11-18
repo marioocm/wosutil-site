@@ -8,9 +8,12 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - `src/layouts/` — `BaseLayout.astro` (document shell, SEO/OG, fonts, theme init, optional countdown head script) and `SiteLayout.astro` (static header/footer chrome and the `#app` wrapper).
 - `src/components/` — static header/footer, the vanilla-TS countdown widgets and the shared hero visual helper.
 - `src/pages/` — `countdown.astro`, `simulator.astro`, redirecting `404.astro` and generated `robots.txt`.
-- `src/scripts/` — page-scoped browser behavior: countdown island, site chrome, hero/joiner pickers, generation preset, troop power, stats and simulation results.
+- `src-app/` — desktop shell build (Astro `srcDir`): `pages/index.astro`, served locally by WosUtil.
+- `src/scripts/` — page-scoped browser behavior: countdown island, site chrome, hero/joiner pickers, generation preset, troop power, stats, simulation results and the desktop shell client (`app.ts`).
 - `src/lib/` — shared logic, types and Vitest tests. Key modules: countdown/rally helpers, hero data and stats, API-backed generations, troop-power and stat math, simulation case builder/formatter, rate limit, redirect/nav/theme, shared API base resolution.
-- `src/styles/` — Tailwind entry (`global.css`) and design tokens (`theme.css`).
+- `src/styles/` — Tailwind entry (`global.css`), desktop shell classes (`app.css`) and design tokens (`theme.css`).
+- `scripts/package-ui.mjs` — copies the desktop shell build into `dist/ui/` and writes its hashed `manifest.json`.
+- `astro.app.config.ts` — desktop shell build (`base: '/'`, output `dist-app/`), separate from the public site build.
 - `docs/DESIGN.md` — design system source of truth for layout, color, typography, components and motion. **Read it before touching UI.**
 - `public/.nojekyll` — required so GitHub Pages serves Astro's `_astro/` assets; `public/favicon.svg`.
 - `.github/workflows/` — `ci.yml` (typecheck, tests and build on pushes/PRs) and `deploy.yml` (build and Pages deploy on `main`).
@@ -30,6 +33,7 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - Tailwind v4 is CSS-first (`@theme` in `src/styles/theme.css`, no `tailwind.config.js`). Named spacing tokens collide with size utilities: `max-w-md` resolves to 12px, so use arbitrary values (e.g. `max-w-[34rem]`).
 - Fonts are self-hosted Fontsource files with custom `@font-face` in `BaseLayout.astro` (`font-display: optional`; primary latin subset preloaded). Do not add Google Fonts, proprietary fonts or copied Suisse Int'l (commercial license).
 - `pnpm typecheck` is `tsc --noEmit`, not `astro check`: Astro 7's checker currently refuses TypeScript 7. Keep `.astro` templates thin and let `pnpm build` validate them.
+- The desktop shell (`src-app/pages/index.astro`) is built with `astro.app.config.ts` (`srcDir: 'src-app'`, base `/`, output `dist-app/`) because WosUtil serves it from its own local root, not from the Pages base. `scripts/package-ui.mjs` copies it to `dist/ui/` with a hashed `manifest.json`; that folder is the versioned UI artifact consumed by the WosUtil desktop client. Bump `apiVersion` in the manifest only for breaking API changes, together with `wosutil.ui.contract.API_VERSION` in the WosUtil repo.
 - SEO: per-page title/description, canonical + Open Graph in `BaseLayout.astro`, sitemap, generated `robots.txt`, and `noindex` on redirect/404 pages.
 
 ## Commands
@@ -38,9 +42,10 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - Typecheck: `pnpm typecheck`
 - Tests: `pnpm test` (watch: `pnpm test:watch`)
 - Build: `pnpm build` (output `dist/`; preview: `pnpm preview`)
+- Desktop shell: `pnpm build:app` (output `dist-app/`) and `pnpm package:ui` (output `dist/ui/`)
 
 ## Definition of done
-`pnpm typecheck`, `pnpm test` and `pnpm build` must pass locally, and `dist/` must be sanity-checked (root redirect, 404 redirect, both pages render, nav/theme/timer/share work).
+`pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm build:app` and `pnpm package:ui` must pass locally, and `dist/` must be sanity-checked (root redirect, 404 redirect, both pages render, nav/theme/timer/share work).
 
 ## Git workflow
 GitHub Flow: `main` is always deployable; all work happens on short-lived branches merged via Pull Requests (squash merge, branch deleted after merge).
