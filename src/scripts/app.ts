@@ -101,10 +101,10 @@ function renderEmulator(snapshot: Snapshot): void {
 
 function renderToolbar(snapshot: Snapshot): void {
   el('tool-status').textContent = snapshot.tool_running ? 'Tool running' : 'Tool stopped'
-  el('start').classList.toggle('hidden', snapshot.tool_running)
-  el('stop').classList.toggle('hidden', !snapshot.tool_running)
-  el('refresh').classList.toggle('hidden', snapshot.tool_running)
-  el('limit-field').classList.toggle('hidden', snapshot.tool_running)
+  el('start').hidden = snapshot.tool_running
+  el('stop').hidden = !snapshot.tool_running
+  el('refresh').hidden = snapshot.tool_running
+  el('limit-field').hidden = snapshot.tool_running
   const limit = el<HTMLInputElement>('limit')
   if (document.activeElement !== limit) limit.value = String(snapshot.max_instances)
 }
@@ -149,8 +149,8 @@ function buildRows(snapshot: Snapshot): void {
     rowNodes.set(instance.index, { checkbox, profile, status })
   }
 
-  list.classList.toggle('hidden', snapshot.instances.length === 0)
-  el('empty').classList.toggle('hidden', snapshot.instances.length > 0)
+  list.hidden = snapshot.instances.length === 0
+  el('empty').hidden = snapshot.instances.length > 0
 }
 
 function renderRows(snapshot: Snapshot): void {
