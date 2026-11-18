@@ -34,11 +34,13 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - Fonts are self-hosted Fontsource files with custom `@font-face` in `BaseLayout.astro` (`font-display: optional`; primary latin subset preloaded). Do not add Google Fonts, proprietary fonts or copied Suisse Int'l (commercial license).
 - `pnpm typecheck` is `tsc --noEmit`, not `astro check`: Astro 7's checker currently refuses TypeScript 7. Keep `.astro` templates thin and let `pnpm build` validate them.
 - The desktop shell (`src-app/pages/index.astro`) is built with `astro.app.config.ts` (`srcDir: 'src-app'`, base `/`, output `dist-app/`) because WosUtil serves it from its own local root, not from the Pages base. `scripts/package-ui.mjs` copies it to `dist/ui/` with a hashed `manifest.json`; that folder is the versioned UI artifact consumed by the WosUtil desktop client. Bump `apiVersion` in the manifest only for breaking API changes, together with `wosutil.ui.contract.API_VERSION` in the WosUtil repo.
+- Shell development: run the WosUtil API with `WOSUTIL_UI_NO_WINDOW=1 WOSUTIL_UI_PORT=8765 WOSUTIL_UI_TOKEN=dev` (PowerShell: `$env:...`), then `pnpm dev:app` and open `http://localhost:4321/?t=dev`. The Vite proxy forwards `/api` (including SSE) to the Python server and edits hot-reload. Set `WOSUTIL_UI_URL=http://localhost:4321/?t=dev` to show that dev URL in the Edge app window instead of a normal browser tab.
 - SEO: per-page title/description, canonical + Open Graph in `BaseLayout.astro`, sitemap, generated `robots.txt`, and `noindex` on redirect/404 pages.
 
 ## Commands
 - Install: `pnpm install`
 - Dev server: `pnpm dev`
+- Desktop shell dev server: `pnpm dev:app` (proxies `/api` to `127.0.0.1:8765`; override with `WOSUTIL_API`)
 - Typecheck: `pnpm typecheck`
 - Tests: `pnpm test` (watch: `pnpm test:watch`)
 - Build: `pnpm build` (output `dist/`; preview: `pnpm preview`)
