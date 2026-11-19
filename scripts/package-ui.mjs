@@ -27,6 +27,7 @@ await rm(outDir, { recursive: true, force: true })
 await mkdir(outDir, { recursive: true })
 
 await cp(entryFile, join(outDir, 'index.html'))
+await cp(join(appDir, 'templates'), join(outDir, 'templates'), { recursive: true })
 await cp(join(appDir, '_astro'), join(outDir, '_astro'), { recursive: true })
 if (existsSync(join(appDir, 'favicon.svg'))) {
   await cp(join(appDir, 'favicon.svg'), join(outDir, 'favicon.svg'))
