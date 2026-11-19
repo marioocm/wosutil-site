@@ -2,6 +2,7 @@
 import SiteLayout from '../layouts/SiteLayout.astro'
 import { TROOP_TYPES } from '../lib/heroes'
 import { STAT_BONUSES } from '../lib/stat-bonuses'
+import { CITY_PRESETS } from '../lib/stat-buffs'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_RATIO,
@@ -177,6 +178,18 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
         >
           Hero Comparison
         </h2>
+        <label
+          class="mt-2 flex cursor-pointer items-center justify-center gap-2 text-micro text-ink-muted"
+          title="Apply the hero's stat difference to that class when you change heroes."
+        >
+          <input
+            type="checkbox"
+            data-sync-hero-stats
+            checked
+            class="size-3.5 cursor-pointer accent-invert"
+          />
+          Sync hero stats
+        </label>
 
         <div class="mt-4 flex flex-col">
           {
@@ -739,6 +752,9 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
         <h2 id="stat-bonuses-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
           Stats Bonuses
         </h2>
+        <p class="mt-1 text-center text-micro leading-snug text-ink-muted">
+          Effective stats: base + heroes + city/pets/Gareth + widgets.
+        </p>
 
         <table
           class="mt-4 w-full table-fixed border-collapse"
@@ -828,6 +844,87 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
         </table>
 
         <p id="stat-bonuses-summary" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+      </section>
+
+      <section
+        class="w-full rounded-card border border-line bg-paper p-5"
+        aria-labelledby="modifiers-title"
+        data-modifiers
+      >
+        <h2 id="modifiers-title" class="text-center text-p1 font-medium tracking-[-0.01em]">
+          Buffs
+        </h2>
+        <p class="mt-1 text-center text-micro leading-snug text-ink-muted">
+          City, pets and Gareth update the effective stats above; widgets apply too.
+        </p>
+
+        <div class="mt-4 grid grid-cols-2 gap-4">
+          {
+            TROOP_POWER_SIDES.map((side) => (
+              <div
+                class="flex min-w-0 flex-col gap-2"
+                role="group"
+                aria-label={`${side.label} side buffs`}
+                data-modifiers-side={side.id}
+                data-city="0"
+                data-pets="false"
+                data-gareth="0"
+              >
+                <h3 class="text-center text-p3 font-medium">{side.label}</h3>
+
+                <div>
+                  <span class="block text-[10px] font-medium text-ink-muted">City</span>
+                  <div class="mt-1 grid grid-cols-3 gap-1">
+                    {CITY_PRESETS.map((preset) => (
+                      <button
+                        type="button"
+                        data-city-preset={preset}
+                        data-active={preset === 0 ? 'true' : 'false'}
+                        aria-pressed={preset === 0 ? 'true' : 'false'}
+                        aria-label={`${side.label} city buffs ${preset}%`}
+                        class="min-h-[2rem] cursor-pointer rounded-sm border border-line bg-background px-1 font-mono text-[10px] tabular-nums text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                      >
+                        {preset === 0 ? 'Off' : `${preset}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label class="flex cursor-pointer items-center justify-between gap-2 text-[10px] font-medium text-ink-muted">
+                  <span>Pets (max)</span>
+                  <input
+                    type="checkbox"
+                    data-pets-toggle
+                    class="size-3.5 cursor-pointer accent-invert"
+                    aria-label={`${side.label} pet buffs`}
+                  />
+                </label>
+
+                <label class="flex items-center justify-between gap-2 text-[10px] font-medium text-ink-muted">
+                  <span title="Enemy lethality down">Gareth</span>
+                  <input
+                    type="number"
+                    data-gareth
+                    min="0"
+                    max="5"
+                    step="0.25"
+                    value="0"
+                    inputmode="decimal"
+                    aria-label={`${side.label} Gareth enemy lethality down`}
+                    class="w-14 rounded-xs border border-line bg-background px-1 py-0.5 text-right font-mono text-[10px] tabular-nums text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+                  />
+                </label>
+
+                <p data-modifier-summary class="text-center text-[10px] leading-snug text-ink-subtle">
+                  City off · Pets off
+                </p>
+                <p data-widget-summary class="text-center text-[10px] leading-snug text-ink-subtle">
+                  Widgets: none
+                </p>
+              </div>
+            ))
+          }
+        </div>
       </section>
       </div>
 
@@ -1192,6 +1289,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     import { initGenerationPreset } from '../scripts/generation-preset'
     import { initHeroComparison } from '../scripts/hero-comparison'
     import { initJoiners } from '../scripts/joiners'
+    import { initModifierControls } from '../lib/modifier-controls'
     import { initOptimiseRatio } from '../scripts/optimise-ratio'
     import { initSimulation } from '../scripts/simulate'
     import { initStatBonuses } from '../scripts/stat-bonuses'
@@ -1200,6 +1298,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     initHeroComparison()
     initJoiners()
     initTroopPower()
+    initModifierControls()
     initStatBonuses()
     initSimulation()
     initOptimiseRatio()

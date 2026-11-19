@@ -1,15 +1,23 @@
 import type { TroopType } from './heroes'
+import { normalizeBuffs, type SideBuffs } from './stat-buffs'
 
 export interface GenerationLineup {
   heroes: Record<TroopType, string>
   ratio: readonly [number, number, number]
   joiners: readonly string[]
+  /** Raw panel (base + hero stats + gear + always-on), before buffs/widgets. */
+  rawStats?: Record<TroopType, readonly number[]>
+  /** Effective panel with the preset's max city/pets/Gareth/widgets applied. */
+  stats?: Record<TroopType, readonly number[]>
+  /** Buffs the preset assumes (city 20, pets max, Gareth 5). */
+  modifiers?: SideBuffs
 }
 
 export interface GenerationPreset {
   generation: number
   tier: number
   fc: number
+  t12Skills: number
   baseStat: number
   totalTroops: number
   attack: GenerationLineup
@@ -41,6 +49,32 @@ function readInteger(value: unknown, field: string, minimum: number): number {
     throw new TypeError(`Invalid generation ${field}`)
   }
   return number
+}
+
+function readStatPanel(
+  value: unknown,
+  field: string,
+): Record<TroopType, readonly number[]> | undefined {
+  if (value === undefined) return undefined
+  if (!isRecord(value)) throw new TypeError(`Invalid generation ${field}`)
+  const read = (type: TroopType): readonly number[] => {
+    const stats = value[type]
+    if (!Array.isArray(stats) || stats.length < 4) {
+      throw new TypeError(`Invalid generation ${field} ${type}`)
+    }
+    return stats.slice(0, 4).map((stat) => readNumber(stat, `${field} ${type}`))
+  }
+  return {
+    infantry: read('infantry'),
+    lancer: read('lancer'),
+    marksman: read('marksman'),
+  }
+}
+
+function readModifiers(value: unknown, field: string): SideBuffs | undefined {
+  if (value === undefined) return undefined
+  if (!isRecord(value)) throw new TypeError(`Invalid generation ${field}`)
+  return normalizeBuffs(value as Partial<SideBuffs>)
 }
 
 function readLineup(value: unknown, field: string): GenerationLineup {
@@ -87,6 +121,9 @@ function readLineup(value: unknown, field: string): GenerationLineup {
     },
     ratio: [shares[0] ?? 0, shares[1] ?? 0, shares[2] ?? 0],
     joiners,
+    rawStats: readStatPanel(value['rawStats'], `${field} rawStats`),
+    stats: readStatPanel(value['stats'], `${field} stats`),
+    modifiers: readModifiers(value['modifiers'], `${field} modifiers`),
   }
 }
 
@@ -96,6 +133,10 @@ function readPreset(value: unknown): GenerationPreset {
     generation: readInteger(value['generation'], 'generation', 1),
     tier: readInteger(value['tier'], 'tier', 1),
     fc: readInteger(value['fc'], 'fc', 0),
+    t12Skills:
+      value['t12Skills'] === undefined
+        ? 0
+        : Math.min(readInteger(value['t12Skills'], 't12Skills', 0), 24),
     baseStat: readNumber(value['baseStat'], 'baseStat'),
     totalTroops: readNumber(value['totalTroops'], 'totalTroops'),
     attack: readLineup(value['attack'], 'attack'),

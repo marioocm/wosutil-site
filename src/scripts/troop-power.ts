@@ -603,7 +603,7 @@ export function initTroopPower(): void {
     for (const loadout of loadouts.values()) {
       loadout.tier = preset.tier
       loadout.fc = preset.fc
-      loadout.t12 = 0
+      loadout.t12 = preset.t12Skills
       renderLoadout(loadout)
     }
   })

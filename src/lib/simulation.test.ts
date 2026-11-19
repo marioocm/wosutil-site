@@ -66,8 +66,8 @@ describe('buildEngineCase', () => {
     })
     expect(engine.attacker.stats).toEqual({
       inf: [100, 12.5, -100, 0],
-      lanc: [0, 0, 0, 4.25],
-      mark: [0, 0, 0, 0],
+      lanc: [0, 0, 15, 4.25],
+      mark: [0, 0, 15, 0],
     })
     expect(engine.attacker.t12).toEqual({
       infantry: 24,
@@ -85,6 +85,48 @@ describe('buildEngineCase', () => {
     expect(engine.defender.joiner_heroes).toEqual([])
     expect(engine.defender.troops.lancer).toBeUndefined()
     expect(engine.defender.troops.marksman).toBeUndefined()
+  })
+
+  it('applies city, pets and Gareth to the effective stats', () => {
+    const base = state()
+    const maxBuffs = {
+      city: {
+        attack: 20,
+        defense: 20,
+        lethality: 20,
+        health: 20,
+        enemy_attack: 20,
+        enemy_defense: 20,
+      },
+      pets: {
+        attack: 10,
+        defense: 10,
+        lethality: 10,
+        health: 10,
+        enemy_defense: 10,
+        enemy_lethality: 5,
+        enemy_health: 5,
+      },
+      gareth: 5,
+    }
+    const engine = buildEngineCase({
+      left: {
+        ...base.left,
+        heroes: {},
+        stats: {
+          'infantry-attack': 100,
+          'infantry-defense': 100,
+          'infantry-lethality': 100,
+          'infantry-health': 100,
+        },
+        modifiers: maxBuffs,
+      },
+      right: { ...base.right, heroes: {}, stats: {}, modifiers: maxBuffs },
+    })
+    expect(engine.attacker.stats.inf[0]).toBeCloseTo(116.666667, 5)
+    expect(engine.attacker.stats.inf[1]).toBeCloseTo(100, 5)
+    expect(engine.attacker.stats.inf[2]).toBeCloseTo(136.363636, 5)
+    expect(engine.attacker.stats.inf[3]).toBeCloseTo(147.619048, 5)
   })
 
   it('uses the API seed count', () => {

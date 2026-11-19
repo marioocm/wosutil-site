@@ -13,7 +13,32 @@ export interface HeroStatContribution {
 
 export type SideStatPanel = Record<TroopType, Record<CombatStat, number>>
 
+export type WidgetCounts = Record<CombatStat, number>
+
+export interface ComposeSideStatsOptions {
+  /** Multiply the final panel by the side's S4 widgets (+15% per widget). */
+  widgets?: boolean
+  /** Add max hero gear (+200 ATK/DEF, +600 LETH/HP) to every class. */
+  gear?: boolean
+  /** Add the always-on Jeronimo/Natalia buffs (+10 ATK/DEF, +15 LETH/HP). */
+  alwaysOn?: boolean
+}
+
 export const WIDGET_BONUS = 0.15
+
+export const HERO_GEAR_BUFFS: Readonly<Record<CombatStat, number>> = {
+  attack: 200,
+  defense: 200,
+  lethality: 600,
+  health: 600,
+}
+
+export const ALWAYS_ACTIVE_BUFFS: Readonly<Record<CombatStat, number>> = {
+  attack: 10,
+  defense: 10,
+  lethality: 15,
+  health: 15,
+}
 
 export const COMBAT_STATS: readonly CombatStat[] = [
   'attack',
@@ -85,19 +110,31 @@ function emptyPanel(base: number): SideStatPanel {
   }
 }
 
+export function heroWidgetCounts(
+  heroes: readonly Hero[],
+  side: 'left' | 'right',
+): WidgetCounts {
+  const widgetSide: WidgetSide = side === 'left' ? 'att' : 'def'
+  const widgets: WidgetCounts = { attack: 0, defense: 0, lethality: 0, health: 0 }
+  for (const hero of heroes) {
+    const contribution = HERO_STAT_CONTRIBUTIONS[hero.id]
+    if (contribution && contribution.widgetSide === widgetSide) {
+      widgets[contribution.widgetStat] += 1
+    }
+  }
+  return widgets
+}
+
 export function composeSideStats(
   base: number,
   heroes: readonly Hero[],
   side: 'left' | 'right',
+  options: ComposeSideStatsOptions = {},
 ): SideStatPanel {
+  const { widgets: applyWidgets = true } = options
   const panel = emptyPanel(base)
   const widgetSide: WidgetSide = side === 'left' ? 'att' : 'def'
-  const widgets: Record<CombatStat, number> = {
-    attack: 0,
-    defense: 0,
-    lethality: 0,
-    health: 0,
-  }
+  const widgets: WidgetCounts = { attack: 0, defense: 0, lethality: 0, health: 0 }
 
   for (const hero of heroes) {
     const contribution = HERO_STAT_CONTRIBUTIONS[hero.id]
@@ -114,12 +151,25 @@ export function composeSideStats(
     }
   }
 
-  for (const stat of COMBAT_STATS) {
-    const count = widgets[stat]
-    if (count === 0) continue
-    const factor = 1 + WIDGET_BONUS * count
+  if (options.gear ?? false) {
     for (const type of ['infantry', 'lancer', 'marksman'] as const) {
-      panel[type][stat] *= factor
+      for (const stat of COMBAT_STATS) panel[type][stat] += HERO_GEAR_BUFFS[stat]
+    }
+  }
+  if (options.alwaysOn ?? false) {
+    for (const type of ['infantry', 'lancer', 'marksman'] as const) {
+      for (const stat of COMBAT_STATS) panel[type][stat] += ALWAYS_ACTIVE_BUFFS[stat]
+    }
+  }
+
+  if (applyWidgets) {
+    for (const stat of COMBAT_STATS) {
+      const count = widgets[stat]
+      if (count === 0) continue
+      const factor = 1 + WIDGET_BONUS * count
+      for (const type of ['infantry', 'lancer', 'marksman'] as const) {
+        panel[type][stat] *= factor
+      }
     }
   }
 

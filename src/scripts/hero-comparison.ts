@@ -13,6 +13,7 @@ import {
   type Hero,
   type TroopType,
 } from '../lib/heroes'
+import { dispatchHeroChange } from '../lib/hero-events'
 
 type Side = 'left' | 'right'
 
@@ -134,18 +135,22 @@ export function initHeroComparison(): void {
     if (!activeSlot) return
     const type = activeSlot.dataset['heroType'] as TroopType
     const side = activeSlot.dataset['heroSide'] as Side
+    const previous = selections.get(slotKey(type, side)) ?? null
     selections.set(slotKey(type, side), hero)
     renderSlot(activeSlot)
     closePicker()
+    dispatchHeroChange({ side, type, previousId: previous?.id ?? null, heroId: hero.id })
   }
 
   function clearSelection(): void {
     if (!activeSlot) return
     const type = activeSlot.dataset['heroType'] as TroopType
     const side = activeSlot.dataset['heroSide'] as Side
+    const previous = selections.get(slotKey(type, side)) ?? null
     selections.delete(slotKey(type, side))
     renderSlot(activeSlot)
     closePicker()
+    dispatchHeroChange({ side, type, previousId: previous?.id ?? null, heroId: null })
   }
 
   function applyGeneration(generation: number): void {

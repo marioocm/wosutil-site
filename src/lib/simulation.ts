@@ -1,6 +1,9 @@
 import { HERO_SKILLS } from './hero-skills'
-import { getHeroByName, TROOP_TYPES, type TroopType } from './heroes'
+import { getHeroByName, TROOP_TYPES, type Hero, type TroopType } from './heroes'
 import { STAT_BONUSES } from './stat-bonuses'
+import { readModifierControls } from './modifier-controls'
+import { composeEffectiveStats, emptyBuffs, type SideBuffs } from './stat-buffs'
+import { heroWidgetCounts, type SideStatPanel } from './hero-stats'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_T12_SKILL,
@@ -21,6 +24,7 @@ export interface SimulatorSideState {
   joiners: (string | null)[]
   troops: Record<TroopType, TroopLoadout>
   stats: Record<string, number>
+  modifiers?: SideBuffs
 }
 
 export interface SimulatorState {
@@ -176,6 +180,15 @@ function parsePercent(raw: string | null | undefined): number {
   return Number.isFinite(value) ? Math.max(value, -100) : 0
 }
 
+function parseStatInput(input: HTMLInputElement | null | undefined): number {
+  const raw = input?.dataset['rawValue']
+  if (raw !== undefined && raw !== '') {
+    const value = Number(raw)
+    return Number.isFinite(value) ? Math.max(value, -100) : 0
+  }
+  return parsePercent(input?.value)
+}
+
 function readSide(root: ParentNode, side: SimulatorSide): SimulatorSideState {
   const heroes: Partial<Record<TroopType, string>> = {}
   for (const { id } of TROOP_TYPES) {
@@ -220,12 +233,12 @@ function readSide(root: ParentNode, side: SimulatorSide): SimulatorSideState {
 
   const stats: Record<string, number> = {}
   for (const stat of STAT_BONUSES) {
-    stats[stat.id] = parsePercent(
-      root.querySelector<HTMLInputElement>(`#stat-${stat.id}-${side}`)?.value,
+    stats[stat.id] = parseStatInput(
+      root.querySelector<HTMLInputElement>(`#stat-${stat.id}-${side}`),
     )
   }
 
-  return { heroes, joiners, troops, stats }
+  return { heroes, joiners, troops, stats, modifiers: readModifierControls(root, side) }
 }
 
 export function readSimulatorState(root: ParentNode = document): SimulatorState {
@@ -250,8 +263,60 @@ function statRow(side: SimulatorSideState, type: TroopType): number[] {
   })
 }
 
+function rawPanel(side: SimulatorSideState): SideStatPanel {
+  const [infantry, lancer, marksman] = TROOP_TYPES.map(({ id }) => statRow(side, id))
+  return {
+    infantry: {
+      attack: infantry?.[0] ?? 0,
+      defense: infantry?.[1] ?? 0,
+      lethality: infantry?.[2] ?? 0,
+      health: infantry?.[3] ?? 0,
+    },
+    lancer: {
+      attack: lancer?.[0] ?? 0,
+      defense: lancer?.[1] ?? 0,
+      lethality: lancer?.[2] ?? 0,
+      health: lancer?.[3] ?? 0,
+    },
+    marksman: {
+      attack: marksman?.[0] ?? 0,
+      defense: marksman?.[1] ?? 0,
+      lethality: marksman?.[2] ?? 0,
+      health: marksman?.[3] ?? 0,
+    },
+  }
+}
+
+function heroObjects(side: SimulatorSideState): Hero[] {
+  return TROOP_TYPES.flatMap(({ id }) => {
+    const name = side.heroes[id]
+    const hero = name ? getHeroByName(name) : null
+    return hero ? [hero] : []
+  })
+}
+
+function effectiveStats(
+  side: SimulatorSideState,
+  foe: SimulatorSideState,
+  sideKey: EngineSideName,
+): EngineSide['stats'] {
+  const effective = composeEffectiveStats(
+    rawPanel(side),
+    side.modifiers ?? emptyBuffs(),
+    foe.modifiers ?? emptyBuffs(),
+    heroWidgetCounts(heroObjects(side), sideKey === 'att' ? 'left' : 'right'),
+  )
+  return {
+    inf: STAT_NAMES.map((name) => effective.infantry[name]),
+    lanc: STAT_NAMES.map((name) => effective.lancer[name]),
+    mark: STAT_NAMES.map((name) => effective.marksman[name]),
+  }
+}
+
 function buildSide(
   side: SimulatorSideState,
+  foe: SimulatorSideState,
+  sideKey: EngineSideName,
   name: string,
   includeEmpty = false,
 ): EngineSide {
@@ -274,11 +339,7 @@ function buildSide(
     heroes,
     joiner_heroes: joiners,
     troops,
-    stats: {
-      inf: statRow(side, 'infantry'),
-      lanc: statRow(side, 'lancer'),
-      mark: statRow(side, 'marksman'),
-    },
+    stats: effectiveStats(side, foe, sideKey),
     t12: {
       infantry: side.troops.infantry.t12,
       lancer: side.troops.lancer.t12,
@@ -289,15 +350,15 @@ function buildSide(
 
 export function buildEngineCase(state: SimulatorState): EngineCase {
   return {
-    attacker: buildSide(state.left, 'Left'),
-    defender: buildSide(state.right, 'Right'),
+    attacker: buildSide(state.left, state.right, 'att', 'Left'),
+    defender: buildSide(state.right, state.left, 'def', 'Right'),
   }
 }
 
 export function buildOptimizeCase(state: SimulatorState): EngineCase {
   return {
-    attacker: buildSide(state.left, 'Left', true),
-    defender: buildSide(state.right, 'Right', true),
+    attacker: buildSide(state.left, state.right, 'att', 'Left', true),
+    defender: buildSide(state.right, state.left, 'def', 'Right', true),
   }
 }
 

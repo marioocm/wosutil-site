@@ -129,6 +129,12 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--negative);
 }
 
+[data-city-preset][data-active="true"] {
+  border-color: var(--invert);
+  background: var(--invert);
+  color: var(--invert-fg);
+}
+
 .hero-picker::backdrop,
 .troop-picker::backdrop,
 .joiner-picker::backdrop,
