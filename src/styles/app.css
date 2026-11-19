@@ -298,12 +298,12 @@ body {
     margin-bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.app-row-slot[data-last-visible='true'],
-.app-row-slot[data-collapsed='true'] {
+.app-row-slot[data-last-visible],
+.app-row-slot[data-collapsed] {
   margin-bottom: 0;
 }
 
-.app-row-slot[data-collapsed='true'] {
+.app-row-slot[data-collapsed] {
   grid-template-rows: 0fr;
 }
 
@@ -329,7 +329,7 @@ body {
     transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.app-list[data-running='true'] .app-row {
+.app-list[data-running] .app-row {
   grid-template-columns: var(--app-row-name-width, 10rem) 12rem minmax(0, 1fr) auto;
 }
 
@@ -338,7 +338,7 @@ body {
   background: var(--tint);
 }
 
-.app-row-slot[data-collapsed='true'] .app-row {
+.app-row-slot[data-collapsed] .app-row {
   opacity: 0;
   transform: translateY(-4px);
 }
@@ -915,7 +915,7 @@ body {
   }
 
   .app-row,
-  .app-list[data-running='true'] .app-row {
+  .app-list[data-running] .app-row {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
       "toggle name info"
@@ -924,7 +924,7 @@ body {
     row-gap: 8px;
   }
 
-  .app-list[data-running='true'] .app-row {
+  .app-list[data-running] .app-row {
     grid-template-areas:
       "name name info"
       "profile profile profile"
