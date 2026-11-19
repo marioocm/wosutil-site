@@ -38,11 +38,13 @@ for (const path of await listFiles(outDir)) {
   files[path] = createHash('sha256').update(data).digest('hex')
 }
 
-const commit = process.env.GITHUB_SHA ?? ''
+// The version is derived from the file hashes, so it only changes when the
+// shell changes. Pinning the manifest would be impossible if an unrelated
+// site deploy changed it.
+const contentHash = createHash('sha256').update(JSON.stringify(files)).digest('hex')
 const manifest = {
   apiVersion: 1,
-  uiVersion: commit ? commit.slice(0, 7) : 'dev',
-  siteCommit: commit,
+  uiVersion: contentHash.slice(0, 7),
   entry: 'index.html',
   files,
 }
