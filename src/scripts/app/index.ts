@@ -3,7 +3,7 @@ import { openDialog, showError } from './dialog'
 import { el } from './dom'
 import { initInstances } from './instances'
 import { appendLog, replaceLog, scrollLogToBottom } from './log'
-import { initPreferences, showPreferences } from './preferences'
+import { confirmDiscardPreferences, initPreferences, showPreferences } from './preferences'
 import { initProfiles, refreshProfiles } from './profiles'
 import { setSnapshot } from './store'
 import type { Snapshot } from './types'
@@ -21,6 +21,7 @@ let navIndicator: HTMLElement | null = null
 let navActive: HTMLAnchorElement | null = null
 let navHovered: HTMLAnchorElement | null = null
 let reduceMotion: MediaQueryList | null = null
+let currentSection: Section = 'instances'
 
 function isSection(value: string): value is Section {
   return (SECTIONS as readonly string[]).includes(value)
@@ -64,8 +65,15 @@ function showSection(section: Section): void {
   if (section === 'log') scrollLogToBottom()
   if (location.hash !== `#${section}`) history.replaceState(null, '', `#${section}`)
   document.querySelector<HTMLElement>('.app-main')?.scrollTo({ top: 0 })
+  currentSection = section
   navActive = document.querySelector<HTMLAnchorElement>('[data-section][aria-current="page"]')
   if (!navHovered) moveNavIndicator(navActive, true)
+}
+
+async function switchSection(section: Section): Promise<void> {
+  if (section === currentSection) return
+  if (currentSection === 'preferences' && !(await confirmDiscardPreferences())) return
+  showSection(section)
 }
 
 function setupNav(): void {
@@ -78,10 +86,21 @@ function setupNav(): void {
     link.addEventListener('click', (event) => {
       event.preventDefault()
       const section = link.dataset['section']
-      if (section && isSection(section)) showSection(section)
+      if (section && isSection(section)) void switchSection(section)
     })
   })
-  window.addEventListener('hashchange', () => showSection(readSection()))
+  window.addEventListener('hashchange', () => {
+    const next = readSection()
+    if (next === currentSection) return
+    if (currentSection !== 'preferences') {
+      showSection(next)
+      return
+    }
+    void confirmDiscardPreferences().then((discarded) => {
+      if (discarded) showSection(next)
+      else history.replaceState(null, '', `#${currentSection}`)
+    })
+  })
 
   nav?.addEventListener('pointerover', (event) => {
     const link = linkFromNavEvent(event)

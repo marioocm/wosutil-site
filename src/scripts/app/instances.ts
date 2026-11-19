@@ -6,6 +6,7 @@ import type { InstanceRow, Snapshot } from './types'
 
 type RowRefs = {
   slot: HTMLLIElement
+  name: HTMLElement
   checkbox: HTMLInputElement
   profile: HTMLSelectElement
   profileName: HTMLElement
@@ -189,6 +190,7 @@ function renderToolbar(snapshot: Snapshot): void {
   el('limit-field').hidden = snapshot.tool_running
   const limit = el<HTMLInputElement>('limit')
   if (document.activeElement !== limit) limit.value = String(snapshot.max_instances)
+  el('instances').toggleAttribute('data-running', snapshot.tool_running)
   if (changed) animateToolbar()
 }
 
@@ -247,6 +249,22 @@ function updateLastVisible(): void {
   }
 }
 
+function updateNameColumn(): void {
+  // Measuring a hidden row returns 0, so keep the last width while some rows
+  // are collapsed.
+  for (const row of rowNodes.values()) {
+    if (row.slot.hidden) return
+  }
+  const range = document.createRange()
+  let width = 0
+  for (const row of rowNodes.values()) {
+    range.selectNodeContents(row.name)
+    width = Math.max(width, range.getBoundingClientRect().width)
+  }
+  if (width === 0) return
+  el('instances').style.setProperty('--app-row-name-width', `${Math.min(width + 1, 260)}px`)
+}
+
 function updateEmpty(snapshot: Snapshot): void {
   const visibleCount = snapshot.tool_running ? snapshot.instances.filter((instance) => instance.checked).length : snapshot.instances.length
   const empty = el('empty')
@@ -263,6 +281,7 @@ function buildRows(snapshot: Snapshot): void {
   list.replaceChildren()
   rowNodes.clear()
   hideTasktip()
+  const visibility: { row: RowRefs; visible: boolean }[] = []
 
   for (const instance of snapshot.instances) {
     const fragment = template.content.cloneNode(true) as DocumentFragment
@@ -276,6 +295,7 @@ function buildRows(snapshot: Snapshot): void {
     if (!slot || !checkbox || !name || !profile || !profileName || !status || !info) continue
 
     name.textContent = `Instance ${instance.index} (${instance.name})`
+    name.title = name.textContent
     checkbox.setAttribute('aria-label', `Select instance ${instance.index}`)
     checkbox.addEventListener('change', () => {
       void updateSelection(instance.index)
@@ -303,13 +323,17 @@ function buildRows(snapshot: Snapshot): void {
       else showTasktip(instance.index, true)
     })
 
-    const row: RowRefs = { slot, checkbox, profile, profileName, status, info, tooltip: instance.tooltip, visible: false, hideTimer: 0 }
+    const row: RowRefs = { slot, name, checkbox, profile, profileName, status, info, tooltip: instance.tooltip, visible: false, hideTimer: 0 }
     updateRow(row, instance, snapshot.tool_running)
     list.append(slot)
     rowNodes.set(instance.index, row)
-    setRowVisible(row, !snapshot.tool_running || instance.checked, false)
+    visibility.push({ row, visible: !snapshot.tool_running || instance.checked })
   }
 
+  // All rows are still expanded here, so the name column can measure the
+  // widest name before the run-only rows are collapsed.
+  updateNameColumn()
+  for (const entry of visibility) setRowVisible(entry.row, entry.visible, false)
   updateEmpty(snapshot)
   updateLastVisible()
 }
@@ -367,6 +391,8 @@ export function initInstances(): void {
     if (event.key === 'Escape') hideTasktip()
   })
   window.addEventListener('resize', positionTasktip)
+  window.addEventListener('resize', updateNameColumn)
   window.addEventListener('scroll', positionTasktip, true)
+  void document.fonts.ready.then(updateNameColumn)
   subscribe(render)
 }
