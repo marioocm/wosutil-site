@@ -4,11 +4,14 @@ import {
   PET_MODIFIERS,
   cityBuffs,
   composeEffectiveStats,
+  effectiveBuckets,
+  effectiveStat,
   emptyBuffs,
   maxBuffs,
   maxPets,
   normalizeBuffs,
   petsEnabled,
+  rawStat,
 } from './stat-buffs'
 import type { SideStatPanel, WidgetCounts } from './hero-stats'
 
@@ -83,6 +86,15 @@ describe('composeEffectiveStats', () => {
     expect(stats.infantry.defense).toBeCloseTo((100 * 1.0) / 1.3 - 100, 6)
     expect(stats.infantry.lethality).toBeCloseTo((100 * 1.0) / 1.1 - 100, 6)
     expect(stats.infantry.health).toBeCloseTo((100 * 1.0) / 1.05 - 100, 6)
+  })
+
+  it('inverts the effective transform for manual edits', () => {
+    const buckets = effectiveBuckets(maxBuffs(), maxBuffs(), widgets({ attack: 2, health: 1 }))
+    for (const stat of ['attack', 'defense', 'lethality', 'health'] as const) {
+      const raw = 123.456
+      const effective = effectiveStat(raw, stat, buckets)
+      expect(rawStat(effective, stat, buckets)).toBeCloseTo(raw, 6)
+    }
   })
 
   it('matches the max-buff Gen 17 preset panel', () => {

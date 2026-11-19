@@ -180,6 +180,15 @@ function parsePercent(raw: string | null | undefined): number {
   return Number.isFinite(value) ? Math.max(value, -100) : 0
 }
 
+function parseStatInput(input: HTMLInputElement | null | undefined): number {
+  const raw = input?.dataset['rawValue']
+  if (raw !== undefined && raw !== '') {
+    const value = Number(raw)
+    return Number.isFinite(value) ? Math.max(value, -100) : 0
+  }
+  return parsePercent(input?.value)
+}
+
 function readSide(root: ParentNode, side: SimulatorSide): SimulatorSideState {
   const heroes: Partial<Record<TroopType, string>> = {}
   for (const { id } of TROOP_TYPES) {
@@ -224,8 +233,8 @@ function readSide(root: ParentNode, side: SimulatorSide): SimulatorSideState {
 
   const stats: Record<string, number> = {}
   for (const stat of STAT_BONUSES) {
-    stats[stat.id] = parsePercent(
-      root.querySelector<HTMLInputElement>(`#stat-${stat.id}-${side}`)?.value,
+    stats[stat.id] = parseStatInput(
+      root.querySelector<HTMLInputElement>(`#stat-${stat.id}-${side}`),
     )
   }
 

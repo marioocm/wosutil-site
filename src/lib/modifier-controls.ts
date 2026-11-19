@@ -11,6 +11,26 @@ import {
 
 export type ModifierSide = 'left' | 'right'
 
+export interface ModifierChangeDetail {
+  side: ModifierSide
+}
+
+export const MODIFIER_CHANGE_EVENT = 'wosutil:modifiers-change'
+
+function notifyModifierChange(side: ModifierSide): void {
+  document.dispatchEvent(
+    new CustomEvent<ModifierChangeDetail>(MODIFIER_CHANGE_EVENT, { detail: { side } }),
+  )
+}
+
+export function onModifierChange(listener: (detail: ModifierChangeDetail) => void): void {
+  document.addEventListener(MODIFIER_CHANGE_EVENT, (event) => {
+    const detail = (event as CustomEvent<ModifierChangeDetail>).detail
+    if (!detail || !detail.side) return
+    listener(detail)
+  })
+}
+
 const CITY_VALUE_ATTR = 'cityValues'
 const PET_VALUE_ATTR = 'petValues'
 
@@ -115,6 +135,7 @@ export function initModifierControls(): void {
         ...current,
         city: cityBuffs(Number(button.dataset['cityPreset'])),
       })
+      notifyModifierChange(side)
     })
 
     const pets = container.querySelector<HTMLInputElement>('[data-pets-toggle]')
@@ -124,6 +145,7 @@ export function initModifierControls(): void {
         ...current,
         pets: maxPets(pets.checked),
       })
+      notifyModifierChange(side)
     })
 
     const gareth = container.querySelector<HTMLInputElement>('[data-gareth]')
@@ -133,6 +155,7 @@ export function initModifierControls(): void {
         ...current,
         gareth: Math.min(Math.max(Number(gareth.value) || 0, 0), GARETH_MAX),
       })
+      notifyModifierChange(side)
     })
   }
 }

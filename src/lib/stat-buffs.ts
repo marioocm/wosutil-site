@@ -111,13 +111,53 @@ export function petsEnabled(pets: Readonly<Record<PetModifier, number>>): boolea
   return PET_MODIFIERS.some((modifier) => pets[modifier] > 0)
 }
 
+export interface EffectiveBuckets {
+  up: Record<CombatStat, number>
+  down: Record<CombatStat, number>
+}
+
 /**
- * Apply the upstream effective-stat transform to one side's raw panel.
+ * Build the numerator/denominator percentages for one side.
  *
  * Own city/pet bonuses and the side's S4 widgets go into the numerator; the
  * opponent's enemy debuffs and Gareth go into the denominator. Same-bucket
- * percentages add (they never compound), and the transform matches
- * `compose_stats_max` in the Python meta tooling.
+ * percentages add (they never compound).
+ */
+export function effectiveBuckets(
+  own: SideBuffs,
+  foe: SideBuffs,
+  widgets: WidgetCounts,
+): EffectiveBuckets {
+  return {
+    up: {
+      attack: own.city.attack + own.pets.attack + WIDGET_BONUS * 100 * widgets.attack,
+      defense: own.city.defense + own.pets.defense + WIDGET_BONUS * 100 * widgets.defense,
+      lethality:
+        own.city.lethality + own.pets.lethality + WIDGET_BONUS * 100 * widgets.lethality,
+      health: own.city.health + own.pets.health + WIDGET_BONUS * 100 * widgets.health,
+    },
+    down: {
+      attack: Math.abs(foe.city.enemy_attack),
+      defense: Math.abs(foe.city.enemy_defense) + Math.abs(foe.pets.enemy_defense),
+      lethality: Math.abs(foe.pets.enemy_lethality) + foe.gareth,
+      health: Math.abs(foe.pets.enemy_health),
+    },
+  }
+}
+
+export function effectiveStat(value: number, stat: CombatStat, buckets: EffectiveBuckets): number {
+  return ((100 + value) * (1 + buckets.up[stat] / 100)) / (1 + buckets.down[stat] / 100) - 100
+}
+
+/** Inverse of {@link effectiveStat}; used when a displayed stat is edited. */
+export function rawStat(effective: number, stat: CombatStat, buckets: EffectiveBuckets): number {
+  return ((effective + 100) * (1 + buckets.down[stat] / 100)) / (1 + buckets.up[stat] / 100) - 100
+}
+
+/**
+ * Apply the upstream effective-stat transform to one side's raw panel.
+ *
+ * The transform matches `compose_stats_max` in the Python meta tooling.
  */
 export function composeEffectiveStats(
   raw: SideStatPanel,
@@ -125,25 +165,12 @@ export function composeEffectiveStats(
   foe: SideBuffs,
   widgets: WidgetCounts,
 ): SideStatPanel {
-  const up: Record<CombatStat, number> = {
-    attack: own.city.attack + own.pets.attack + WIDGET_BONUS * 100 * widgets.attack,
-    defense: own.city.defense + own.pets.defense + WIDGET_BONUS * 100 * widgets.defense,
-    lethality: own.city.lethality + own.pets.lethality + WIDGET_BONUS * 100 * widgets.lethality,
-    health: own.city.health + own.pets.health + WIDGET_BONUS * 100 * widgets.health,
-  }
-  const down: Record<CombatStat, number> = {
-    attack: Math.abs(foe.city.enemy_attack),
-    defense: Math.abs(foe.city.enemy_defense) + Math.abs(foe.pets.enemy_defense),
-    lethality: Math.abs(foe.pets.enemy_lethality) + foe.gareth,
-    health: Math.abs(foe.pets.enemy_health),
-  }
-
+  const buckets = effectiveBuckets(own, foe, widgets)
   const panel = {} as SideStatPanel
   for (const type of ['infantry', 'lancer', 'marksman'] as const) {
     const row = {} as Record<CombatStat, number>
     for (const stat of COMBAT_STATS) {
-      const value =
-        ((100 + raw[type][stat]) * (1 + up[stat] / 100)) / (1 + down[stat] / 100) - 100
+      const value = effectiveStat(raw[type][stat], stat, buckets)
       row[stat] = Math.round(value * 1e6) / 1e6
     }
     panel[type] = row

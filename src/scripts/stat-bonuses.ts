@@ -8,12 +8,22 @@ import {
   composeSideStats,
   HERO_STAT_CONTRIBUTIONS,
   heroWidgetCounts,
+  type CombatStat,
   type SideStatPanel,
 } from '../lib/hero-stats'
 import { onHeroChange, type HeroChangeDetail } from '../lib/hero-events'
-import { getHeroById, getHeroByName, TROOP_TYPES, type Hero } from '../lib/heroes'
-import { applyModifierControls } from '../lib/modifier-controls'
-import { maxBuffs } from '../lib/stat-buffs'
+import { getHeroById, getHeroByName, TROOP_TYPES, type Hero, type TroopType } from '../lib/heroes'
+import {
+  applyModifierControls,
+  onModifierChange,
+  readModifierControls,
+} from '../lib/modifier-controls'
+import {
+  composeEffectiveStats,
+  effectiveBuckets,
+  maxBuffs,
+  rawStat,
+} from '../lib/stat-buffs'
 import {
   compareStatBonuses,
   formatStatBonus,
@@ -24,6 +34,14 @@ import {
 } from '../lib/stat-bonuses'
 
 type Side = 'left' | 'right'
+
+function zeroPanel(): SideStatPanel {
+  return {
+    infantry: { attack: 0, defense: 0, lethality: 0, health: 0 },
+    lancer: { attack: 0, defense: 0, lethality: 0, health: 0 },
+    marksman: { attack: 0, defense: 0, lethality: 0, health: 0 },
+  }
+}
 
 function resizeInput(input: HTMLInputElement): void {
   const display = input.value === '' ? input.placeholder : input.value
@@ -77,58 +95,41 @@ function updateSummary(table: HTMLElement, summary: HTMLElement): void {
   summary.textContent = `${leftLabel} higher in ${leftHigher}, ${rightLabel} higher in ${rightHigher}, tied in ${tied}.`
 }
 
+function otherSide(side: Side): Side {
+  return side === 'left' ? 'right' : 'left'
+}
+
+function heroList(heroes: Record<string, Hero | null>): Hero[] {
+  return TROOP_TYPES.flatMap(({ id }) => {
+    const hero = heroes[id]
+    return hero ? [hero] : []
+  })
+}
+
 export function initStatBonuses(): void {
   const table = document.querySelector<HTMLElement>('[data-stat-bonuses]')
   if (!table) return
   const root: HTMLElement = table
   const summary = document.getElementById('stat-bonuses-summary')
+  const rawPanels: Record<Side, SideStatPanel> = {
+    left: zeroPanel(),
+    right: zeroPanel(),
+  }
 
   function syncEnabled(): boolean {
     const toggle = document.querySelector<HTMLInputElement>('[data-sync-hero-stats]')
     return toggle?.checked ?? true
   }
 
-  function setInput(side: Side, type: string, stat: string, value: number): void {
-    const input = root.querySelector<HTMLInputElement>(`#stat-${type}-${stat}-${side}`)
-    if (!input) return
-    input.value = formatStatBonus(value)
-    resizeInput(input)
+  function statInput(side: Side, type: TroopType, stat: CombatStat): HTMLInputElement | null {
+    return root.querySelector<HTMLInputElement>(`#stat-${type}-${stat}-${side}`)
   }
 
-  function setPanel(side: Side, panel: SideStatPanel): void {
-    for (const type of TROOP_TYPES) {
-      for (const stat of COMBAT_STATS) {
-        setInput(side, type.id, stat, panel[type.id][stat])
-      }
+  function updateRows(): void {
+    for (const row of root.querySelectorAll<HTMLElement>('[data-stat-row]')) {
+      updateRow(row)
     }
-  }
-
-  const WIDGET_LABELS: Record<(typeof COMBAT_STATS)[number], string> = {
-    attack: 'ATK',
-    defense: 'DEF',
-    lethality: 'LETH',
-    health: 'HP',
-  }
-
-  function updateWidgetSummaryFromHeroes(
-    side: Side,
-    heroes: Record<string, Hero | null>,
-  ): void {
-    const summaryNode = document.querySelector<HTMLElement>(
-      `[data-modifiers-side="${side}"] [data-widget-summary]`,
-    )
-    if (!summaryNode) return
-    const counts = heroWidgetCounts(
-      TROOP_TYPES.flatMap(({ id }) => {
-        const hero = heroes[id]
-        return hero ? [hero] : []
-      }),
-      side,
-    )
-    const parts = COMBAT_STATS.filter((stat) => counts[stat] > 0).map(
-      (stat) => `+${counts[stat] * 15}% ${WIDGET_LABELS[stat]}`,
-    )
-    summaryNode.textContent = parts.length > 0 ? `Widgets: ${parts.join(' · ')}` : 'Widgets: none'
+    if (summary) updateSummary(root, summary)
   }
 
   function readHeroesFromDom(side: Side): Record<string, Hero | null> {
@@ -143,44 +144,130 @@ export function initStatBonuses(): void {
     return heroes
   }
 
+  const WIDGET_LABELS: Record<CombatStat, string> = {
+    attack: 'ATK',
+    defense: 'DEF',
+    lethality: 'LETH',
+    health: 'HP',
+  }
+
+  function updateWidgetSummary(side: Side, heroes: readonly Hero[]): void {
+    const summaryNode = document.querySelector<HTMLElement>(
+      `[data-modifiers-side="${side}"] [data-widget-summary]`,
+    )
+    if (!summaryNode) return
+    const counts = heroWidgetCounts(heroes, side)
+    const parts = COMBAT_STATS.filter((stat) => counts[stat] > 0).map(
+      (stat) => `+${counts[stat] * 15}% ${WIDGET_LABELS[stat]}`,
+    )
+    summaryNode.textContent = parts.length > 0 ? `Widgets: ${parts.join(' · ')}` : 'Widgets: none'
+  }
+
+  function setRawPanel(side: Side, panel: SideStatPanel): void {
+    for (const type of TROOP_TYPES) {
+      for (const stat of COMBAT_STATS) {
+        rawPanels[side][type.id][stat] = panel[type.id][stat]
+      }
+    }
+  }
+
+  function panelFromStats(
+    stats: Record<TroopType, readonly number[]>,
+  ): SideStatPanel {
+    const read = (type: TroopType, index: number): number => stats[type][index] ?? 0
+    return {
+      infantry: {
+        attack: read('infantry', 0),
+        defense: read('infantry', 1),
+        lethality: read('infantry', 2),
+        health: read('infantry', 3),
+      },
+      lancer: {
+        attack: read('lancer', 0),
+        defense: read('lancer', 1),
+        lethality: read('lancer', 2),
+        health: read('lancer', 3),
+      },
+      marksman: {
+        attack: read('marksman', 0),
+        defense: read('marksman', 1),
+        lethality: read('marksman', 2),
+        health: read('marksman', 3),
+      },
+    }
+  }
+
+  /**
+   * Recompute the visible (effective) panel from the stored raw panel.
+   *
+   * The inputs are always the final stats the engine receives; the raw values
+   * live in `data-raw-value` so a later buff toggle can rebuild the panel.
+   */
+  function displaySide(side: Side, heroesOverride?: readonly Hero[]): void {
+    const own = readModifierControls(document, side)
+    const foe = readModifierControls(document, otherSide(side))
+    const heroes = heroesOverride ?? heroList(readHeroesFromDom(side))
+    const effective = composeEffectiveStats(
+      rawPanels[side],
+      own,
+      foe,
+      heroWidgetCounts(heroes, side),
+    )
+
+    for (const type of TROOP_TYPES) {
+      for (const stat of COMBAT_STATS) {
+        const input = statInput(side, type.id, stat)
+        if (!input) continue
+        input.dataset['rawValue'] = String(rawPanels[side][type.id][stat])
+        input.value = formatStatBonus(effective[type.id][stat])
+        resizeInput(input)
+      }
+    }
+    updateRows()
+  }
+
+  function displayAll(): void {
+    displaySide('left')
+    displaySide('right')
+  }
+
+  function applyManualEdit(input: HTMLInputElement): void {
+    const parts = input.id.split('-')
+    if (parts.length !== 4) return
+    const type = TROOP_TYPES.find(({ id }) => id === parts[1])
+    const stat = COMBAT_STATS.find((name) => name === parts[2])
+    const side = parts[3] === 'left' || parts[3] === 'right' ? parts[3] : null
+    if (!type || !stat || !side) return
+
+    const effective = parseStatBonus(input.value)
+    const own = readModifierControls(document, side)
+    const foe = readModifierControls(document, otherSide(side))
+    const heroes = heroList(readHeroesFromDom(side))
+    const buckets = effectiveBuckets(own, foe, heroWidgetCounts(heroes, side))
+    const raw = effective === null ? 0 : rawStat(effective, stat, buckets)
+    rawPanels[side][type.id][stat] = raw
+    input.dataset['rawValue'] = String(raw)
+  }
+
   function applyGeneration(generation: number): void {
     const preset = getGenerationPreset(generation)
     if (!preset) return
 
+    const heroesBySide: Record<Side, Hero[]> = { left: [], right: [] }
     for (const side of ['left', 'right'] as const) {
       const lineup = getGenerationLineup(preset, side)
       const lineupHeroes: Record<string, Hero | null> = {}
       for (const { id } of TROOP_TYPES) {
         lineupHeroes[id] = getHeroById(lineup.heroes[id])
       }
-      updateWidgetSummaryFromHeroes(side, lineupHeroes)
+      const heroes = heroList(lineupHeroes)
+      heroesBySide[side] = heroes
+      updateWidgetSummary(side, heroes)
+
       if (lineup.rawStats) {
-        setPanel(side, {
-          infantry: {
-            attack: lineup.rawStats.infantry[0] ?? 0,
-            defense: lineup.rawStats.infantry[1] ?? 0,
-            lethality: lineup.rawStats.infantry[2] ?? 0,
-            health: lineup.rawStats.infantry[3] ?? 0,
-          },
-          lancer: {
-            attack: lineup.rawStats.lancer[0] ?? 0,
-            defense: lineup.rawStats.lancer[1] ?? 0,
-            lethality: lineup.rawStats.lancer[2] ?? 0,
-            health: lineup.rawStats.lancer[3] ?? 0,
-          },
-          marksman: {
-            attack: lineup.rawStats.marksman[0] ?? 0,
-            defense: lineup.rawStats.marksman[1] ?? 0,
-            lethality: lineup.rawStats.marksman[2] ?? 0,
-            health: lineup.rawStats.marksman[3] ?? 0,
-          },
-        })
+        setRawPanel(side, panelFromStats(lineup.rawStats))
       } else {
-        const heroes = TROOP_TYPES.flatMap(({ id }) => {
-          const hero = lineupHeroes[id]
-          return hero ? [hero] : []
-        })
-        setPanel(
+        setRawPanel(
           side,
           composeSideStats(preset.baseStat, heroes, side, {
             widgets: false,
@@ -193,41 +280,43 @@ export function initStatBonuses(): void {
       applyModifierControls(document, side, lineup.modifiers ?? maxBuffs())
     }
 
-    for (const row of root.querySelectorAll<HTMLElement>('[data-stat-row]')) {
-      updateRow(row)
-    }
-    if (summary) updateSummary(root, summary)
+    displaySide('left', heroesBySide.left)
+    displaySide('right', heroesBySide.right)
   }
 
   function applyHeroDelta(detail: HeroChangeDetail): void {
-    updateWidgetSummaryFromHeroes(detail.side, readHeroesFromDom(detail.side))
-    if (!syncEnabled() || detail.previousId === detail.heroId) return
-    const before = detail.previousId ? HERO_STAT_CONTRIBUTIONS[detail.previousId] : undefined
-    const after = detail.heroId ? HERO_STAT_CONTRIBUTIONS[detail.heroId] : undefined
-    const attackDefense = (after?.attackDefense ?? 0) - (before?.attackDefense ?? 0)
-    const lethalityHealth = (after?.lethalityHealth ?? 0) - (before?.lethalityHealth ?? 0)
-    if (attackDefense === 0 && lethalityHealth === 0) return
+    const heroes = heroList(readHeroesFromDom(detail.side))
+    updateWidgetSummary(detail.side, heroes)
 
-    const read = (stat: string): number => {
-      const input = root.querySelector<HTMLInputElement>(
-        `#stat-${detail.type}-${stat}-${detail.side}`,
-      )
-      return parseStatBonus(input?.value) ?? 0
+    if (syncEnabled() && detail.previousId !== detail.heroId) {
+      const before = detail.previousId ? HERO_STAT_CONTRIBUTIONS[detail.previousId] : undefined
+      const after = detail.heroId ? HERO_STAT_CONTRIBUTIONS[detail.heroId] : undefined
+      const attackDefense = (after?.attackDefense ?? 0) - (before?.attackDefense ?? 0)
+      const lethalityHealth = (after?.lethalityHealth ?? 0) - (before?.lethalityHealth ?? 0)
+      const row = rawPanels[detail.side][detail.type]
+      row.attack += attackDefense
+      row.defense += attackDefense
+      row.lethality += lethalityHealth
+      row.health += lethalityHealth
     }
 
-    setInput(detail.side, detail.type, 'attack', read('attack') + attackDefense)
-    setInput(detail.side, detail.type, 'defense', read('defense') + attackDefense)
-    setInput(detail.side, detail.type, 'lethality', read('lethality') + lethalityHealth)
-    setInput(detail.side, detail.type, 'health', read('health') + lethalityHealth)
+    displaySide(detail.side)
+  }
 
-    for (const row of root.querySelectorAll<HTMLElement>('[data-stat-row]')) {
-      updateRow(row)
+  // Seed the raw panel from any pre-filled inputs (currently empty on load).
+  for (const side of ['left', 'right'] as const) {
+    for (const type of TROOP_TYPES) {
+      for (const stat of COMBAT_STATS) {
+        const input = statInput(side, type.id, stat)
+        rawPanels[side][type.id][stat] = parseStatBonus(input?.value) ?? 0
+        if (input) input.dataset['rawValue'] = String(rawPanels[side][type.id][stat])
+      }
     }
-    if (summary) updateSummary(root, summary)
   }
 
   onGenerationChange(applyGeneration)
   onHeroChange(applyHeroDelta)
+  onModifierChange(() => displayAll())
 
   table.addEventListener('input', (event) => {
     if (!(event.target instanceof HTMLInputElement)) return
@@ -239,6 +328,7 @@ export function initStatBonuses(): void {
       event.target.value = edit.value
       event.target.setSelectionRange(edit.caret, edit.caret)
     }
+    applyManualEdit(event.target)
     resizeInput(event.target)
 
     const row = event.target.closest<HTMLElement>('[data-stat-row]')
@@ -249,6 +339,7 @@ export function initStatBonuses(): void {
     if (!(event.target instanceof HTMLInputElement)) return
     if (!event.target.matches('input[data-stat-side]')) return
 
+    applyManualEdit(event.target)
     const normalized = normalizeStatBonus(event.target.value)
     if (normalized !== event.target.value) {
       event.target.value = normalized
@@ -269,6 +360,6 @@ export function initStatBonuses(): void {
     updateRow(row)
   }
   if (summary) updateSummary(table, summary)
-  updateWidgetSummaryFromHeroes('left', readHeroesFromDom('left'))
-  updateWidgetSummaryFromHeroes('right', readHeroesFromDom('right'))
+  updateWidgetSummary('left', heroList(readHeroesFromDom('left')))
+  updateWidgetSummary('right', heroList(readHeroesFromDom('right')))
 }
