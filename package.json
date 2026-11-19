@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "dev:app": "astro dev --config astro.app.config.ts",
     "build": "astro build",
     "build:app": "astro build --config astro.app.config.ts",
     "package:ui": "node scripts/package-ui.mjs",
