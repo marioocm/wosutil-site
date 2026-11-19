@@ -48,12 +48,12 @@ export function connectEvents(handlers: {
 
 export function startHeartbeat(): void {
   window.setInterval(() => {
-    void request('/api/heartbeat', 'POST', {}).catch(() => {})
+    void request('/api/heartbeat', 'POST').catch(() => {})
   }, 3000)
 }
 
 export async function resume(): Promise<void> {
-  await request('/api/resume', 'POST', {}).catch(() => {})
+  await request('/api/resume', 'POST').catch(() => {})
 }
 
 export function sendSuspend(): void {
