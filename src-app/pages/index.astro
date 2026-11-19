@@ -5,146 +5,142 @@ import '../../src/styles/app.css'
 
 <AppLayout title="WoS Util" description="WoS Util desktop automation console.">
   <header class="app-header">
-    <div class="app-header-inner">
-      <div class="app-brand">
-        <span class="app-wordmark">WoS Util</span>
-        <nav class="app-nav" aria-label="Sections">
-          <a href="#instances" data-section="instances" aria-current="page">Instances</a>
-          <a href="#profiles" data-section="profiles">Profiles</a>
-          <a href="#preferences" data-section="preferences">Preferences</a>
-          <a href="#log" data-section="log">Log</a>
-        </nav>
-      </div>
-      <div class="app-header-actions">
-        <span id="connection" class="app-connection" data-state="connecting">Connecting…</span>
-        <label class="app-inline-field">
-          <span>Emulator</span>
-          <select id="emulator" class="app-select" aria-label="Emulator"></select>
-        </label>
-      </div>
+    <div class="app-header-inner app-header-inner--nav-only">
+      <nav class="app-nav" aria-label="Sections">
+        <a href="#instances" data-section="instances" aria-current="page">Instances</a>
+        <a href="#profiles" data-section="profiles">Profiles</a>
+        <a href="#preferences" data-section="preferences">Preferences</a>
+        <a href="#log" data-section="log">Log</a>
+        <span class="app-nav-indicator" data-nav-indicator aria-hidden="true"></span>
+      </nav>
     </div>
   </header>
 
   <main class="app-main">
-    <section id="view-instances" class="app-view" aria-label="Instances">
-      <section class="app-card" aria-labelledby="instances-title">
-        <div class="app-card-head">
-          <div>
+    <div class="app-content">
+      <section id="view-instances" class="app-view" aria-label="Instances">
+        <section class="app-card" aria-labelledby="instances-title">
+          <div class="app-card-head app-card-head--center">
             <h1 id="instances-title" class="text-h4">Instances</h1>
-            <p id="tool-status" class="app-muted">Tool stopped</p>
+            <div class="app-actions">
+              <label id="limit-field" class="app-inline-field">
+                <span>Emulators</span>
+                <input id="limit" class="app-input app-input--number" type="number" min="1" max="20" step="1" />
+              </label>
+              <button id="refresh" class="app-button" type="button">Refresh</button>
+              <button id="start" class="app-button app-button--primary" type="button">Start tool</button>
+              <button id="stop" class="app-button app-button--outline" type="button" hidden>Stop tool</button>
+            </div>
           </div>
-          <div class="app-actions">
-            <label id="limit-field" class="app-inline-field">
-              <span>Emulators</span>
-              <input id="limit" class="app-input app-input--number" type="number" min="1" max="20" step="1" />
-            </label>
-            <button id="refresh" class="app-button" type="button">Refresh</button>
-            <button id="start" class="app-button app-button--primary" type="button">Start tool</button>
-            <button id="stop" class="app-button app-button--outline" type="button" hidden>Stop tool</button>
-          </div>
-        </div>
 
-        <ul id="instances" class="app-list" aria-label="Emulator instances"></ul>
-        <p id="empty" class="app-empty" hidden>No emulator instances detected.</p>
+          <ul id="instances" class="app-list" aria-label="Emulator instances"></ul>
+          <p id="empty" class="app-empty" hidden>No emulator instances detected.</p>
+        </section>
       </section>
-    </section>
 
-    <section id="view-profiles" class="app-view" aria-label="Profiles" hidden>
-      <section class="app-card" aria-labelledby="profiles-title">
-        <div class="app-card-head">
-          <div>
-            <h1 id="profiles-title" class="text-h4">Profiles</h1>
-            <p class="app-muted">Choose a profile, tick its tasks and save.</p>
+      <section id="view-profiles" class="app-view" aria-label="Profiles" hidden>
+        <section class="app-card" aria-labelledby="profiles-title">
+          <div class="app-card-head">
+            <div>
+              <h1 id="profiles-title" class="text-h4">Profiles</h1>
+              <p class="app-muted">Choose a profile, tick its tasks and save.</p>
+            </div>
+            <div class="app-actions">
+              <select id="profile-select" class="app-select" aria-label="Profile"></select>
+              <button id="profile-new" class="app-button" type="button">New</button>
+              <button id="profile-save" class="app-button app-button--primary" type="button">Save</button>
+              <button id="profile-delete" class="app-button app-button--outline" type="button">Delete</button>
+            </div>
           </div>
-          <div class="app-actions">
-            <select id="profile-select" class="app-select" aria-label="Profile"></select>
-            <button id="profile-new" class="app-button" type="button">New</button>
-            <button id="profile-save" class="app-button app-button--primary" type="button">Save</button>
-            <button id="profile-delete" class="app-button app-button--outline" type="button">Delete</button>
-          </div>
-        </div>
-        <ul id="profile-tasks" class="app-check-list" aria-label="Profile tasks"></ul>
+          <ul id="profile-tasks" class="app-check-list" aria-label="Profile tasks"></ul>
+        </section>
       </section>
-    </section>
 
-    <section id="view-preferences" class="app-view" aria-label="Preferences" hidden>
-      <form id="preferences-form" class="app-stack" novalidate>
-        <section class="app-card" aria-labelledby="prefs-emulator-title">
-          <h2 id="prefs-emulator-title" class="text-p1 font-medium">Emulator</h2>
-          <p class="app-muted">The active emulator is switched from the header. Configure every emulator's paths here.</p>
-          <label class="app-field app-field--inline">
-            <span>Configure paths for</span>
-            <select id="paths-emulator" class="app-select"></select>
-          </label>
-          <div id="paths-fields" class="app-stack-sm"></div>
-        </section>
+      <section id="view-preferences" class="app-view" aria-label="Preferences" hidden>
+        <form id="preferences-form" class="app-stack" novalidate>
+          <section class="app-card" aria-labelledby="prefs-emulator-title">
+            <h2 id="prefs-emulator-title" class="text-p1 font-medium">Emulator</h2>
+            <p class="app-muted">The tool controls the active emulator. Stop the tool before switching it.</p>
+            <div class="app-grid-2">
+              <label class="app-field">
+                <span>Active emulator</span>
+                <select id="emulator-active" class="app-select"></select>
+              </label>
+              <label class="app-field">
+                <span>Configure paths for</span>
+                <select id="paths-emulator" class="app-select"></select>
+              </label>
+            </div>
+            <div id="paths-fields" class="app-stack-sm"></div>
+          </section>
 
-        <section class="app-card" aria-labelledby="prefs-priorities-title">
-          <h2 id="prefs-priorities-title" class="text-p1 font-medium">Task priorities</h2>
-          <p class="app-muted">Top runs first.</p>
-          <ol id="priority-list" class="app-priority-list"></ol>
-        </section>
+          <section class="app-card" aria-labelledby="prefs-priorities-title">
+            <h2 id="prefs-priorities-title" class="text-p1 font-medium">Task priorities</h2>
+            <p class="app-muted">Top runs first.</p>
+            <ol id="priority-list" class="app-priority-list"></ol>
+          </section>
 
-        <section class="app-card" aria-labelledby="prefs-marches-title">
-          <h2 id="prefs-marches-title" class="text-p1 font-medium">Marches and resources</h2>
-          <div class="app-grid-2">
-            <label class="app-field">
-              <span>Kill beasts march</span>
-              <input id="kill-beast" class="app-input" type="number" step="1" />
+          <section class="app-card" aria-labelledby="prefs-marches-title">
+            <h2 id="prefs-marches-title" class="text-p1 font-medium">Marches and resources</h2>
+            <div class="app-grid-2">
+              <label class="app-field">
+                <span>Kill beasts march</span>
+                <input id="kill-beast" class="app-input" type="number" step="1" />
+              </label>
+              <label class="app-field">
+                <span>Bear rally call march</span>
+                <input id="bear-call" class="app-input" type="number" step="1" />
+              </label>
+            </div>
+            <div id="bear-marches" class="app-grid-3"></div>
+            <div class="app-grid-2">
+              <label class="app-field">
+                <span>Ox gathering</span>
+                <select id="gather" class="app-select"></select>
+              </label>
+              <label class="app-field">
+                <span>Intel</span>
+                <select id="intel" class="app-select"></select>
+              </label>
+              <label class="app-field">
+                <span>Mystery shop</span>
+                <select id="mystery-shop" class="app-select"></select>
+              </label>
+            </div>
+          </section>
+
+          <section class="app-card" aria-labelledby="prefs-behavior-title">
+            <h2 id="prefs-behavior-title" class="text-p1 font-medium">Behavior</h2>
+            <label class="app-check-row">
+              <input id="remember-schedule" class="app-check" type="checkbox" />
+              <span>Remember the task schedule between sessions</span>
             </label>
-            <label class="app-field">
-              <span>Bear rally call march</span>
-              <input id="bear-call" class="app-input" type="number" step="1" />
+            <label class="app-check-row">
+              <input id="start-minimized" class="app-check" type="checkbox" />
+              <span>Start emulators minimized</span>
             </label>
+            <label class="app-check-row">
+              <input id="debug-mode" class="app-check" type="checkbox" />
+              <span>Debug mode (verbose logs and OCR captures)</span>
+            </label>
+          </section>
+
+          <div class="app-form-actions">
+            <p id="prefs-save-status" class="app-status" role="status"></p>
+            <button id="preferences-save" class="app-button app-button--primary" type="submit">Save preferences</button>
           </div>
-          <div id="bear-marches" class="app-grid-3"></div>
-          <div class="app-grid-2">
-            <label class="app-field">
-              <span>Ox gathering</span>
-              <select id="gather" class="app-select"></select>
-            </label>
-            <label class="app-field">
-              <span>Intel</span>
-              <select id="intel" class="app-select"></select>
-            </label>
-            <label class="app-field">
-              <span>Mystery shop</span>
-              <select id="mystery-shop" class="app-select"></select>
-            </label>
-          </div>
-        </section>
-
-        <section class="app-card" aria-labelledby="prefs-behavior-title">
-          <h2 id="prefs-behavior-title" class="text-p1 font-medium">Behavior</h2>
-          <label class="app-check-row">
-            <input id="remember-schedule" class="app-check" type="checkbox" />
-            <span>Remember the task schedule between sessions</span>
-          </label>
-          <label class="app-check-row">
-            <input id="start-minimized" class="app-check" type="checkbox" />
-            <span>Start emulators minimized</span>
-          </label>
-          <label class="app-check-row">
-            <input id="debug-mode" class="app-check" type="checkbox" />
-            <span>Debug mode (verbose logs and OCR captures)</span>
-          </label>
-        </section>
-
-        <div class="app-form-actions">
-          <p id="prefs-save-status" class="app-status" role="status"></p>
-          <button id="preferences-save" class="app-button app-button--primary" type="submit">Save preferences</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="view-log" class="app-view" aria-label="Log" hidden>
-      <section class="app-card" aria-labelledby="log-title">
-        <div class="app-card-head">
-          <h2 id="log-title" class="text-p1 font-medium tracking-[-0.01em]">Log</h2>
-        </div>
-        <div id="log" class="app-log" role="log" aria-live="polite"></div>
+        </form>
       </section>
-    </section>
+
+      <section id="view-log" class="app-view" aria-label="Log" hidden>
+        <section class="app-card" aria-labelledby="log-title">
+          <div class="app-card-head">
+            <h2 id="log-title" class="text-p1 font-medium tracking-[-0.01em]">Log</h2>
+          </div>
+          <div id="log" class="app-log" role="log" aria-live="polite"></div>
+        </section>
+      </section>
+    </div>
   </main>
 
   <dialog id="dialog" class="app-dialog">
@@ -159,12 +155,28 @@ import '../../src/styles/app.css'
     </div>
   </dialog>
 
+  <div id="task-tooltip" class="app-tasktip" role="tooltip" hidden>
+    <ol id="task-tooltip-list" class="app-tasktip-list"></ol>
+  </div>
+
   <template id="instance-template">
-    <li class="app-row">
-      <input class="app-check" type="checkbox" />
-      <span class="app-row-name"></span>
-      <select class="app-select app-row-profile" aria-label="Profile"></select>
-      <span class="app-row-status"></span>
+    <li class="app-row-slot">
+      <div class="app-row-clip">
+        <div class="app-row">
+          <input class="app-check" type="checkbox" />
+          <span class="app-row-name"></span>
+          <select class="app-select app-row-profile" aria-label="Profile"></select>
+          <span class="app-row-profile-name" hidden></span>
+          <span class="app-row-status"></span>
+          <button class="app-info" type="button" aria-describedby="task-tooltip" hidden>
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.4"></circle>
+              <path d="M8 7.1v3.9"></path>
+              <path d="M8 4.9v.2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
     </li>
   </template>
 

@@ -1,7 +1,7 @@
 import { request, runCommand } from './api'
 import { showError } from './dialog'
 import { el } from './dom'
-import { getSnapshot } from './store'
+import { getSnapshot, subscribe } from './store'
 import type { PathField, PreferencesPayload } from './types'
 
 let payload: PreferencesPayload | null = null
@@ -98,6 +98,21 @@ async function browsePath(code: string, field: PathField, input: HTMLInputElemen
     button.disabled = false
     button.textContent = original
   }
+}
+
+function updateEmulatorAvailability(): void {
+  el<HTMLSelectElement>('emulator-active').disabled = getSnapshot()?.tool_running === true
+}
+
+function renderActiveEmulator(data: PreferencesPayload): void {
+  const select = el<HTMLSelectElement>('emulator-active')
+  const key = data.emulators.map((emulator) => `${emulator.code}:${emulator.label}`).join(',')
+  if (select.dataset['key'] !== key) {
+    select.dataset['key'] = key
+    select.replaceChildren(...data.emulators.map((emulator) => new Option(emulator.label, emulator.code)))
+  }
+  select.value = data.preferences.emulator ?? data.activeEmulator
+  updateEmulatorAvailability()
 }
 
 function renderPathEmulators(data: PreferencesPayload): void {
@@ -200,6 +215,7 @@ function buildForm(): void {
   setChecked('remember-schedule', prefs.remember_schedule)
   setChecked('start-minimized', prefs.start_minimized)
   setChecked('debug-mode', prefs.debug_mode)
+  renderActiveEmulator(data)
   renderPathEmulators(data)
   renderPriorityList()
   setStatus('')
@@ -221,9 +237,8 @@ function intValue(id: string): number {
 }
 
 function collectValues(): Record<string, unknown> {
-  const snapshot = getSnapshot()
   return {
-    emulator: snapshot?.emulator ?? payload?.activeEmulator ?? 'mumu',
+    emulator: el<HTMLSelectElement>('emulator-active').value,
     emulator_paths: pathsDraft,
     task_order: taskOrder,
     kill_beast_march: intValue('kill-beast'),
@@ -268,6 +283,12 @@ export function initPreferences(): void {
     event.preventDefault()
     void savePreferences()
   })
+  el<HTMLSelectElement>('emulator-active').addEventListener('change', () => {
+    const active = el<HTMLSelectElement>('emulator-active').value
+    const paths = el<HTMLSelectElement>('paths-emulator')
+    if (Array.from(paths.options).some((option) => option.value === active)) paths.value = active
+    renderPathFields()
+  })
   el<HTMLSelectElement>('paths-emulator').addEventListener('change', () => {
     renderPathFields()
   })
@@ -277,6 +298,7 @@ export function initPreferences(): void {
   el<HTMLInputElement>('bear-call').addEventListener('input', () => {
     bearCallSet = true
   })
+  subscribe(() => updateEmulatorAvailability())
 }
 
 export function showPreferences(): void {

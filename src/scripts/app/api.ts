@@ -1,4 +1,3 @@
-import { setConnection } from './dom'
 import type { ActionResult, DialogPayload, LogEntry, Snapshot } from './types'
 
 let token = ''
@@ -38,8 +37,6 @@ export function connectEvents(handlers: {
   onDialog: (payload: DialogPayload) => void
 }): void {
   const source = new EventSource(`/api/events?t=${encodeURIComponent(token)}`)
-  source.addEventListener('open', () => setConnection('Live', 'live'))
-  source.addEventListener('error', () => setConnection('Reconnecting…', 'error'))
   source.addEventListener('state', (event) => handlers.onState(parseEvent<Snapshot>(event)))
   source.addEventListener('logs', (event) => handlers.onLogs(parseEvent<{ entries: LogEntry[] }>(event).entries))
   source.addEventListener('log', (event) => handlers.onLog(parseEvent<LogEntry>(event)))

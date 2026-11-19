@@ -1,9 +1,22 @@
 /* Desktop shell classes. Tokens come from styles/theme.css. */
 
+html {
+  scrollbar-gutter: auto;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .app-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  flex: 0 0 auto;
   border-bottom: 1px solid var(--line);
   background: var(--paper);
 }
@@ -11,7 +24,7 @@
 .app-header-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
   width: 100%;
   max-width: 1120px;
@@ -20,16 +33,11 @@
   padding: 0 24px;
 }
 
-.app-brand {
+.app-nav {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 24px;
-}
-
-.app-nav {
-  display: flex;
-  align-items: center;
-  gap: 20px;
   height: 56px;
 }
 
@@ -37,14 +45,11 @@
   display: flex;
   align-items: center;
   height: 56px;
-  border-bottom: 2px solid transparent;
   color: var(--ink-muted);
   font-size: var(--text-button);
   font-weight: 500;
   line-height: 1;
-  transition:
-    color 120ms ease,
-    border-color 120ms ease;
+  transition: color 120ms ease;
 }
 
 .app-nav a:hover {
@@ -52,13 +57,39 @@
 }
 
 .app-nav a[aria-current='page'] {
-  border-bottom-color: var(--ink);
   color: var(--ink);
 }
 
 .app-nav a:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+.app-nav-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--ink);
+  pointer-events: none;
+  transition:
+    left 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Shared with the standalone Template Creator header. */
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.app-wordmark {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .app-header-actions {
@@ -68,33 +99,26 @@
   margin-left: auto;
 }
 
-.app-wordmark {
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-
-.app-wordmark {
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-
 .app-connection {
   font-size: var(--text-micro);
   color: var(--ink-subtle);
 }
-.app-connection[data-state='live'] {
-  color: var(--ink-muted);
-}
 
+.app-connection[data-state='live'],
 .app-connection[data-state='error'] {
   color: var(--ink-muted);
 }
 
 .app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.app-content {
   display: grid;
   gap: 16px;
   width: 100%;
@@ -132,6 +156,10 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
+}
+
+.app-card-head--center {
+  align-items: center;
 }
 
 .app-muted {
@@ -255,28 +283,59 @@
 
 .app-list {
   display: grid;
-  gap: 8px;
+  gap: 0;
   margin-top: 16px;
   padding: 0;
   list-style: none;
+}
+
+.app-row-slot {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin-bottom: 8px;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-bottom 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-row-slot[data-last-visible='true'],
+.app-row-slot[data-collapsed='true'] {
+  margin-bottom: 0;
+}
+
+.app-row-slot[data-collapsed='true'] {
+  grid-template-rows: 0fr;
+}
+
+.app-row-clip {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .app-row {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 56px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--bg);
   transition:
     background-color 120ms ease,
-    border-color 120ms ease;
+    border-color 120ms ease,
+    opacity 160ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .app-row:hover {
   border-color: var(--line-strong);
   background: var(--tint);
+}
+
+.app-row-slot[data-collapsed='true'] .app-row {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .app-check {
@@ -300,11 +359,97 @@
   width: 12rem;
 }
 
+.app-row-profile-name {
+  font-size: var(--text-p3);
+  color: var(--ink-muted);
+}
+
 .app-row-status {
   margin-left: auto;
   font-size: var(--text-micro);
   color: var(--ink-muted);
   text-align: right;
+}
+
+.app-info {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-subtle);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.app-info:hover,
+.app-info:focus-visible {
+  background: var(--tint);
+  color: var(--ink);
+}
+
+.app-info:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.app-tasktip {
+  position: fixed;
+  z-index: 40;
+  width: max-content;
+  max-width: min(26rem, calc(100vw - 16px));
+  max-height: min(20rem, calc(100vh - 16px));
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  padding: 10px 12px;
+  overscroll-behavior: contain;
+}
+
+.app-tasktip-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-tasktip-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-micro);
+}
+
+.app-tasktip-position {
+  color: var(--ink-subtle);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-tasktip-name {
+  overflow-wrap: anywhere;
+}
+
+.app-tasktip-time {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.app-tasktip-empty {
+  font-size: var(--text-micro);
+  color: var(--ink-muted);
 }
 
 .app-empty {
@@ -559,6 +704,18 @@
     gap: 8px;
   }
 
+  .app-header-inner--nav-only {
+    height: 48px;
+    flex-wrap: nowrap;
+    padding: 0 16px;
+    gap: 0;
+  }
+
+  .app-header-inner--nav-only .app-nav,
+  .app-header-inner--nav-only .app-nav a {
+    height: 48px;
+  }
+
   .app-brand {
     width: 100%;
     justify-content: space-between;
@@ -579,7 +736,7 @@
     justify-content: space-between;
   }
 
-  .app-main {
+  .app-content {
     padding: 16px;
   }
 
@@ -596,5 +753,13 @@
     width: 100%;
     margin-left: 0;
     text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-nav-indicator,
+  .app-row-slot,
+  .app-row {
+    transition: none;
   }
 }
