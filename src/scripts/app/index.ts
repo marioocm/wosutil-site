@@ -60,7 +60,16 @@ function onSnapshot(snapshot: Snapshot): void {
   }).then(() => runCommand('ack_requirements_reminder'))
 }
 
+function blockBrowserChrome(): void {
+  document.addEventListener('contextmenu', (event) => event.preventDefault())
+  window.addEventListener('keydown', (event) => {
+    const key = event.key.toLowerCase()
+    if ((event.ctrlKey || event.metaKey) && ['f', 'g', 'p', 's', 'u'].includes(key)) event.preventDefault()
+  })
+}
+
 export function initApp(): void {
+  blockBrowserChrome()
   const token = new URLSearchParams(location.search).get('t') ?? ''
   if (!token) {
     setConnection('Missing token', 'error')
