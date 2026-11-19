@@ -29,7 +29,7 @@ function slotKey(type: TroopType, side: Side): string {
 }
 
 function sideLabel(side: Side): string {
-  return side === 'left' ? 'Attacker side (left)' : 'Defender side (right)'
+  return side === 'left' ? 'Attacker side' : 'Defender side'
 }
 
 function renderSlot(button: HTMLButtonElement): void {
