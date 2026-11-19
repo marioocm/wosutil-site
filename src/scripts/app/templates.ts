@@ -1,7 +1,7 @@
 import { getToken, request, runCommand } from './api'
 import { showError } from './dialog'
 import { el } from './dom'
-import { subscribe } from './store'
+import { setSnapshot, subscribe } from './store'
 import type { Snapshot } from './types'
 
 type TemplateImage = { rev: number; width: number; height: number; source: string; directory: string }
@@ -214,10 +214,16 @@ function renderInstances(snapshot: Snapshot): void {
   }
 }
 
+async function refreshInstances(): Promise<void> {
+  await runCommand('refresh_instances')
+  const state = await request<Snapshot>('/api/state', 'GET')
+  setSnapshot(state)
+}
+
 export function initTemplates(): void {
   initSelection()
   el('template-refresh').addEventListener('click', () => {
-    void runCommand('refresh_instances')
+    void refreshInstances()
   })
   el('template-load').addEventListener('click', () => {
     void loadImage()

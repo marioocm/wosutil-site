@@ -1,0 +1,86 @@
+---
+import AppLayout from '../layouts/AppLayout.astro'
+import '../../src/styles/app.css'
+---
+
+<AppLayout title="WoS Util · Template Creator" description="WoS Util template editor.">
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="app-brand">
+        <span class="app-wordmark">WoS Util · Template Creator</span>
+      </div>
+      <div class="app-header-actions">
+        <span id="connection" class="app-connection" data-state="connecting">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="app-view" aria-label="Template Creator">
+      <section class="app-card" aria-labelledby="templates-title">
+        <div class="app-card-head">
+          <div>
+            <h1 id="templates-title" class="text-h4">Template Creator</h1>
+            <p class="app-muted">Capture or load a screenshot and save a crop as a template.</p>
+          </div>
+          <div class="app-actions">
+            <select id="template-instance" class="app-select" aria-label="Emulator instance"></select>
+            <button id="template-refresh" class="app-button" type="button">Refresh</button>
+            <button id="template-load" class="app-button" type="button">Load image</button>
+            <button id="template-capture" class="app-button app-button--primary" type="button">Capture</button>
+          </div>
+        </div>
+        <p id="template-status" class="app-muted" role="status"></p>
+      </section>
+
+      <section class="app-card" aria-labelledby="template-image-title">
+        <div class="app-card-head">
+          <h2 id="template-image-title" class="text-p1 font-medium">Image</h2>
+          <div class="app-actions">
+            <button id="template-zoom-out" class="app-button app-button--small" type="button">Zoom −</button>
+            <button id="template-zoom-in" class="app-button app-button--small" type="button">Zoom +</button>
+            <button id="template-reset" class="app-button app-button--small" type="button">Reset</button>
+            <button id="template-copy" class="app-button app-button--small" type="button">Copy ROI</button>
+            <span id="template-roi" class="app-status"></span>
+          </div>
+        </div>
+        <div id="template-viewport" class="app-image-viewport">
+          <div id="template-stage" class="app-image-stage" hidden>
+            <img id="template-image" alt="Template source" draggable="false" />
+            <div id="template-overlay" class="app-image-overlay">
+              <div id="template-selection" class="app-image-selection" hidden></div>
+            </div>
+          </div>
+        </div>
+        <p id="template-empty" class="app-empty">Load an image or capture an emulator screenshot.</p>
+      </section>
+
+      <section class="app-card" aria-labelledby="template-save-title">
+        <h2 id="template-save-title" class="text-p1 font-medium">Save</h2>
+        <div class="app-grid-2">
+          <label class="app-field">
+            <span>Template path</span>
+            <input id="template-path" class="app-input" type="text" placeholder="city/example.png" />
+          </label>
+          <label class="app-field">
+            <span>Full screenshot path</span>
+            <input id="template-full-path" class="app-input" type="text" placeholder="screenshots/screen.png" />
+          </label>
+        </div>
+        <div class="app-form-actions">
+          <p id="template-save-status" class="app-status" role="status"></p>
+          <button id="template-save-full" class="app-button" type="button">Save full screenshot</button>
+          <button id="template-save" class="app-button app-button--primary" type="button">Save template</button>
+        </div>
+      </section>
+    </section>
+
+
+  </main>
+
+  <script>
+    import { initTemplatePage } from '../../src/scripts/app/template-page'
+
+    initTemplatePage()
+  </script>
+</AppLayout>
