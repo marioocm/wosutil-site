@@ -1,5 +1,6 @@
 export const NAV_ITEMS = [
   { section: 'simulator', label: 'Simulator', href: '../simulator/' },
+  { section: 'reports', label: 'Reports', href: '../reports/' },
   { section: 'countdown', label: 'Countdown', href: '../countdown/' },
 ] as const
 

@@ -126,9 +126,18 @@ function normalizeSearch(value: string): string {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
+const HERO_ALIASES: Record<string, string> = {
+  bokan: 'lumak-bokan',
+}
+
 export function getHeroByName(name: string): Hero | null {
   const normalized = normalizeSearch(name)
-  return HEROES.find((hero) => normalizeSearch(hero.name) === normalized) ?? null
+  const alias = HERO_ALIASES[normalized]
+  return (
+    HEROES.find(
+      (hero) => hero.id === alias || normalizeSearch(hero.name) === normalized,
+    ) ?? null
+  )
 }
 
 export function filterHeroes(heroes: readonly Hero[], query: string): Hero[] {
