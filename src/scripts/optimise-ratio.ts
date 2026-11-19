@@ -224,7 +224,7 @@ export function initOptimiseRatio(): void {
   }
 
   function renderResults(result: OptimizeRatioResult, side: 'left' | 'right'): void {
-    const sideLabel = side === 'left' ? 'Left' : 'Right'
+    const sideLabel = side === 'left' ? 'Attacker' : 'Defender'
     const elapsed = Number.isFinite(result.elapsed_ms)
       ? `${Math.round(result.elapsed_ms)} ms`
       : ''
