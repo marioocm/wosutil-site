@@ -65,8 +65,8 @@ function updateRow(row: HTMLElement): void {
 }
 
 function updateSummary(table: HTMLElement, summary: HTMLElement): void {
-  const leftLabel = table.dataset['leftLabel'] ?? 'Left'
-  const rightLabel = table.dataset['rightLabel'] ?? 'Right'
+  const leftLabel = table.dataset['leftLabel'] ?? 'Attacker'
+  const rightLabel = table.dataset['rightLabel'] ?? 'Defender'
   let leftHigher = 0
   let rightHigher = 0
   let tied = 0

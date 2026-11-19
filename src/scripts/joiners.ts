@@ -17,7 +17,7 @@ const OPTION_CLASS =
   'flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left transition-colors hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 function sideLabel(side: Side): string {
-  return side === 'left' ? 'Left side' : 'Right side'
+  return side === 'left' ? 'Attacker side (left)' : 'Defender side (right)'
 }
 
 function slotKey(side: Side, index: number): string {

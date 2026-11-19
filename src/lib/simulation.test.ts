@@ -52,7 +52,7 @@ function state(overrides: Partial<SimulatorState> = {}): SimulatorState {
 describe('buildEngineCase', () => {
   it('carries heroes, joiners, troops, stats and skill levels', () => {
     const engine = buildEngineCase(state())
-    expect(engine.attacker.name).toBe('Left')
+    expect(engine.attacker.name).toBe('Attacker')
     expect(engine.attacker.heroes).toEqual([
       { name: 'Ahmose', s1: SKILL_LEVEL, s2: SKILL_LEVEL, s3: SKILL_LEVEL },
       { name: 'Reina', s1: SKILL_LEVEL, s2: SKILL_LEVEL, s3: SKILL_LEVEL },

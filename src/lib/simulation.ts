@@ -350,15 +350,15 @@ function buildSide(
 
 export function buildEngineCase(state: SimulatorState): EngineCase {
   return {
-    attacker: buildSide(state.left, state.right, 'att', 'Left'),
-    defender: buildSide(state.right, state.left, 'def', 'Right'),
+    attacker: buildSide(state.left, state.right, 'att', 'Attacker'),
+    defender: buildSide(state.right, state.left, 'def', 'Defender'),
   }
 }
 
 export function buildOptimizeCase(state: SimulatorState): EngineCase {
   return {
-    attacker: buildSide(state.left, state.right, 'att', 'Left', true),
-    defender: buildSide(state.right, state.left, 'def', 'Right', true),
+    attacker: buildSide(state.left, state.right, 'att', 'Attacker', true),
+    defender: buildSide(state.right, state.left, 'def', 'Defender', true),
   }
 }
 

@@ -569,7 +569,7 @@ export function initTroopPower(): void {
       tierLabel,
       fcValue,
       t12Value,
-      sideLabel: card.dataset['troopSideLabel'] ?? 'Left',
+      sideLabel: card.dataset['troopSideLabel'] ?? 'Attacker',
       typeId,
       typeLabel: card.dataset['troopTypeLabel'] ?? 'Troop',
     }
