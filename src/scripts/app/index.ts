@@ -6,9 +6,10 @@ import { appendLog, replaceLog, scrollLogToBottom } from './log'
 import { initPreferences, showPreferences } from './preferences'
 import { initProfiles, refreshProfiles } from './profiles'
 import { setSnapshot } from './store'
+import { initTemplates, showTemplates } from './templates'
 import type { Snapshot } from './types'
 
-const SECTIONS = ['instances', 'profiles', 'preferences', 'log'] as const
+const SECTIONS = ['instances', 'profiles', 'preferences', 'templates', 'log'] as const
 type Section = (typeof SECTIONS)[number]
 
 function isSection(value: string): value is Section {
@@ -30,6 +31,7 @@ function showSection(section: Section): void {
   }
   if (section === 'profiles') refreshProfiles()
   if (section === 'preferences') showPreferences()
+  if (section === 'templates') void showTemplates()
   if (section === 'log') scrollLogToBottom()
   if (location.hash !== `#${section}`) history.replaceState(null, '', `#${section}`)
 }
@@ -80,6 +82,7 @@ export function initApp(): void {
   initInstances()
   initProfiles()
   initPreferences()
+  initTemplates()
   setupNav()
   showSection(readSection())
 
