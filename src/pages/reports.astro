@@ -1,0 +1,1204 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+---
+
+<SiteLayout
+  title="WoS Util — Battle Reports"
+  description="Browse the Whiteout Survival battle report archive: battle overview, heroes, joiners, troop power, stat bonuses and skill details."
+  active="reports"
+>
+  <main data-reports class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]">
+    <header class="mb-8 flex flex-col gap-5 border-b border-line pb-8 lg:flex-row lg:items-end lg:justify-between">
+      <div class="max-w-[42rem] lg:flex-1">
+        <p class="text-eyebrow font-medium uppercase tracking-[0.16em] text-ink-muted">Archive</p>
+        <h1 class="mt-3 text-h2 font-medium tracking-[-0.02em]">Battle reports</h1>
+        <p class="mt-4 max-w-[36rem] text-p2 leading-relaxed text-ink-muted">
+          Battle overview, hero comparison, troop power, stat bonuses and skill details from
+          the archive.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-caption text-ink-muted">
+        <span class="rounded-full border border-line bg-paper px-3 py-1.5">
+          <strong data-stat-reports class="font-mono text-ink">—</strong> reports
+        </span>
+        <span class="rounded-full border border-line bg-paper px-3 py-1.5">
+          ATT win <strong data-stat-attacker class="font-mono text-ink">—</strong>
+        </span>
+        <span class="rounded-full border border-line bg-paper px-3 py-1.5">
+          DEF win <strong data-stat-defender class="font-mono text-ink">—</strong>
+        </span>
+        <a
+          class="rounded-full border border-line bg-paper px-3 py-1.5 text-ink transition-colors hover:border-line-strong hover:bg-tint/60"
+          href="/downloads/reports.jsonl.gz"
+          download
+        >
+          Download all
+        </a>
+        <a
+          class="rounded-full border border-line bg-paper px-3 py-1.5 text-ink transition-colors hover:border-line-strong hover:bg-tint/60"
+          href="/api/docs"
+        >
+          API
+        </a>
+      </div>
+    </header>
+
+    <div class="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
+      <aside class="lg:sticky lg:top-24">
+        <form
+          data-report-filters
+          class="rounded-card border border-line bg-paper p-5"
+          aria-label="Report filters"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-p1 font-medium">Filters</h2>
+            <button
+              type="reset"
+              class="cursor-pointer text-caption text-ink-muted underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div class="mt-5 grid gap-4">
+            <label class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted">Hero</span>
+              <input
+                name="hero"
+                list="report-hero-options"
+                placeholder="Hank, Mia…"
+                autocomplete="off"
+                class="h-9 w-full rounded-sm border border-line bg-background px-2.5 text-p3 text-ink placeholder:text-ink-subtle/60 focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
+              />
+              <datalist id="report-hero-options"></datalist>
+            </label>
+
+            <label class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted">Joiner</span>
+              <input
+                name="joiner"
+                list="report-joiner-options"
+                placeholder="Mia, Gordon…"
+                autocomplete="off"
+                class="h-9 w-full rounded-sm border border-line bg-background px-2.5 text-p3 text-ink placeholder:text-ink-subtle/60 focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
+              />
+              <datalist id="report-joiner-options"></datalist>
+            </label>
+
+            <label class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted">Result</span>
+              <select
+                name="result"
+                class="h-9 w-full cursor-pointer rounded-sm border border-line bg-background px-2 text-p3 text-ink focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
+              >
+                <option value="">All results</option>
+                <option value="attacker">Attacker victory</option>
+                <option value="defender">Defender victory</option>
+                <option value="draw">Draw</option>
+                <option value="none">No wipe</option>
+              </select>
+            </label>
+
+            <div class="grid grid-cols-2 gap-3">
+              <label class="grid gap-1.5">
+                <span class="text-micro font-medium text-ink-muted">Tier</span>
+                <select
+                  name="tier"
+                  class="h-9 w-full cursor-pointer rounded-sm border border-line bg-background px-2 text-p3 text-ink focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
+                >
+                  <option value="">All</option>
+                  {Array.from({ length: 12 }, (_, index) => 12 - index).map((tier) => (
+                    <option value={tier}>T{tier}</option>
+                  ))}
+                </select>
+              </label>
+              <label class="grid gap-1.5">
+                <span class="text-micro font-medium text-ink-muted">Furnace</span>
+                <select
+                  name="fc"
+                  class="h-9 w-full cursor-pointer rounded-sm border border-line bg-background px-2 text-p3 text-ink focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
+                >
+                  <option value="">All</option>
+                  {Array.from({ length: 11 }, (_, fc) => (
+                    <option value={fc}>FC{fc}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label class="flex cursor-pointer items-center gap-2 text-p3 text-ink-muted">
+              <input
+                type="checkbox"
+                name="has_t12"
+                class="size-4 cursor-pointer rounded-xs border-line accent-ink"
+              />
+              Has T12 skill
+            </label>
+          </div>
+        </form>
+      </aside>
+
+      <section aria-live="polite">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p data-report-count class="text-caption text-ink-muted">—</p>
+          <p data-report-status class="text-caption text-ink-muted" data-error="false"></p>
+        </div>
+
+        <div data-report-list class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
+
+        <div data-report-empty hidden class="rounded-card border border-dashed border-line bg-paper px-6 py-16 text-center">
+          <p class="text-p1 font-medium">No reports match those filters.</p>
+          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, result or tier.</p>
+        </div>
+
+        <div class="mt-5 flex justify-center">
+          <button
+            type="button"
+            data-report-load
+            hidden
+            class="cursor-pointer rounded-sm border border-line bg-paper px-5 py-2.5 text-button font-medium text-ink transition-colors hover:border-line-strong hover:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-50"
+          >
+            Load more
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <dialog data-report-dialog class="rp-dialog" aria-labelledby="rp-detail-title">
+      <button type="button" data-report-close class="rp-close" aria-label="Close report">Close</button>
+      <div data-report-detail></div>
+    </dialog>
+  </main>
+
+  <script>
+    import { initReports } from '../scripts/reports'
+
+    initReports()
+  </script>
+</SiteLayout>
+
+<style is:global>
+  .rp-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.9rem;
+    text-align: left;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      background-color 150ms ease,
+      transform 150ms ease;
+  }
+
+  .rp-card:hover {
+    background: color-mix(in srgb, var(--tint) 55%, var(--paper));
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+  }
+
+  .rp-card:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .rp-card-head,
+  .rp-card-badges,
+  .rp-card-side-row,
+  .rp-card-foot,
+  .rp-card-side-head {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .rp-card-head {
+    justify-content: space-between;
+  }
+
+  .rp-gen {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .rp-card-badges {
+    margin-left: auto;
+    gap: 0.3rem;
+  }
+
+  .rp-tier-badge,
+  .rp-mode,
+  .rp-fc-text {
+    padding: 0.18rem 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    color: var(--ink-muted);
+    background: var(--tint);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-mode {
+    color: var(--ink);
+  }
+
+  .rp-card-troops {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    padding-top: 0.15rem;
+  }
+
+  .rp-card-side {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .rp-card-side.is-right {
+    text-align: right;
+  }
+
+  .rp-card-side-head {
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-subtle);
+  }
+
+  .rp-card-side-head span:last-child {
+    font-size: 1rem;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .rp-bar {
+    display: block;
+    height: 4px;
+    overflow: hidden;
+    background: var(--tint);
+    border-radius: 999px;
+  }
+
+  .rp-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--positive);
+    border-radius: inherit;
+  }
+
+  .rp-bar.is-defender > span {
+    background: var(--negative);
+  }
+
+  .rp-card-side-block {
+    display: grid;
+    gap: 0.25rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-card-side-row {
+    min-width: 0;
+  }
+
+  .rp-card-tag {
+    width: 1.8rem;
+    flex: 0 0 auto;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-subtle);
+  }
+
+  .rp-mini-heroes {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    gap: 0.5rem;
+    overflow: hidden;
+  }
+
+  .rp-mini-hero {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 33%;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 10px;
+    color: var(--ink-muted);
+  }
+
+  .rp-mini-hero > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rp-avatar {
+    position: relative;
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--ink-muted);
+    background: var(--tint);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-avatar img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .rp-avatar-fallback {
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .rp-avatar-sm {
+    width: 24px;
+    height: 24px;
+  }
+
+  .rp-avatar-md {
+    width: 40px;
+    height: 40px;
+  }
+
+  .rp-avatar-lg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .rp-card-ratio {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .rp-ratio-track {
+    display: flex;
+    height: 6px;
+    min-width: 3rem;
+    flex: 1;
+    overflow: hidden;
+    background: var(--tint);
+    border-radius: 999px;
+  }
+
+  .rp-ratio-fill {
+    display: block;
+    height: 100%;
+  }
+
+  .rp-ratio-fill.is-infantry {
+    background: color-mix(in srgb, var(--ink) 28%, transparent);
+  }
+
+  .rp-ratio-fill.is-lancer {
+    background: color-mix(in srgb, var(--ink) 52%, transparent);
+  }
+
+  .rp-ratio-fill.is-marksman {
+    background: color-mix(in srgb, var(--ink) 78%, transparent);
+  }
+
+  .rp-ratio-fill + .rp-ratio-fill {
+    border-left: 1px solid var(--paper);
+  }
+
+  .rp-ratio-text {
+    flex: 0 0 auto;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-subtle);
+    white-space: nowrap;
+  }
+
+  .rp-card-foot {
+    justify-content: space-between;
+    padding-top: 0.2rem;
+    font-size: 10px;
+    color: var(--ink-subtle);
+  }
+
+  .rp-result {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-result.is-attacker {
+    color: var(--positive);
+    border-color: color-mix(in srgb, var(--positive) 45%, var(--line));
+    background: color-mix(in srgb, var(--positive) 10%, transparent);
+  }
+
+  .rp-result.is-defender {
+    color: var(--negative);
+    border-color: color-mix(in srgb, var(--negative) 45%, var(--line));
+    background: color-mix(in srgb, var(--negative) 10%, transparent);
+  }
+
+  .rp-result.is-draw,
+  .rp-result.is-neutral {
+    color: var(--ink-muted);
+    background: var(--tint);
+  }
+
+  .rp-dialog {
+    position: fixed;
+    inset: 0;
+    width: min(780px, 96vw);
+    height: 92dvh;
+    max-width: none;
+    max-height: 92dvh;
+    min-width: 0;
+    margin: auto;
+    padding: 0;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+    overflow: auto;
+  }
+
+  .rp-dialog::backdrop {
+    background: rgb(11 9 7 / 0.62);
+    backdrop-filter: blur(3px);
+  }
+
+  .rp-close {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    float: right;
+    margin: 0.7rem 0.7rem 0 0;
+    padding: 0.4rem 0.65rem;
+    font-size: var(--text-caption);
+    color: var(--ink-muted);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+  }
+
+  .rp-close:hover {
+    color: var(--ink);
+    border-color: var(--line-strong);
+    background: var(--tint);
+  }
+
+  [data-report-detail] {
+    min-width: 0;
+  }
+
+  .rp-report {
+    padding: 1rem 1.1rem;
+  }
+
+  .rp-detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-right: 4.25rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .rp-kicker {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-subtle);
+  }
+
+  .rp-detail-title {
+    margin: 0.3rem 0 0;
+    font-size: clamp(1.8rem, 4.5vw, 2.4rem);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .rp-muted {
+    color: var(--ink-muted);
+    font-size: 0.72rem;
+  }
+
+  .rp-section {
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-section-title {
+    margin: 0 0 0.55rem;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .rp-overview {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .rp-overview-head,
+  .rp-overview-row {
+    display: grid;
+    grid-template-columns: 1fr 7.5rem 1fr;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.55rem;
+  }
+
+  .rp-overview-head {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-subtle);
+    background: var(--tint);
+  }
+
+  .rp-overview-head span:last-child {
+    text-align: right;
+  }
+
+  .rp-overview-row + .rp-overview-row {
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-overview-label {
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--ink-muted);
+  }
+
+  .rp-overview-left,
+  .rp-overview-right {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rp-overview-right {
+    text-align: right;
+  }
+
+  .rp-hero-compare {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .rp-hero-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2.2rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.55rem;
+  }
+
+  .rp-hero-row + .rp-hero-row {
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-hero-cell {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .rp-hero-cell.is-defender {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+
+  .rp-hero-cell.is-empty {
+    opacity: 0.55;
+  }
+
+  .rp-hero-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.1rem;
+  }
+
+  .rp-hero-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+
+  .rp-hero-copy span {
+    font-size: 0.62rem;
+    color: var(--ink-subtle);
+  }
+
+  .rp-class-center {
+    display: flex;
+    width: 2.1rem;
+    height: 1.5rem;
+    margin: 0 auto;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: var(--tint);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-joiner-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .rp-joiner-side {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.55rem;
+    background: var(--background);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+
+  .rp-joiner-label {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-subtle);
+  }
+
+  .rp-joiner-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .rp-joiner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    padding: 0.12rem 0.3rem 0.12rem 0.12rem;
+    font-size: 0.66rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-troop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .rp-troop-side {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    background: var(--background);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+
+  .rp-troop-side-head {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.65rem;
+    color: var(--ink-muted);
+  }
+
+  .rp-ratio-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--ink-subtle);
+  }
+
+  .rp-troop-slots {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .rp-troop-tile {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 6.6rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    padding: 0.4rem 0.2rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-troop-tile.is-empty {
+    opacity: 0.55;
+  }
+
+  .rp-tile-class {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--ink-subtle);
+  }
+
+  .rp-tile-tier {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .rp-tile-t12 {
+    min-height: 0.7rem;
+    font-size: 0.55rem;
+    color: var(--ink-muted);
+  }
+
+  .rp-tile-count {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .rp-tile-fc {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.3rem;
+    display: flex;
+    width: 22px;
+    height: 25px;
+  }
+
+  .rp-tile-fc .troop-fc-hex {
+    width: 100%;
+    height: 100%;
+  }
+
+  .rp-tile-fc .troop-fc-value {
+    font-size: 11px;
+  }
+
+  .rp-stat-card {
+    padding: 0.35rem;
+    background: var(--background);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+
+  .rp-stat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rp-stat-table th,
+  .rp-stat-table td {
+    padding: 0.28rem 0.3rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rp-stat-table thead th {
+    font-family: var(--font-primary);
+    font-size: 0.62rem;
+    font-weight: 500;
+    color: var(--ink-subtle);
+    text-align: left;
+  }
+
+  .rp-stat-table thead th:last-child {
+    text-align: right;
+  }
+
+  .rp-stat-table tbody th {
+    font-family: var(--font-primary);
+    font-size: 0.64rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .rp-stat-table tbody tr:last-child td,
+  .rp-stat-table tbody tr:last-child th {
+    border-bottom: 0;
+  }
+
+  .rp-stat-left {
+    text-align: left;
+  }
+
+  .rp-stat-right {
+    text-align: right;
+  }
+
+  .rp-battle-section {
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-battle-toggle {
+    display: flex;
+    justify-content: center;
+  }
+
+  .rp-battle-button {
+    min-width: 12rem;
+    padding: 0.62rem 1.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--invert-fg);
+    background: var(--invert);
+    border: 1px solid var(--invert);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .rp-battle-button:hover {
+    opacity: 0.82;
+  }
+
+  .rp-battle-button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .rp-battle-details {
+    margin-top: 0.75rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-battle-details[hidden] {
+    display: none;
+  }
+
+  .rp-bd-heroes {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .rp-bd-hero-pair {
+    padding: 0.45rem 0.4rem;
+  }
+
+  .rp-bd-hero-pair + .rp-bd-hero-pair {
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-bd-hero-head-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2.1rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .rp-bd-hero-head {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .rp-bd-hero-head.is-right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+
+  .rp-bd-hero-head > div {
+    display: grid;
+    min-width: 0;
+    gap: 0.05rem;
+  }
+
+  .rp-bd-hero-head strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  .rp-bd-hero-head span {
+    font-size: 0.55rem;
+    color: var(--ink-subtle);
+  }
+
+  .rp-bd-skill-table {
+    margin-top: 0.28rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-bd-skill-head,
+  .rp-bd-skill-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3rem 3rem 3rem 3rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .rp-bd-skill-head {
+    padding: 0.2rem 0;
+    font-size: 0.5rem;
+    color: var(--ink-subtle);
+  }
+
+  .rp-bd-skill-head span:nth-child(2),
+  .rp-bd-skill-head span:nth-child(3),
+  .rp-bd-skill-head span:nth-child(4),
+  .rp-bd-skill-head span:nth-child(5) {
+    text-align: center;
+  }
+
+  .rp-bd-skill-head span:last-child {
+    text-align: right;
+  }
+
+  .rp-bd-skill-row {
+    padding: 0.2rem 0;
+    font-size: 0.56rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-bd-skill-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .rp-bd-skill-name.is-right {
+    text-align: right;
+  }
+
+  .rp-bd-trig,
+  .rp-bd-kills {
+    font-family: var(--font-mono);
+    color: var(--ink-subtle);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .rp-bd-kills.is-right {
+    border-left: 1px solid var(--line);
+  }
+
+  .rp-bd-troops {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.55rem;
+  }
+
+  .rp-bd-troop-side {
+    min-width: 0;
+    padding: 0.5rem;
+    background: var(--background);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+  }
+
+  .rp-bd-troop-side h4 {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-subtle);
+  }
+
+  .rp-bd-troop-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.1rem 0.3rem;
+    padding: 0.28rem 0;
+    font-size: 0.6rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-bd-troop-row:first-of-type {
+    border-top: 0;
+  }
+
+  .rp-bd-troop-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-muted);
+  }
+
+  .rp-bd-troop-count {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .rp-bd-troop-meta {
+    grid-column: 1 / -1;
+    font-family: var(--font-mono);
+    font-size: 0.53rem;
+    color: var(--ink-subtle);
+    white-space: normal;
+  }
+
+  .rp-skill-note {
+    margin-top: 0.6rem;
+  }
+
+  .rp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .rp-action {
+    padding: 0.4rem 0.65rem;
+    font-size: var(--text-caption);
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .rp-action:hover {
+    border-color: var(--line-strong);
+    background: var(--tint);
+  }
+
+  @media (max-width: 700px) {
+    .rp-report {
+      padding: 0.85rem;
+    }
+
+    .rp-detail-head {
+      flex-direction: column;
+      padding-right: 3.5rem;
+    }
+
+    .rp-overview-head,
+    .rp-overview-row {
+      grid-template-columns: 1fr 5.5rem 1fr;
+      padding-inline: 0.4rem;
+    }
+
+    .rp-hero-row {
+      grid-template-columns: minmax(0, 1fr) 1.8rem minmax(0, 1fr);
+      padding-inline: 0.4rem;
+    }
+
+    .rp-avatar-lg {
+      width: 42px;
+      height: 42px;
+    }
+
+    .rp-avatar-md {
+      width: 34px;
+      height: 34px;
+    }
+
+    .rp-hero-copy strong {
+      font-size: 0.76rem;
+    }
+
+    .rp-hero-copy span {
+      font-size: 0.55rem;
+    }
+
+    .rp-troop-tile {
+      min-height: 6.1rem;
+    }
+
+    .rp-stat-table {
+      font-size: 0.66rem;
+    }
+
+    .rp-bd-hero-head-row {
+      grid-template-columns: minmax(0, 1fr) 1.6rem minmax(0, 1fr);
+    }
+
+    .rp-bd-hero-head strong {
+      font-size: 0.65rem;
+    }
+
+    .rp-bd-skill-head,
+    .rp-bd-skill-row {
+      grid-template-columns: minmax(0, 1fr) 2.2rem 2.2rem 2.2rem 2.2rem minmax(0, 1fr);
+    }
+
+    .rp-bd-skill-row {
+      font-size: 0.5rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .rp-dialog {
+      width: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      border-radius: 0;
+    }
+
+    .rp-card {
+      padding: 0.75rem;
+    }
+
+    .rp-mini-hero {
+      max-width: 100%;
+    }
+  }
+</style>
