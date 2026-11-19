@@ -1,7 +1,7 @@
 import { request, runCommand } from './api'
-import { showError } from './dialog'
+import { openDialog, showError } from './dialog'
 import { el } from './dom'
-import { getSnapshot } from './store'
+import { getSnapshot, subscribe } from './store'
 import type { PathField, PreferencesPayload } from './types'
 
 let payload: PreferencesPayload | null = null
@@ -11,20 +11,10 @@ let killSet = false
 let bearCallSet = false
 let loaded = false
 let loading = false
-
-function setStatus(message: string): void {
-  el('prefs-save-status').textContent = message
-}
+let baseline = ''
 
 function ensurePathDraft(code: string): void {
   if (!pathsDraft[code]) pathsDraft[code] = {}
-}
-
-function setNumber(id: string, value: number, bounds: [number, number]): void {
-  const input = el<HTMLInputElement>(id)
-  input.min = String(bounds[0])
-  input.max = String(bounds[1])
-  input.value = String(value)
 }
 
 function setChecked(id: string, value: boolean): void {
@@ -100,6 +90,21 @@ async function browsePath(code: string, field: PathField, input: HTMLInputElemen
   }
 }
 
+function updateEmulatorAvailability(): void {
+  el<HTMLSelectElement>('emulator-active').disabled = getSnapshot()?.tool_running === true
+}
+
+function renderActiveEmulator(data: PreferencesPayload): void {
+  const select = el<HTMLSelectElement>('emulator-active')
+  const key = data.emulators.map((emulator) => `${emulator.code}:${emulator.label}`).join(',')
+  if (select.dataset['key'] !== key) {
+    select.dataset['key'] = key
+    select.replaceChildren(...data.emulators.map((emulator) => new Option(emulator.label, emulator.code)))
+  }
+  select.value = data.preferences.emulator ?? data.activeEmulator
+  updateEmulatorAvailability()
+}
+
 function renderPathEmulators(data: PreferencesPayload): void {
   const select = el<HTMLSelectElement>('paths-emulator')
   const key = data.emulators.map((emulator) => emulator.code).join(',')
@@ -111,23 +116,43 @@ function renderPathEmulators(data: PreferencesPayload): void {
   renderPathFields()
 }
 
+function buildMarchOptions(container: HTMLElement, name: string, selected: number, bounds: [number, number]): void {
+  container.replaceChildren()
+  for (let march = bounds[0]; march <= bounds[1]; march += 1) {
+    const option = document.createElement('label')
+    option.className = 'app-march-option'
+    const input = document.createElement('input')
+    input.type = 'radio'
+    input.name = name
+    input.value = String(march)
+    input.checked = march === selected
+    input.setAttribute('aria-label', `March ${march}`)
+    const value = document.createElement('span')
+    value.textContent = String(march)
+    option.append(input, value)
+    container.append(option)
+  }
+}
+
+function renderMarchPicker(containerId: string, name: string, selected: number, bounds: [number, number]): void {
+  buildMarchOptions(el(containerId), name, selected, bounds)
+}
+
 function renderBearMarches(values: number[], bounds: [number, number], count: number): void {
   const container = el('bear-marches')
   container.replaceChildren()
   for (let index = 0; index < count; index += 1) {
-    const label = document.createElement('label')
-    label.className = 'app-field'
+    const field = document.createElement('div')
+    field.className = 'app-march-field'
     const caption = document.createElement('span')
     caption.textContent = `March ${index + 1}`
-    const input = document.createElement('input')
-    input.className = 'app-input bear-march'
-    input.type = 'number'
-    input.step = '1'
-    input.min = String(bounds[0])
-    input.max = String(bounds[1])
-    input.value = String(values[index] ?? bounds[0])
-    label.append(caption, input)
-    container.append(label)
+    const picker = document.createElement('div')
+    picker.className = 'app-march-picker'
+    picker.setAttribute('role', 'radiogroup')
+    picker.setAttribute('aria-label', `Bear trap march ${index + 1}`)
+    buildMarchOptions(picker, `bear-trap-march-${index + 1}`, values[index] ?? bounds[0], bounds)
+    field.append(caption, picker)
+    container.append(field)
   }
 }
 
@@ -177,6 +202,36 @@ function renderPriorityList(): void {
   })
 }
 
+function selectedMarch(containerId: string, fallback: number): number {
+  const input = document.querySelector<HTMLInputElement>(`#${containerId} input:checked`)
+  const value = input ? Number(input.value) : fallback
+  return Number.isFinite(value) ? value : fallback
+}
+
+function selectedBearMarches(): number[] {
+  return Array.from(document.querySelectorAll<HTMLInputElement>('#bear-marches .app-march-picker input:checked')).map((input) => Number(input.value) || 0)
+}
+
+function collectValues(): Record<string, unknown> {
+  const defaults = payload?.preferences
+  return {
+    emulator: el<HTMLSelectElement>('emulator-active').value,
+    emulator_paths: pathsDraft,
+    task_order: taskOrder,
+    kill_beast_march: selectedMarch('kill-beast-marches', defaults?.kill_beast_march ?? 1),
+    kill_beast_march_set: killSet,
+    bear_trap_marches: selectedBearMarches(),
+    bear_rally_call_march: selectedMarch('bear-call-marches', defaults?.bear_rally_call_march ?? 1),
+    bear_rally_call_march_set: bearCallSet,
+    gather_resource: el<HTMLSelectElement>('gather').value,
+    intel_mode: el<HTMLSelectElement>('intel').value,
+    mystery_shop_level: el<HTMLSelectElement>('mystery-shop').value,
+    debug_mode: el<HTMLInputElement>('debug-mode').checked,
+    remember_schedule: el<HTMLInputElement>('remember-schedule').checked,
+    start_minimized: el<HTMLInputElement>('start-minimized').checked,
+  }
+}
+
 function buildForm(): void {
   const data = payload
   if (!data) return
@@ -191,8 +246,8 @@ function buildForm(): void {
 
   killSet = prefs.kill_beast_march_set
   bearCallSet = prefs.bear_rally_call_march_set
-  setNumber('kill-beast', prefs.kill_beast_march, data.bounds.killBeastMarch)
-  setNumber('bear-call', prefs.bear_rally_call_march, data.bounds.bearRallyCallMarch)
+  renderMarchPicker('bear-call-marches', 'bear-call-march', prefs.bear_rally_call_march, data.bounds.bearRallyCallMarch)
+  renderMarchPicker('kill-beast-marches', 'kill-beast-march', prefs.kill_beast_march, data.bounds.killBeastMarch)
   renderBearMarches(prefs.bear_trap_marches, data.bounds.bearTrapMarch, data.bounds.bearTrapCount)
   fillSelect('gather', data.options.gather, data.labels.gather, prefs.gather_resource)
   fillSelect('intel', data.options.intel, data.labels.intel, prefs.intel_mode)
@@ -200,9 +255,10 @@ function buildForm(): void {
   setChecked('remember-schedule', prefs.remember_schedule)
   setChecked('start-minimized', prefs.start_minimized)
   setChecked('debug-mode', prefs.debug_mode)
+  renderActiveEmulator(data)
   renderPathEmulators(data)
   renderPriorityList()
-  setStatus('')
+  baseline = JSON.stringify(collectValues())
 }
 
 async function loadPreferences(): Promise<void> {
@@ -215,52 +271,60 @@ async function loadPreferences(): Promise<void> {
   }
 }
 
-function intValue(id: string): number {
-  const value = Number(el<HTMLInputElement>(id).value)
-  return Number.isFinite(value) ? value : 0
-}
-
-function collectValues(): Record<string, unknown> {
-  const snapshot = getSnapshot()
-  return {
-    emulator: snapshot?.emulator ?? payload?.activeEmulator ?? 'mumu',
-    emulator_paths: pathsDraft,
-    task_order: taskOrder,
-    kill_beast_march: intValue('kill-beast'),
-    kill_beast_march_set: killSet,
-    bear_trap_marches: Array.from(document.querySelectorAll<HTMLInputElement>('.bear-march')).map((input) => Number(input.value) || 0),
-    bear_rally_call_march: intValue('bear-call'),
-    bear_rally_call_march_set: bearCallSet,
-    gather_resource: el<HTMLSelectElement>('gather').value,
-    intel_mode: el<HTMLSelectElement>('intel').value,
-    mystery_shop_level: el<HTMLSelectElement>('mystery-shop').value,
-    debug_mode: el<HTMLInputElement>('debug-mode').checked,
-    remember_schedule: el<HTMLInputElement>('remember-schedule').checked,
-    start_minimized: el<HTMLInputElement>('start-minimized').checked,
-  }
-}
-
 async function savePreferences(): Promise<void> {
   if (!payload) return
   const button = el<HTMLButtonElement>('preferences-save')
   button.disabled = true
-  setStatus('Saving…')
+  button.textContent = 'Saving…'
   try {
     const result = await runCommand('save_preferences', { values: collectValues() })
     if (!result.ok) {
-      setStatus('')
       showError(result.error ?? 'Could not save the preferences.')
       return
     }
     loaded = false
     await loadPreferences()
-    setStatus('Saved')
+    button.textContent = 'Saved'
     window.setTimeout(() => {
-      if (el('prefs-save-status').textContent === 'Saved') setStatus('')
+      if (button.textContent === 'Saved') button.textContent = 'Save preferences'
     }, 2500)
   } finally {
     button.disabled = false
+    if (button.textContent !== 'Saved') button.textContent = 'Save preferences'
   }
+}
+
+function togglePreferencesSection(button: HTMLButtonElement): void {
+  const contentId = button.getAttribute('aria-controls')
+  const content = contentId ? document.getElementById(contentId) : null
+  if (!content) return
+  const expanded = button.getAttribute('aria-expanded') !== 'true'
+  const title = button.dataset['sectionTitle'] ?? 'section'
+  button.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+  content.setAttribute('data-expanded', expanded ? 'true' : 'false')
+  content.toggleAttribute('inert', !expanded)
+  if (expanded) content.removeAttribute('aria-hidden')
+  else content.setAttribute('aria-hidden', 'true')
+  button.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Expand'} ${title}`)
+  button.title = `${expanded ? 'Collapse' : 'Expand'} ${title}`
+}
+
+export function isPreferencesDirty(): boolean {
+  return loaded && baseline !== '' && JSON.stringify(collectValues()) !== baseline
+}
+
+export async function confirmDiscardPreferences(): Promise<boolean> {
+  if (!isPreferencesDirty()) return true
+  const value = await openDialog({
+    title: 'Unsaved changes',
+    text: 'Discard your unsaved preference changes?',
+    confirmLabel: 'Discard',
+    cancelLabel: 'Keep editing',
+  })
+  if (value !== true) return false
+  loaded = false
+  await loadPreferences()
+  return true
 }
 
 export function initPreferences(): void {
@@ -268,15 +332,31 @@ export function initPreferences(): void {
     event.preventDefault()
     void savePreferences()
   })
+  el<HTMLSelectElement>('emulator-active').addEventListener('change', () => {
+    const active = el<HTMLSelectElement>('emulator-active').value
+    const paths = el<HTMLSelectElement>('paths-emulator')
+    if (Array.from(paths.options).some((option) => option.value === active)) paths.value = active
+    renderPathFields()
+  })
   el<HTMLSelectElement>('paths-emulator').addEventListener('change', () => {
     renderPathFields()
   })
-  el<HTMLInputElement>('kill-beast').addEventListener('input', () => {
+  el('kill-beast-marches').addEventListener('change', () => {
     killSet = true
   })
-  el<HTMLInputElement>('bear-call').addEventListener('input', () => {
+  el('bear-call-marches').addEventListener('change', () => {
     bearCallSet = true
   })
+  document.querySelectorAll<HTMLElement>('.app-collapse').forEach((section) => {
+    section.addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return
+      const content = section.querySelector<HTMLElement>('.app-collapse-content')
+      if (content?.contains(event.target)) return
+      const button = section.querySelector<HTMLButtonElement>('.app-collapse-toggle')
+      if (button) togglePreferencesSection(button)
+    })
+  })
+  subscribe(() => updateEmulatorAvailability())
 }
 
 export function showPreferences(): void {
