@@ -15,8 +15,8 @@ import {
 } from '../lib/troop-power'
 
 const SIDES = [
-  { id: 'left', label: 'Attacker', position: 'Left' },
-  { id: 'right', label: 'Defender', position: 'Right' },
+  { id: 'left', label: 'Attacker' },
+  { id: 'right', label: 'Defender' },
 ] as const
 
 const initialFirstDivider = DEFAULT_TROOP_RATIO[0] ?? 0
@@ -55,17 +55,6 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     id="simulator"
     class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
   >
-    <div
-      class="mx-auto mb-4 flex w-full max-w-[78rem] flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-sm border border-line bg-paper px-3 py-2 text-center text-micro text-ink-muted"
-    >
-      <span><strong class="font-medium text-ink">Attacker</strong> = left</span>
-      <span class="text-ink-subtle" aria-hidden="true">·</span>
-      <span><strong class="font-medium text-ink">Defender</strong> = right</span>
-      <span class="basis-full text-[10px] leading-snug text-ink-subtle">
-        Widgets and buffs follow these roles.
-      </span>
-    </div>
-
     <div
       class="mx-auto grid w-full max-w-[78rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)_minmax(0,1fr)] lg:items-start lg:gap-6"
     >
@@ -201,8 +190,8 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
           class="mt-4 grid grid-cols-2 gap-4 text-center text-[10px] font-medium uppercase tracking-[0.08em] text-ink-subtle"
           aria-hidden="true"
         >
-          <span>Attacker · Left</span>
-          <span>Defender · Right</span>
+          <span>Attacker</span>
+          <span>Defender</span>
         </div>
 
         <div class="mt-2 flex flex-col">
@@ -235,7 +224,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                     >
                   </span>
                   <span class={heroCaptionClass} data-hero-caption>Select</span>
-                  <span class="sr-only">{type.label} hero for the attacker (left side)</span>
+                  <span class="sr-only">{type.label} hero for the attacker</span>
                 </button>
 
                 <button
@@ -258,7 +247,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                     >
                   </span>
                   <span class={heroCaptionClass} data-hero-caption>Select</span>
-                  <span class="sr-only">{type.label} hero for the defender (right side)</span>
+                  <span class="sr-only">{type.label} hero for the defender</span>
                 </button>
               </div>
             ))
@@ -366,7 +355,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 data-joiner-side={side.id}
               >
                 <span class="col-span-2 text-center text-[10px] font-medium uppercase tracking-[0.08em] text-ink-subtle">
-                  {side.label} · {side.position}
+                  {side.label}
                 </span>
                 {JOINER_INDEXES.map((index) => (
                   <button
@@ -478,7 +467,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 data-troop-power-side={side.id}
               >
                 <span class="text-center text-[10px] font-medium uppercase tracking-[0.08em] text-ink-subtle">
-                  {side.label} · {side.position}
+                  {side.label}
                 </span>
                 <label class="flex flex-col items-center gap-1">
                   <span class="text-micro text-ink-muted">Total Troops</span>
@@ -792,12 +781,10 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
             <tr>
               <th scope="col" class="pb-1 text-left text-[10px] font-medium leading-tight text-ink-subtle">
                 Attacker
-                <span class="block text-[9px] font-normal normal-case tracking-normal">Left</span>
               </th>
               <th scope="col"><span class="sr-only">Stat</span></th>
               <th scope="col" class="pb-1 text-right text-[10px] font-medium leading-tight text-ink-subtle">
                 Defender
-                <span class="block text-[9px] font-normal normal-case tracking-normal">Right</span>
               </th>
             </tr>
           </thead>
@@ -821,7 +808,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                         autocomplete="off"
                         spellcheck="false"
                         data-stat-side="left"
-                        aria-label={`Attacker (left) ${stat.label} percentage`}
+                        aria-label={`Attacker ${stat.label} percentage`}
                         class={inputClass}
                       />
                       <span
@@ -856,7 +843,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                         autocomplete="off"
                         spellcheck="false"
                         data-stat-side="right"
-                        aria-label={`Defender (right) ${stat.label} percentage`}
+                        aria-label={`Defender ${stat.label} percentage`}
                         class={inputClass}
                       />
                       <span
@@ -899,9 +886,6 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 data-gareth="0"
               >
                 <h3 class="text-center text-p3 font-medium">{side.label}</h3>
-                <span class="text-center text-[9px] uppercase tracking-[0.08em] text-ink-subtle">
-                  {side.position}
-                </span>
 
                 <div>
                   <span class="block text-[10px] font-medium text-ink-muted">City</span>
