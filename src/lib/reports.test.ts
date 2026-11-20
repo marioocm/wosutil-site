@@ -6,10 +6,12 @@ import {
   formatNumber,
   formatPercent,
   formatSkill,
+  generationFilterLabel,
   generationLabel,
   heroName,
   isRally,
   maxTroopLevel,
+  parseGeneration,
   ratioText,
   reportGeneration,
   resultLabel,
@@ -51,6 +53,12 @@ describe('reports helpers', () => {
     expect(reportGeneration(item)).toBe(15)
     expect(generationLabel(15)).toBe('Gen 15')
     expect(generationLabel(null)).toBe('Gen —')
+    expect(generationFilterLabel(10)).toBe('Gen 10 or older')
+    expect(generationFilterLabel(undefined)).toBe('All gens')
+    expect(parseGeneration('10')).toBe(10)
+    expect(parseGeneration('')).toBeNull()
+    expect(parseGeneration('0')).toBeNull()
+    expect(parseGeneration('ten')).toBeNull()
     expect(isRally(item)).toBe(true)
     expect(isRally({ ...item, joiners: { attacker: [], defender: [] } })).toBe(false)
   })
@@ -62,10 +70,15 @@ describe('reports helpers', () => {
   })
 
   it('builds a query without empty filters', () => {
-    const query = buildQuery({ hero: ' Hank ', result: 'attacker', has_t12: true }, 120, 24)
+    const query = buildQuery(
+      { hero: ' Hank ', result: 'attacker', max_gen: 10, has_t12: true },
+      120,
+      24,
+    )
     const params = new URLSearchParams(query)
     expect(params.get('hero')).toBe('Hank')
     expect(params.get('result')).toBe('attacker')
+    expect(params.get('max_gen')).toBe('10')
     expect(params.get('has_t12')).toBe('true')
     expect(params.get('cursor')).toBe('120')
     expect(params.get('limit')).toBe('24')

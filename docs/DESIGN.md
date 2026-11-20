@@ -368,6 +368,28 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   progress copy is shown. The small live status line below the toggle reports
   any API error or confirms an applied ratio, and stays empty during a run.
 
+### Battle Reports filters
+
+- Outlined --paper sidebar card with a `Filters` heading and a muted `Clear`
+  action. The first control is a full-width generation trigger (`All gens` by
+  default or `Gen N or older`) that opens the same paper `<dialog>` picker as the
+  simulator: a full-width `All gens` option followed by a three-column grid of
+  `Gen 1–N` buttons, with the current bound selected. Picking a generation is an
+  upper bound: every main hero and joiner in the report must be that generation
+  or older, so newer heroes exclude the report. Choosing a lower generation
+  clears any selected hero or joiner that no longer fits.
+- Hero and Joiner are full-width triggers showing the selected portrait, name,
+  or `Any hero` / `Any joiner`. They open one shared paper `<dialog>` with a
+  search field and the same hero rows used by the simulator (portrait, name and
+  `Gen N` / `Epic`); a leading `Any hero` / `Any joiner` row clears the filter.
+  Options are ordered newest generation first, epics last, and hide heroes newer
+  than the selected generation. Both pickers are disabled until `/v1/meta`
+  returns the archive's hero lists.
+- Result, Tier and Furnace stay compact native selects; Furnace keeps `FC0` for
+  troops with no fire crystal. The `Has T12 skill` checkbox closes the card.
+- Report cards show `FC0` when the report has troops but no fire crystal level,
+  and Gen `—` only when no main hero or joiner is recognized.
+
 ### Footer
 
 - Centered GitHub link only. No secondary tagline.

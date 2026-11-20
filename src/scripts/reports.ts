@@ -28,6 +28,7 @@ import {
   type Troop,
   type TroopClass,
 } from '../lib/reports'
+import { initReportFilters } from './report-filters'
 
 const SIDE_LABEL: Record<SideKey, string> = { attacker: 'Attacker', defender: 'Defender' }
 const SHORT_LABEL: Record<TroopClass, string> = { infantry: 'INF', lancer: 'LAN', marksman: 'MAR' }
@@ -129,6 +130,12 @@ function renderCard(item: ReportListItem): string {
   const attRate = survivorRate(item.attacker_survivors, item.attacker_troops)
   const defRate = survivorRate(item.defender_survivors, item.defender_troops)
   const level = maxTroopLevel(item)
+  const fcLabel =
+    level.fc === null
+      ? level.tier === null
+        ? 'FC—'
+        : 'FC0'
+      : `FC${level.fc}`
   const rally = isRally(item)
   const joinerCount = (item.joiners.attacker?.length ?? 0) + (item.joiners.defender?.length ?? 0)
   const heroes = (side: SideKey) =>
@@ -141,7 +148,7 @@ function renderCard(item: ReportListItem): string {
         <span class="rp-gen">${escapeHtml(generationLabel(reportGeneration(item)))}</span>
         <span class="rp-card-badges">
           <span class="rp-tier-badge">${level.tier === null ? 'T—' : `T${level.tier}`}</span>
-          <span class="rp-fc-text">${level.fc === null ? 'FC—' : `FC${level.fc}`}</span>
+          <span class="rp-fc-text">${fcLabel}</span>
           <span class="rp-mode">${rally ? 'Rally' : '1v1'}</span>
         </span>
       </span>
@@ -184,7 +191,8 @@ function detailKicker(detail: ReportDetail): string {
     joiners: { attacker: detail.attacker.joiners, defender: detail.defender.joiners },
   })
   const rally = isRally({ joiners: { attacker: detail.attacker.joiners, defender: detail.defender.joiners } })
-  return `${generationLabel(generation)} · ${tier === null ? 'T—' : `T${tier}`} · ${fc === null ? 'FC—' : `FC${fc}`} · ${rally ? 'Rally' : '1v1'}`
+  const fcLabel = fc === null ? (tiers.length ? 'FC0' : 'FC—') : `FC${fc}`
+  return `${generationLabel(generation)} · ${tier === null ? 'T—' : `T${tier}`} · ${fcLabel} · ${rally ? 'Rally' : '1v1'}`
 }
 
 function overviewRows(side: SideDetail): Array<[string, number]> {
@@ -294,17 +302,18 @@ function troopTile(side: SideDetail, troopClass: TroopClass): string {
       </div>`
   }
   const title = summary.groups
-    .map((troop) => `T${troop.tier} ${troop.furnace || 'FC—'}: ${formatNumber(troop.count)}`)
+    .map((troop) => `T${troop.tier} ${troop.furnace || 'FC0'}: ${formatNumber(troop.count)}`)
     .join(' · ')
+  const fc = summary.fc ?? 0
   return `
     <div class="rp-troop-slot" title="${escapeHtml(title)}">
       <span class="rp-troop-tile">
         <span class="rp-tile-class">${SHORT_LABEL[troopClass]}</span>
         <span class="rp-tile-tier">T${summary.tier ?? '—'}</span>
         ${
-          summary.fc === null
-            ? ''
-            : `<span class="rp-tile-fc"><span class="troop-fc-hex"><span class="troop-fc-value">${summary.fc}</span></span></span>`
+          summary.groups.length
+            ? `<span class="rp-tile-fc"><span class="troop-fc-hex"><span class="troop-fc-value">${fc}</span></span></span>`
+            : ''
         }
       </span>
       ${summary.tier === 12 ? `<span class="rp-tile-t12">Lv ${t12Level}</span>` : ''}
@@ -416,7 +425,7 @@ function renderBattleTroops(sideKey: SideKey, side: SideDetail): string {
     .map(
       (troop) => `
       <tr>
-        <th scope="row" title="${escapeHtml(`${classLabel(troop.class)} · T${troop.tier} · ${troop.furnace || 'FC—'}`)}">${classLabel(troop.class)} · T${troop.tier} · ${escapeHtml(troop.furnace || 'FC—')}</th>
+        <th scope="row" title="${escapeHtml(`${classLabel(troop.class)} · T${troop.tier} · ${troop.furnace || 'FC0'}`)}">${classLabel(troop.class)} · T${troop.tier} · ${escapeHtml(troop.furnace || 'FC0')}</th>
         <td>${formatNumber(troop.count)}</td>
         <td>${formatNumber(troop.injured)}</td>
         <td>${formatNumber(troop.losses)}</td>
@@ -526,22 +535,9 @@ function parsePathId(): string | null {
   return match?.[1] ?? null
 }
 
-function initialFilters(): ReportFilters {
-  const params = new URLSearchParams(window.location.search)
-  return {
-    hero: params.get('hero') || '',
-    joiner: params.get('joiner') || '',
-    result: params.get('result') || '',
-    tier: params.get('tier') || '',
-    fc: params.get('fc') || '',
-    has_t12: params.get('has_t12') === 'true',
-  }
-}
-
 export function initReports(): void {
   const root = document.querySelector<HTMLElement>('[data-reports]')
   if (!root) return
-  const form = must<HTMLFormElement>(root, '[data-report-filters]')
   const list = must<HTMLElement>(root, '[data-report-list]')
   const empty = must<HTMLElement>(root, '[data-report-empty]')
   const loadMore = must<HTMLButtonElement>(root, '[data-report-load]')
@@ -551,10 +547,8 @@ export function initReports(): void {
   const detailRoot = must<HTMLElement>(dialog, '[data-report-detail]')
   const dialogMeta = must<HTMLElement>(dialog, '[data-report-meta]')
   const closeButton = must<HTMLButtonElement>(dialog, '[data-report-close]')
-  const heroOptions = must<HTMLDataListElement>(root, '#report-hero-options')
-  const joinerOptions = must<HTMLDataListElement>(root, '#report-joiner-options')
   const state: State = {
-    filters: initialFilters(),
+    filters: {},
     cursor: null,
     loading: false,
     items: [],
@@ -563,6 +557,12 @@ export function initReports(): void {
     currentId: null,
     request: 0,
   }
+  const filterController = initReportFilters((next) => {
+    state.filters = next
+    syncUrl()
+    void loadPage(true)
+  })
+  state.filters = filterController.filters
 
   const desktopLayout = window.matchMedia('(min-width: 1024px)')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -667,26 +667,6 @@ export function initReports(): void {
     status.dataset.error = error ? 'true' : 'false'
   }
 
-  const setFormValues = (): void => {
-    for (const [key, value] of Object.entries(state.filters)) {
-      const field = form.elements.namedItem(key)
-      if (field instanceof HTMLInputElement && field.type === 'checkbox') {
-        field.checked = Boolean(value)
-      } else if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
-        field.value = value === undefined || value === null ? '' : String(value)
-      }
-    }
-  }
-
-  const readFilters = (): ReportFilters => ({
-    hero: (form.elements.namedItem('hero') as HTMLInputElement | null)?.value ?? '',
-    joiner: (form.elements.namedItem('joiner') as HTMLInputElement | null)?.value ?? '',
-    result: (form.elements.namedItem('result') as HTMLSelectElement | null)?.value ?? '',
-    tier: (form.elements.namedItem('tier') as HTMLSelectElement | null)?.value ?? '',
-    fc: (form.elements.namedItem('fc') as HTMLSelectElement | null)?.value ?? '',
-    has_t12: (form.elements.namedItem('has_t12') as HTMLInputElement | null)?.checked ?? false,
-  })
-
   const syncUrl = (): void => {
     if (state.currentId) return
     const params = new URLSearchParams()
@@ -699,10 +679,7 @@ export function initReports(): void {
 
   const setMeta = (meta: ReportMeta): void => {
     state.meta = meta
-    heroOptions.innerHTML = meta.heroes.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('')
-    joinerOptions.innerHTML = meta.joiners.map((name) => `<option value="${escapeHtml(name)}"></option>`).join('')
-    state.total = meta.total
-    updateCount()
+    filterController.setMeta(meta)
   }
 
   const loadMeta = async (): Promise<void> => {
@@ -798,28 +775,6 @@ export function initReports(): void {
   }
 
   desktopLayout.addEventListener('change', syncBattleDetails)
-  form.addEventListener('submit', (event) => event.preventDefault())
-  let timer: number | undefined
-  form.addEventListener('input', () => {
-    window.clearTimeout(timer)
-    timer = window.setTimeout(() => {
-      state.filters = readFilters()
-      syncUrl()
-      void loadPage(true)
-    }, 250)
-  })
-  form.addEventListener('change', () => {
-    state.filters = readFilters()
-    syncUrl()
-    void loadPage(true)
-  })
-  form.addEventListener('reset', () => {
-    window.setTimeout(() => {
-      state.filters = {}
-      syncUrl()
-      void loadPage(true)
-    }, 0)
-  })
   loadMore.addEventListener('click', () => void loadPage(false))
   const refresh = must<HTMLButtonElement>(root, '[data-report-refresh]')
   refresh.addEventListener('click', () => {
@@ -878,7 +833,6 @@ export function initReports(): void {
     }
   })
 
-  setFormValues()
   const initialId = parsePathId() || new URLSearchParams(window.location.search).get('id')
   void loadMeta()
   void loadStats()

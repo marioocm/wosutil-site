@@ -111,6 +111,7 @@ export interface ReportFilters {
   result?: string
   tier?: string
   fc?: string
+  max_gen?: number
   has_t12?: boolean
 }
 
@@ -216,6 +217,17 @@ export function generationLabel(generation: number | null): string {
   return generation === null ? 'Gen —' : `Gen ${generation}`
 }
 
+export function generationFilterLabel(generation: number | null | undefined): string {
+  return generation ? `Gen ${generation} or older` : 'All gens'
+}
+
+export function parseGeneration(value: string | null | undefined): number | null {
+  const text = String(value ?? '').trim()
+  if (!text) return null
+  const number = Number(text)
+  return Number.isInteger(number) && number > 0 ? number : null
+}
+
 export function isRally(item: { joiners: Record<SideKey, string[]> }): boolean {
   return (item.joiners.attacker?.length ?? 0) + (item.joiners.defender?.length ?? 0) > 0
 }
@@ -241,6 +253,7 @@ export function buildQuery(filters: ReportFilters, cursor?: number | null, limit
   if (filters.result) params.set('result', filters.result)
   if (filters.tier) params.set('tier', filters.tier)
   if (filters.fc) params.set('fc', filters.fc)
+  if (filters.max_gen) params.set('max_gen', String(filters.max_gen))
   if (filters.has_t12) params.set('has_t12', 'true')
   if (cursor !== undefined && cursor !== null) params.set('cursor', String(cursor))
   params.set('limit', String(limit))

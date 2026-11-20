@@ -1,20 +1,16 @@
+import { bindPickerKeyboard, createClearOption, createHeroOption } from '../components/hero-option'
 import { fillHeroVisual } from '../components/hero-visual'
 import { getGenerationLineup, getGenerationPreset, onGenerationChange } from '../lib/generations'
 import {
   filterHeroes,
-  formatHeroGeneration,
   getAllHeroes,
   getHeroById,
-  getTroopTypeLabel,
   getTroopTypeShortLabel,
   isHeroAvailable,
   type Hero,
 } from '../lib/heroes'
 
 type Side = 'left' | 'right'
-
-const OPTION_CLASS =
-  'flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left transition-colors hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 function sideLabel(side: Side): string {
   return side === 'left' ? 'Attacker side' : 'Defender side'
@@ -115,79 +111,15 @@ export function initJoiners(): void {
     closePicker()
   }
 
-  function createHeroOption(hero: Hero, selected: boolean): HTMLButtonElement {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = OPTION_CLASS
-    button.dataset['joinerOption'] = hero.id
-    button.dataset['joinerSelected'] = selected ? 'true' : 'false'
-
-    const avatar = document.createElement('span')
-    avatar.className =
-      'relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-line bg-background text-micro font-medium text-ink-muted'
-    avatar.setAttribute('aria-hidden', 'true')
-    fillHeroVisual(avatar, hero)
-
-    const name = document.createElement('span')
-    name.className = 'min-w-0 flex-1 truncate text-p2 text-ink'
-    name.textContent = hero.name
-
-    const meta = document.createElement('span')
-    meta.className = 'shrink-0 text-micro text-ink-muted'
-    meta.textContent = `${formatHeroGeneration(hero.generation)} · ${getTroopTypeLabel(hero.type)}`
-
-    button.append(avatar, name, meta)
-
-    if (selected) {
-      const check = document.createElement('span')
-      check.className = 'shrink-0 text-p2 text-ink'
-      check.setAttribute('aria-hidden', 'true')
-      check.textContent = '✓'
-
-      const selectedLabel = document.createElement('span')
-      selectedLabel.className = 'sr-only'
-      selectedLabel.textContent = 'Selected'
-
-      button.append(check, selectedLabel)
-    }
-
-    button.addEventListener('click', () => selectHero(hero))
-    return button
-  }
-
-  function createNoneOption(): HTMLButtonElement {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = `${OPTION_CLASS} mb-1 border-b border-line pb-3`
-    button.dataset['joinerOption'] = 'none'
-    button.dataset['joinerNone'] = 'true'
-
-    const avatar = document.createElement('span')
-    avatar.className =
-      'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-line bg-background text-p2 text-ink-muted'
-    avatar.setAttribute('aria-hidden', 'true')
-    avatar.textContent = '−'
-
-    const name = document.createElement('span')
-    name.className = 'min-w-0 flex-1 text-p2 text-ink'
-    name.textContent = 'None'
-
-    const meta = document.createElement('span')
-    meta.className = 'shrink-0 text-micro text-ink-muted'
-    meta.textContent = 'Clear'
-
-    button.append(avatar, name, meta)
-    button.addEventListener('click', clearSelection)
-    return button
-  }
-
   function renderOptions(): void {
     const query = search.value
     const heroes = filterHeroes(getAllHeroes(maxGeneration), query)
     const current = currentSelection()
     const nodes: HTMLElement[] = []
 
-    if (query.trim() === '') nodes.push(createNoneOption())
+    if (query.trim() === '') {
+      nodes.push(createClearOption({ kind: 'joiner', onSelect: clearSelection }))
+    }
 
     if (heroes.length === 0) {
       const empty = document.createElement('p')
@@ -199,7 +131,14 @@ export function initJoiners(): void {
 
     options.replaceChildren(
       ...nodes,
-      ...heroes.map((hero) => createHeroOption(hero, current?.id === hero.id)),
+      ...heroes.map((hero) =>
+        createHeroOption(hero, {
+          kind: 'joiner',
+          selected: current?.id === hero.id,
+          showType: true,
+          onSelect: selectHero,
+        }),
+      ),
     )
   }
 
@@ -268,35 +207,7 @@ export function initJoiners(): void {
     event.preventDefault()
     firstHero.focus()
   })
-  options.addEventListener('keydown', (event) => {
-    if (
-      event.key !== 'ArrowDown' &&
-      event.key !== 'ArrowUp' &&
-      event.key !== 'Home' &&
-      event.key !== 'End'
-    ) {
-      return
-    }
-
-    const items = [...options.querySelectorAll<HTMLButtonElement>('[data-joiner-option]')]
-    const focused = document.activeElement
-    if (!(focused instanceof HTMLButtonElement)) return
-    const index = items.indexOf(focused)
-    if (index === -1) return
-
-    event.preventDefault()
-    let next = index
-    if (event.key === 'Home') {
-      next = 0
-    } else if (event.key === 'End') {
-      next = items.length - 1
-    } else if (event.key === 'ArrowDown') {
-      next = Math.min(index + 1, items.length - 1)
-    } else {
-      next = Math.max(index - 1, 0)
-    }
-    items[next]?.focus()
-  })
+  bindPickerKeyboard(options, 'joiner')
   dialog.addEventListener('click', (event) => {
     if (event.target === dialog) closePicker()
   })

@@ -56,29 +56,108 @@ import SiteLayout from '../layouts/SiteLayout.astro'
           </div>
 
           <div class="mt-5 grid gap-4">
-            <label class="grid gap-1.5">
-              <span class="text-micro font-medium text-ink-muted">Hero</span>
-              <input
-                name="hero"
-                list="report-hero-options"
-                placeholder="Hank, Mia…"
-                autocomplete="off"
-                class="h-9 w-full rounded-sm border border-line bg-background px-2.5 text-p3 text-ink placeholder:text-ink-subtle/60 focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
-              />
-              <datalist id="report-hero-options"></datalist>
-            </label>
+            <div class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted">Generation</span>
+              <button
+                type="button"
+                data-report-generation-trigger
+                data-selected="false"
+                aria-haspopup="dialog"
+                aria-controls="report-generation-picker"
+                aria-label="Filter by generation: All gens"
+                class="group flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                <span data-report-generation-value class="min-w-0 truncate">All gens</span>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
+                >
+                  <path d="m4 6 4 4 4-4"></path>
+                </svg>
+              </button>
+            </div>
 
-            <label class="grid gap-1.5">
+            <div class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted">Hero</span>
+              <button
+                type="button"
+                data-report-picker-trigger="hero"
+                data-selected="false"
+                disabled
+                aria-haspopup="dialog"
+                aria-controls="report-picker"
+                aria-label="Filter by hero: Any hero"
+                class="group flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60"
+              >
+                <span
+                  data-report-hero-visual
+                  class="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted"
+                  aria-hidden="true"
+                >
+                  +
+                </span>
+                <span data-report-hero-value class="min-w-0 flex-1 truncate">Any hero</span>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
+                >
+                  <path d="m4 6 4 4 4-4"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="grid gap-1.5">
               <span class="text-micro font-medium text-ink-muted">Joiner</span>
-              <input
-                name="joiner"
-                list="report-joiner-options"
-                placeholder="Mia, Gordon…"
-                autocomplete="off"
-                class="h-9 w-full rounded-sm border border-line bg-background px-2.5 text-p3 text-ink placeholder:text-ink-subtle/60 focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
-              />
-              <datalist id="report-joiner-options"></datalist>
-            </label>
+              <button
+                type="button"
+                data-report-picker-trigger="joiner"
+                data-selected="false"
+                disabled
+                aria-haspopup="dialog"
+                aria-controls="report-picker"
+                aria-label="Filter by joiner: Any joiner"
+                class="group flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60"
+              >
+                <span
+                  data-report-joiner-visual
+                  class="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted"
+                  aria-hidden="true"
+                >
+                  +
+                </span>
+                <span data-report-joiner-value class="min-w-0 flex-1 truncate">Any joiner</span>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
+                >
+                  <path d="m4 6 4 4 4-4"></path>
+                </svg>
+              </button>
+            </div>
 
             <label class="grid gap-1.5">
               <span class="text-micro font-medium text-ink-muted">Result</span>
@@ -131,6 +210,101 @@ import SiteLayout from '../layouts/SiteLayout.astro'
             </label>
           </div>
         </form>
+
+        <dialog
+          id="report-generation-picker"
+          class="rp-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="report-generation-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3
+                  id="report-generation-picker-title"
+                  class="text-p1 font-medium tracking-[-0.01em]"
+                >
+                  Filter by generation
+                </h3>
+                <p class="text-micro text-ink-muted">
+                  Shows reports whose main heroes and joiners are this generation or older.
+                </p>
+              </div>
+              <button
+                type="button"
+                data-report-generation-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <div
+              data-report-generation-options
+              class="grid min-h-0 flex-1 grid-cols-3 content-start gap-1.5 overflow-y-auto overscroll-contain p-3"
+            ></div>
+          </div>
+        </dialog>
+
+        <dialog
+          id="report-picker"
+          class="rp-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          aria-labelledby="report-picker-title"
+        >
+          <div class="flex max-h-[inherit] flex-col">
+            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+              <div class="min-w-0">
+                <h3 id="report-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
+                  Filter by hero
+                </h3>
+                <p data-report-picker-subtitle class="text-micro text-ink-muted"></p>
+              </div>
+              <button
+                type="button"
+                data-report-picker-close
+                class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-transparent text-ink transition-colors hover:border-line-strong hover:bg-tint/50 active:bg-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8"></path>
+                </svg>
+              </button>
+            </div>
+            <label class="border-b border-line px-3 py-2">
+              <input
+                type="search"
+                data-report-picker-search
+                aria-label="Search heroes"
+                placeholder="Search heroes"
+                autocomplete="off"
+                class="h-9 w-full rounded-sm border border-line bg-background px-2.5 text-p3 text-ink placeholder:text-ink-subtle/60 focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
+              />
+            </label>
+            <div
+              data-report-picker-options
+              class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
+            ></div>
+          </div>
+        </dialog>
       </aside>
 
       <section aria-live="polite">
@@ -143,7 +317,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
         <div data-report-empty hidden class="rounded-card border border-dashed border-line bg-paper px-6 py-16 text-center">
           <p class="text-p1 font-medium">No reports match those filters.</p>
-          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, result or tier.</p>
+          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, generation, result or tier.</p>
         </div>
 
         <div class="mt-5 flex justify-center">
@@ -176,6 +350,22 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 </SiteLayout>
 
 <style is:global>
+  [data-report-generation-trigger][data-selected="true"],
+  [data-report-picker-trigger][data-selected="true"] {
+    border-color: var(--line-strong);
+    background: color-mix(in srgb, var(--tint) 55%, var(--paper));
+  }
+
+  .rp-picker::backdrop {
+    background: rgb(11 9 7 / 0.45);
+  }
+
+  [data-report-generation-option][data-selected="true"],
+  [data-report-option][data-selected="true"] {
+    border-color: var(--ink);
+    background: var(--tint);
+  }
+
   .rp-card {
     display: flex;
     flex-direction: column;
