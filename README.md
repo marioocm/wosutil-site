@@ -1,14 +1,15 @@
 # WoS Util Site
 
-Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, plus a battle simulator with generation presets, Hero Comparison, Joiners, Troop Power, Stats Bonuses and simulated battle reports.
+Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, a battle simulator with generation presets, Hero Comparison, Joiners, Troop Power, Stats Bonuses and simulated battle reports, and a browser for the public battle-report archive.
 
-Live site: [marioocm.github.io/wosutil-site](https://marioocm.github.io/wosutil-site/)
+Live site: [wosutil.mariocm.dev](https://wosutil.mariocm.dev/)
 
 ## Features
 
 - **Countdown:** duration-based timer, rally and enemy callers, call queue, shareable setup and UTC clock.
 - **Simulator:** generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses, plus Battle Overview and Battle Details from the `wosutil-sim` engine.
 - **Optimise Ratio:** sweeps one side's inf/lan/mar split on the engine and lists the best ratios; click a result to apply it to Troop Power.
+- **Reports:** searchable public battle archive with hero/joiner/result/tier/FC/T12 filters, report details, JSON/CSV downloads and a full JSONL export.
 - Static Astro pages with scoped vanilla-TS scripts; the countdown needs no backend.
 
 ## Stack
@@ -18,7 +19,7 @@ Live site: [marioocm.github.io/wosutil-site](https://marioocm.github.io/wosutil-
 - [Tailwind CSS](https://tailwindcss.com/) v4 — CSS-first config via `@theme`
 - [Vitest](https://vitest.dev/) 5 — unit tests
 - [pnpm](https://pnpm.io/) 10 — package manager
-- GitHub Pages + GitHub Actions — CI/CD
+- GitHub Actions with a self-hosted Windows runner — CI/CD to the PC Caddy stack
 
 ## Requirements
 
@@ -41,12 +42,12 @@ The simulator page calls the `wosutil-sim` engine API. The local default is
 sibling `wosutil-sim` repository.
 
 - Local override without rebuilding: `?api=http://192.168.1.50:8000`.
-- Build-time override: copy `.env.example` to `.env` and set `PUBLIC_SIM_API`.
-- Production: set the repository variable `PUBLIC_SIM_API` (Settings → Secrets
-  and variables → Actions → Variables). The value is public and ends up in the
-  browser bundle, so never put secrets in a `PUBLIC_*` variable.
-- The API must be HTTPS when the site is served over HTTPS (GitHub Pages), and
-  its origin must be allowed in the API's `WOS_CORS_ORIGINS`.
+- Production uses the same-origin `/sim` path served by the PC Caddy stack;
+  the deploy workflow sets `PUBLIC_SIM_API=/sim`.
+- The browser ignores a baked `localhost` API on a public host, so a local
+  build cannot ask visitors for local-network access.
+- The API's origin must be allowed in `WOS_CORS_ORIGINS` when it is called
+  cross-origin. The same-origin `/sim` path needs no CORS entry.
 - The API allows 5 simulations per 10s. The site mirrors that limit client-side
   and shows a friendly retry message when it is reached.
 - Optimise Ratio uses `POST /v1/optimize-ratio` with the same case and a
@@ -64,19 +65,28 @@ pnpm preview     # preview the production build
 
 ## Structure
 
-- `src/pages/` — routes: countdown, simulator, 404 and `robots.txt`.
+- `src/pages/` — routes: countdown, simulator, reports, 404 and `robots.txt`.
 - `src/layouts/` — document shell (`BaseLayout`) and site chrome (`SiteLayout`).
 - `src/components/` — static header/footer, the countdown widgets and the shared hero visual helper.
-- `src/scripts/` — browser behavior: countdown island, header chrome, simulator cards and simulation results.
-- `src/lib/` — shared logic and types, with Vitest tests (timer, rally, heroes, generations, troop power, stats, simulation and rate limit).
+- `src/scripts/` — browser behavior: countdown island, header chrome, simulator cards, simulation results and the reports browser.
+- `src/lib/` — shared logic and types, with Vitest tests (timer, rally, heroes, generations, troop power, stats, simulation, rate limit and reports).
 - `src/styles/` — Tailwind entry and design tokens.
-- `public/` — `.nojekyll` (required for Astro's `_astro/` assets on Pages) and favicon.
+- `public/` — favicon and static assets.
 - `docs/DESIGN.md` — design system.
 - `astro.config.ts` — static config, base/site, root redirect, sitemap and prefetch.
 
 ## Deployment
 
-GitHub Actions builds and publishes `dist/` to GitHub Pages on `main`. The Astro `base`/`site` are derived from `GITHUB_REPOSITORY`, so project pages and forks work without editing the config; override them with `BASE_PATH`/`SITE_URL` if needed. The root URL redirects to `/simulator/`.
+Pushes to `main` run `.github/workflows/deploy.yml` on the self-hosted Windows
+runner labeled `wos-pc`. The job installs, typechecks, tests, builds with
+`SITE_URL=https://wosutil.mariocm.dev` and `PUBLIC_SIM_API=/sim`, copies
+`dist/` into the sibling `wosutil-sim/deploy/web` directory and verifies that
+Caddy returns 200 for `/reports/`. GitHub Pages is disabled; the domain points
+at the PC through a Cloudflare Tunnel.
+
+The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
+override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to
+`/simulator/`.
 
 ## Design and contributing
 
