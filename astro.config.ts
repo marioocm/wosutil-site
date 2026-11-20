@@ -17,7 +17,7 @@ export default defineConfig({
   trailingSlash: 'always',
   prefetch: true,
   redirects: {
-    '/': `${base}simulator/`,
+    '/': `${base}reports/`,
   },
   integrations: [
     {

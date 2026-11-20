@@ -6,10 +6,10 @@ Live site: [wosutil.mariocm.dev](https://wosutil.mariocm.dev/)
 
 ## Features
 
+- **Battle Reports:** searchable public battle archive with hero/joiner/result/tier/FC/T12 filters, report details, JSON/CSV downloads and a full JSONL export.
 - **Countdown:** duration-based timer, rally and enemy callers, call queue, shareable setup and UTC clock.
 - **Simulator:** generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses, plus Battle Overview and Battle Details from the `wosutil-sim` engine.
 - **Optimise Ratio:** sweeps one side's inf/lan/mar split on the engine and lists the best ratios; click a result to apply it to Troop Power.
-- **Reports:** searchable public battle archive with hero/joiner/result/tier/FC/T12 filters, report details, JSON/CSV downloads and a full JSONL export.
 - Static Astro pages with scoped vanilla-TS scripts; the countdown needs no backend.
 
 ## Stack
@@ -90,7 +90,7 @@ PC.
 
 The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
 override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to
-`/simulator/`.
+`/reports/`.
 
 Build and run the image locally:
 
