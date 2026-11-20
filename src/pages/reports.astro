@@ -34,12 +34,13 @@ import SiteLayout from '../layouts/SiteLayout.astro'
         >
           Download all
         </a>
-        <a
-          class="rounded-full border border-line bg-paper px-3 py-1.5 text-ink transition-colors hover:border-line-strong hover:bg-tint/60"
-          href="/api/docs"
+        <button
+          type="button"
+          data-report-refresh
+          class="cursor-pointer rounded-full border border-line bg-paper px-3 py-1.5 text-ink transition-colors hover:border-line-strong hover:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          API
-        </a>
+          Refresh
+        </button>
       </div>
     </header>
 

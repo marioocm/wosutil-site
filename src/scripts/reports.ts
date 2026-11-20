@@ -682,6 +682,12 @@ export function initReports(): void {
     }, 0)
   })
   loadMore.addEventListener('click', () => void loadPage(false))
+  const refresh = must<HTMLButtonElement>(root, '[data-report-refresh]')
+  refresh.addEventListener('click', () => {
+    void loadMeta()
+    void loadStats()
+    void loadPage(true)
+  })
 
   list.addEventListener('click', (event) => {
     const card = (event.target as HTMLElement).closest<HTMLElement>('[data-report-id]')
