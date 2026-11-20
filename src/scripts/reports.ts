@@ -465,17 +465,35 @@ function renderBattleDetails(detail: ReportDetail): string {
     <aside class="rp-battle-card" aria-labelledby="rp-battle-title">
       <h3 id="rp-battle-title" class="sr-only">Battle Details</h3>
       <div class="rp-battle-toggle">
-        <button type="button" class="rp-battle-button" data-battle-details-toggle aria-expanded="false">
+        <button
+          type="button"
+          class="rp-battle-button"
+          data-battle-details-toggle
+          aria-expanded="false"
+          aria-controls="rp-battle-details-panel"
+        >
           Battle Details
         </button>
       </div>
-      <div class="rp-battle-details" data-battle-details hidden>
-        <div class="rp-bd-heroes">
-          ${TROOP_CLASSES.map((troopClass) => renderBattleHeroPair(detail, troopClass)).join('')}
-        </div>
-        <div class="rp-bd-troops">
-          ${renderBattleTroops('attacker', detail.attacker)}
-          ${renderBattleTroops('defender', detail.defender)}
+      <div
+        class="rp-battle-details"
+        id="rp-battle-details-panel"
+        data-battle-details
+        data-expanded="false"
+        aria-hidden="true"
+        inert
+        hidden
+      >
+        <div class="rp-battle-details-inner">
+          <div class="rp-battle-details-body">
+            <div class="rp-bd-heroes">
+              ${TROOP_CLASSES.map((troopClass) => renderBattleHeroPair(detail, troopClass)).join('')}
+            </div>
+            <div class="rp-bd-troops">
+              ${renderBattleTroops('attacker', detail.attacker)}
+              ${renderBattleTroops('defender', detail.defender)}
+            </div>
+          </div>
         </div>
       </div>
     </aside>`
@@ -547,15 +565,101 @@ export function initReports(): void {
   }
 
   const desktopLayout = window.matchMedia('(min-width: 1024px)')
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+  const showBattleDetails = (panel: HTMLElement): void => {
+    panel.hidden = false
+    panel.removeAttribute('aria-hidden')
+    panel.removeAttribute('inert')
+  }
+
+  const hideBattleDetails = (panel: HTMLElement): void => {
+    panel.dataset['expanded'] = 'false'
+    panel.setAttribute('aria-hidden', 'true')
+    panel.setAttribute('inert', '')
+    panel.hidden = true
+  }
+
+  let scrollAnimation = 0
+
+  const animateScrollTo = (target: number, duration: number): void => {
+    const token = ++scrollAnimation
+    const startTop = dialog.scrollTop
+    const start = performance.now()
+    const step = (now: number): void => {
+      if (token !== scrollAnimation) return
+      const progress = Math.min(1, (now - start) / duration)
+      const eased = 1 - (1 - progress) ** 3
+      const max = dialog.scrollHeight - dialog.clientHeight
+      dialog.scrollTop = Math.min(max, startTop + (target - startTop) * eased)
+      if (progress < 1) window.requestAnimationFrame(step)
+    }
+    window.requestAnimationFrame(step)
+  }
+
+  const expandBattleDetails = (panel: HTMLElement): void => {
+    showBattleDetails(panel)
+    panel.dataset['expanded'] = 'false'
+    void panel.offsetHeight
+    panel.dataset['expanded'] = 'true'
+  }
+
+  const collapseBattleDetails = (panel: HTMLElement): void => {
+    const target = Math.min(
+      dialog.scrollTop,
+      Math.max(0, dialog.scrollHeight - panel.getBoundingClientRect().height - dialog.clientHeight),
+    )
+    panel.dataset['expanded'] = 'false'
+    panel.setAttribute('aria-hidden', 'true')
+    panel.setAttribute('inert', '')
+    const finish = (): void => {
+      if (panel.dataset['expanded'] === 'false') panel.hidden = true
+    }
+    if (reduceMotion.matches) {
+      finish()
+      scrollAnimation += 1
+      dialog.scrollTop = target
+      return
+    }
+    animateScrollTo(target, 220)
+    panel.addEventListener('transitionend', function onEnd(event) {
+      if (event.target !== panel || event.propertyName !== 'grid-template-rows') return
+      panel.removeEventListener('transitionend', onEnd)
+      finish()
+    })
+  }
+
+  const scrollBattleDetailsIntoView = (toggle: HTMLElement): void => {
+    const bar = dialog.querySelector<HTMLElement>('[data-report-bar]')
+    const offset = (bar?.offsetHeight ?? 0) + 10
+    const target = Math.max(
+      0,
+      dialog.scrollTop +
+        toggle.getBoundingClientRect().top -
+        dialog.getBoundingClientRect().top -
+        offset,
+    )
+    if (reduceMotion.matches) {
+      scrollAnimation += 1
+      dialog.scrollTop = Math.min(target, dialog.scrollHeight - dialog.clientHeight)
+      return
+    }
+    animateScrollTo(target, 260)
+  }
 
   const syncBattleDetails = (): void => {
     const panel = detailRoot.querySelector<HTMLElement>('[data-battle-details]')
     const toggle = detailRoot.querySelector<HTMLButtonElement>('[data-battle-details-toggle]')
     if (!panel || !toggle) return
     const expanded = desktopLayout.matches
+    if (expanded) {
+      showBattleDetails(panel)
+      panel.dataset['expanded'] = 'true'
+    } else {
+      hideBattleDetails(panel)
+    }
     toggle.setAttribute('aria-expanded', String(expanded))
     toggle.textContent = expanded ? 'Hide Battle Details' : 'Battle Details'
-    panel.hidden = !expanded
   }
 
   const setStatus = (text: string, error = false): void => {
@@ -669,6 +773,7 @@ export function initReports(): void {
 
   const openDetail = async (id: string, push = true): Promise<void> => {
     if (!/^[0-9a-f]{16,64}$/.test(id)) return
+    scrollAnimation += 1
     state.currentId = id
     setStatus('Loading report…')
     try {
@@ -686,6 +791,7 @@ export function initReports(): void {
   }
 
   const closeDetail = (push = true): void => {
+    scrollAnimation += 1
     state.currentId = null
     if (dialog.open) dialog.close()
     if (push) window.history.pushState({}, '', `${BASE}reports/`)
@@ -752,9 +858,14 @@ export function initReports(): void {
       const panel = detailRoot.querySelector<HTMLElement>('[data-battle-details]')
       if (!panel) return
       const expanded = toggle.getAttribute('aria-expanded') === 'true'
+      if (expanded) {
+        collapseBattleDetails(panel)
+      } else {
+        expandBattleDetails(panel)
+        scrollBattleDetailsIntoView(toggle)
+      }
       toggle.setAttribute('aria-expanded', String(!expanded))
       toggle.textContent = expanded ? 'Battle Details' : 'Hide Battle Details'
-      panel.hidden = expanded
     }
   })
 

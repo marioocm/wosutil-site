@@ -7,11 +7,15 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   description="Browse the Whiteout Survival battle report archive: battle overview, heroes, joiners, troop power, stat bonuses and skill details."
   active="reports"
 >
-  <main data-reports class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]">
+  <main
+    id="reports"
+    data-reports
+    class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
+  >
     <header class="mb-8 flex flex-col gap-5 border-b border-line pb-8 lg:flex-row lg:items-end lg:justify-between">
       <div class="max-w-[42rem] lg:flex-1">
         <p class="text-eyebrow font-medium uppercase tracking-[0.16em] text-ink-muted">Archive</p>
-        <h1 class="mt-3 text-h2 font-medium tracking-[-0.02em]">Battle reports</h1>
+        <h1 class="mt-3 text-h2 font-medium tracking-[-0.02em]">Battle Reports</h1>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-caption text-ink-muted">
         <span class="rounded-full border border-line bg-paper px-3 py-1.5">
@@ -156,7 +160,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     </div>
 
     <dialog data-report-dialog class="rp-dialog" aria-labelledby="rp-detail-title">
-      <div class="rp-dialog-bar">
+      <div class="rp-dialog-bar" data-report-bar>
         <span class="rp-dialog-meta" data-report-meta></span>
         <button type="button" data-report-close class="rp-close" aria-label="Close report">Close</button>
       </div>
@@ -922,13 +926,34 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   }
 
   .rp-battle-details {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms ease;
+  }
+
+  .rp-battle-details[hidden] {
+    display: none;
+  }
+
+  .rp-battle-details[data-expanded="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  .rp-battle-details-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .rp-battle-details-body {
     margin-top: 0.75rem;
     padding-top: 0.65rem;
     border-top: 1px solid var(--line);
   }
 
-  .rp-battle-details[hidden] {
-    display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .rp-battle-details {
+      transition: none;
+    }
   }
 
   .rp-bd-heroes {
@@ -1172,7 +1197,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
       display: none;
     }
 
-    .rp-battle-card .rp-battle-details {
+    .rp-battle-card .rp-battle-details-body {
       margin-top: 0;
       padding-top: 0;
       border-top: 0;
