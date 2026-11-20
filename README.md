@@ -18,8 +18,9 @@ Live site: [wosutil.mariocm.dev](https://wosutil.mariocm.dev/)
 - [TypeScript](https://www.typescriptlang.org/) 7
 - [Tailwind CSS](https://tailwindcss.com/) v4 — CSS-first config via `@theme`
 - [Vitest](https://vitest.dev/) 5 — unit tests
-- [pnpm](https://pnpm.io/) 10 — package manager
-- GitHub Actions with a self-hosted Windows runner — CI/CD to the PC Caddy stack
+- [pnpm](https://pnpm.io/) 10 - package manager
+- Docker + Nginx - the published static image
+- GitHub Actions + GHCR + Watchtower - CI and automatic container updates on the PC Caddy stack
 
 ## Requirements
 
@@ -77,16 +78,26 @@ pnpm preview     # preview the production build
 
 ## Deployment
 
-Pushes to `main` run `.github/workflows/deploy.yml` on the self-hosted Windows
-runner labeled `wos-pc`. The job installs, typechecks, tests, builds with
-`SITE_URL=https://wosutil.mariocm.dev` and `PUBLIC_SIM_API=/sim`, copies
-`dist/` into the sibling `wosutil-sim/deploy/web` directory and verifies that
-Caddy returns 200 for `/reports/`. GitHub Pages is disabled; the domain points
-at the PC through a Cloudflare Tunnel.
+Pushes to `main` run `.github/workflows/deploy.yml`. The workflow verifies the
+site and publishes `ghcr.io/marioocm/wosutil-site:latest`; the PC stack in
+`wosutil-sim` pulls that image with Watchtower and restarts the web container.
+Caddy serves the container through the Cloudflare Tunnel. No runner, Node
+installation or host web directory is needed on the PC.
+
+The image is built with `SITE_URL=https://wosutil.mariocm.dev`, `BASE_PATH=/`
+and `PUBLIC_SIM_API=/sim`. GitHub Pages is disabled; the domain points at the
+PC.
 
 The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
 override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to
 `/simulator/`.
+
+Build and run the image locally:
+
+```sh
+docker build -t ghcr.io/marioocm/wosutil-site:local .
+docker run --rm -p 8090:8080 ghcr.io/marioocm/wosutil-site:local
+```
 
 ## Design and contributing
 

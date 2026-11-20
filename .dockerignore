@@ -1,0 +1,8 @@
+.git
+.astro
+dist
+dist-app
+node_modules
+.env
+.env.*
+*.log
