@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-Static website for WoS Util (Whiteout Survival utility): a rally countdown and a battle simulator. Open source (MIT), deployed to GitHub Pages. Stack: Astro 7 (static output) + TypeScript 7 + Tailwind CSS v4, Vitest 5. Package manager: pnpm 10; CI uses Node 24.
+Static website for WoS Util (Whiteout Survival utility): a rally countdown and a battle simulator. Open source (MIT), deployed as a Docker image on the PC (`wosutil-sim` stack) through Cloudflare Tunnel. Stack: Astro 7 (static output) + TypeScript 7 + Tailwind CSS v4, Vitest 5. Package manager: pnpm 10; CI uses Node 24.
 
 ## Structure
 - `astro.config.ts` — static Astro config: `site`/`base` derived from `GITHUB_REPOSITORY` (overridable with `SITE_URL`/`BASE_PATH`), root redirect, sitemap, prefetch and the Tailwind Vite plugin.
@@ -15,8 +15,10 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - `scripts/package-ui.mjs` — copies the desktop shell build (main page and the standalone `templates/` page) into `dist/ui/` and writes its hashed `manifest.json`.
 - `astro.app.config.ts` — desktop shell build (`base: '/'`, output `dist-app/`), separate from the public site build.
 - `docs/DESIGN.md` — design system source of truth for layout, color, typography, components and motion. **Read it before touching UI.**
-- `public/.nojekyll` — required so GitHub Pages serves Astro's `_astro/` assets; `public/favicon.svg`.
-- `.github/workflows/` — `ci.yml` (typecheck, tests and build on pushes/PRs) and `deploy.yml` (build and Pages deploy on `main`).
+- `public/.nojekyll` — legacy GitHub Pages marker, harmless in the Docker/Nginx image; `public/favicon.svg`.
+- `Dockerfile` — multi-stage Node build → `nginxinc/nginx-unprivileged` static image, exposed on container port 8080.
+- `nginx.conf` — static serving with the reports-page fallback for report detail URLs and `_astro/` asset 404s.
+- `.github/workflows/` — `ci.yml` (typecheck, tests and builds on pushes/PRs) and `deploy.yml` (verify + publish the GHCR image on `main`).
 
 ## Key quirks
 - Static output only (`output: 'static'`, no adapter/SSR). `base` is `/<repo>/` for project pages and `/` for user sites/forks; relative nav links (`../<section>/`) keep forks working. The root redirect lives in `astro.config.ts`; `src/pages/404.astro` probes candidate simulator paths via `src/lib/redirect.ts`.
@@ -34,8 +36,9 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - Tailwind v4 is CSS-first (`@theme` in `src/styles/theme.css`, no `tailwind.config.js`). Named spacing tokens collide with size utilities: `max-w-md` resolves to 12px, so use arbitrary values (e.g. `max-w-[34rem]`).
 - Fonts are self-hosted Fontsource files with custom `@font-face` in `BaseLayout.astro` (`font-display: optional`; primary latin subset preloaded). Do not add Google Fonts, proprietary fonts or copied Suisse Int'l (commercial license).
 - `pnpm typecheck` is `tsc --noEmit`, not `astro check`: Astro 7's checker currently refuses TypeScript 7. Keep `.astro` templates thin and let `pnpm build` validate them.
-- The desktop shell (`src-app/pages/index.astro`) is built with `astro.app.config.ts` (`srcDir: 'src-app'`, base `/`, output `dist-app/`) because WosUtil serves it from its own local root, not from the Pages base. `scripts/package-ui.mjs` copies it to `dist/ui/` with a hashed `manifest.json`; that folder is the versioned UI artifact consumed by the WosUtil desktop client. The Template Creator (`src-app/pages/templates.astro`) is a separate page in the same bundle, opened only by the developer tool; it is not linked from the main shell. `uiVersion` is derived from the file hashes, so it only changes when the shell changes, not on every site deploy. Bump `apiVersion` in the manifest only for breaking API changes, together with `wosutil.ui.contract.API_VERSION` in the WosUtil repo.
+- The desktop shell (`src-app/pages/index.astro`) is built with `astro.app.config.ts` (`srcDir: 'src-app'`, base `/`, output `dist-app/`) because WosUtil serves it from its own local root, not from the public site base. `scripts/package-ui.mjs` copies it to `dist/ui/` with a hashed `manifest.json`; that folder is the versioned UI artifact consumed by the WosUtil desktop client. The Template Creator (`src-app/pages/templates.astro`) is a separate page in the same bundle, opened only by the developer tool; it is not linked from the main shell. `uiVersion` is derived from the file hashes, so it only changes when the shell changes, not on every site deploy. Bump `apiVersion` in the manifest only for breaking API changes, together with `wosutil.ui.contract.API_VERSION` in the WosUtil repo.
 - Shell development: run the WosUtil API with `WOSUTIL_UI_NO_WINDOW=1 WOSUTIL_UI_PORT=8765 WOSUTIL_UI_TOKEN=dev` (PowerShell: `$env:...`), then `pnpm dev:app` and open `http://localhost:4321/?t=dev`. The Vite proxy forwards `/api` (including SSE) to the Python server and edits hot-reload. Set `WOSUTIL_UI_URL=http://localhost:4321/?t=dev` to show that dev URL in the Edge app window instead of a normal browser tab.
+- Public deployment is image-based: `.github/workflows/deploy.yml` publishes `ghcr.io/marioocm/wosutil-site:latest` on `main`, and the PC `wos-pc` Compose stack pulls it with Watchtower. There is no GitHub runner, Node install or live `deploy/web` directory on the PC. The image package must stay public so Watchtower can pull it anonymously; never add secrets to the image or workflow.
 - SEO: per-page title/description, canonical + Open Graph in `BaseLayout.astro`, sitemap, generated `robots.txt`, and `noindex` on redirect/404 pages.
 
 ## Commands
