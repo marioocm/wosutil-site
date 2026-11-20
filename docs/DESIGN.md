@@ -128,8 +128,7 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Max content width: `1440px`.
 - Horizontal padding: `px-4` mobile → `px-[100px]` at `xl`.
-- Header height: two rows on mobile (44px brand row + 40px nav row); one
-  `56px` row from `sm`.
+- Header height: one `56px` row at every width.
 - Countdown main grid on desktop: two columns, callers left, timer/queue right.
 - Simulator on desktop: a centered three-column grid with a flexible left
   column holding the sticky generation card, the 34rem card column in the
@@ -146,9 +145,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Header
 
 - Sticky, warm paper background with hairline bottom border.
-- Wordmark left, followed by the Battle Reports / Countdown / Simulator section
-  links.
-- UTC clock and theme toggle right.
+- Wordmark left from `sm` up, followed by the Battle Reports / Countdown /
+  Simulator section links.
+- UTC clock and theme toggle right; the clock is hidden below `sm`.
 - Active section: ink text with a 2px ink underline flush with the header
   border. Inactive sections: muted text that darkens on hover.
 - Hovering (or focusing) a section slides the single underline under it; it
@@ -158,8 +157,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - On narrow/touch viewports the sticky header hides on scroll down
   (`translateY(-100%)`, 220ms) and returns on scroll up, near the top, or when
   a header control receives focus.
-- Mobile: brand + actions share the first row; the section links move to a
-  second row separated by a hairline. From `sm` up it is one row.
+- Mobile: the wordmark is hidden (it duplicates Battle Reports); the section
+  links and theme toggle share a single row. The wordmark returns from `sm` up
+  and the clock appears with it. Below `360px` the links tighten slightly so
+  the row never wraps.
 - No logo mark, tagline, hamburger or extra navigation.
 
 ### Timer
