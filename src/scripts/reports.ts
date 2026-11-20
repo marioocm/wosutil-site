@@ -8,7 +8,6 @@ import {
   fetchJson,
   formatNumber,
   formatPercent,
-  formatShare,
   formatSkill,
   generationLabel,
   heroName,
@@ -18,7 +17,6 @@ import {
   reportDownloadPath,
   reportGeneration,
   resultLabel,
-  resultShort,
   survivorRate,
   type ReportDetail,
   type ReportFilters,
@@ -73,13 +71,6 @@ function statValue(value: number): string {
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value)}%`
 }
 
-function resultClass(result: string): string {
-  if (result === 'attacker') return 'is-attacker'
-  if (result === 'defender') return 'is-defender'
-  if (result === 'draw') return 'is-draw'
-  return 'is-neutral'
-}
-
 function parseFc(value: string | null | undefined): number | null {
   const text = String(value || '').trim().toUpperCase().replace('FC', '')
   if (!text) return null
@@ -130,7 +121,7 @@ function ratioBar(ratio: { infantry: number; lancer: number; marksman: number },
     </span>
     ${
       detailed
-        ? `<span class="rp-ratio-legend"><span>INF ${formatShare(ratio.infantry)}</span><span>LAN ${formatShare(ratio.lancer)}</span><span>MAR ${formatShare(ratio.marksman)}</span></span>`
+        ? `<span class="rp-ratio-legend"><span>INF/LAN/MAR</span><span class="rp-ratio-legend-sep" aria-hidden="true">—</span><span class="rp-ratio-legend-value">${ratioText(ratio)}</span></span>`
         : `<span class="rp-ratio-text">${ratioText(ratio)}</span>`
     }`
 }
@@ -180,7 +171,7 @@ function renderCard(item: ReportListItem): string {
     </button>`
 }
 
-function detailLevel(detail: ReportDetail): { tier: number | null; fc: number | null } {
+function detailKicker(detail: ReportDetail): string {
   const troops = [...(detail.attacker.troops || []), ...(detail.defender.troops || [])]
   const tiers = troops.map((troop) => troop.tier).filter((tier) => Number.isFinite(tier))
   const tier = tiers.length ? Math.max(...tiers) : null
@@ -188,10 +179,13 @@ function detailLevel(detail: ReportDetail): { tier: number | null; fc: number | 
     .filter((troop) => troop.tier === tier)
     .map((troop) => parseFc(troop.furnace))
     .filter((fc): fc is number => fc !== null)
-  return {
-    tier,
-    fc: fcs.length ? Math.max(...fcs) : null,
-  }
+  const fc = fcs.length ? Math.max(...fcs) : null
+  const generation = reportGeneration({
+    heroes: { attacker: detail.attacker.heroes, defender: detail.defender.heroes },
+    joiners: { attacker: detail.attacker.joiners, defender: detail.defender.joiners },
+  })
+  const rally = isRally({ joiners: { attacker: detail.attacker.joiners, defender: detail.defender.joiners } })
+  return `${generationLabel(generation)} · ${tier === null ? 'T—' : `T${tier}`} · ${fc === null ? 'FC—' : `FC${fc}`} · ${rally ? 'Rally' : '1v1'}`
 }
 
 function overviewRows(side: SideDetail): Array<[string, number]> {
@@ -292,31 +286,37 @@ function troopTile(side: SideDetail, troopClass: TroopClass): string {
   const t12Level = Number(side.t12_skills?.[troopClass] ?? 0)
   if (!summary.groups.length) {
     return `
-      <span class="rp-troop-tile is-empty">
-        <span class="rp-tile-class">${SHORT_LABEL[troopClass]}</span>
-        <span class="rp-tile-tier">T—</span>
-        <span class="rp-tile-t12">—</span>
+      <div class="rp-troop-slot is-empty">
+        <span class="rp-troop-tile">
+          <span class="rp-tile-class">${SHORT_LABEL[troopClass]}</span>
+          <span class="rp-tile-tier">T—</span>
+        </span>
         <span class="rp-tile-count">—</span>
-      </span>`
+      </div>`
   }
   const title = summary.groups
     .map((troop) => `T${troop.tier} ${troop.furnace || 'FC—'}: ${formatNumber(troop.count)}`)
     .join(' · ')
   return `
-    <span class="rp-troop-tile" title="${escapeHtml(title)}">
-      <span class="rp-tile-class">${SHORT_LABEL[troopClass]}</span>
-      <span class="rp-tile-tier">T${summary.tier ?? '—'}</span>
-      <span class="rp-tile-t12">${summary.tier === 12 ? `Lv ${t12Level}` : '—'}</span>
-      <span class="rp-tile-fc"><span class="troop-fc-hex"><span class="troop-fc-value">${summary.fc ?? '—'}</span></span></span>
+    <div class="rp-troop-slot" title="${escapeHtml(title)}">
+      <span class="rp-troop-tile">
+        <span class="rp-tile-class">${SHORT_LABEL[troopClass]}</span>
+        <span class="rp-tile-tier">T${summary.tier ?? '—'}</span>
+        ${
+          summary.fc === null
+            ? ''
+            : `<span class="rp-tile-fc"><span class="troop-fc-hex"><span class="troop-fc-value">${summary.fc}</span></span></span>`
+        }
+      </span>
+      ${summary.tier === 12 ? `<span class="rp-tile-t12">Lv ${t12Level}</span>` : ''}
       <span class="rp-tile-count">${formatNumber(summary.count)}</span>
-    </span>`
+    </div>`
 }
 
 function renderTroopPower(detail: ReportDetail): string {
   const side = (sideKey: SideKey, sideDetail: SideDetail) => `
-    <div class="rp-troop-side">
-      <div class="rp-troop-side-head">
-        <span>${SIDE_LABEL[sideKey]}</span>
+    <div class="rp-troop-side" role="group" aria-label="${SIDE_LABEL[sideKey]} troop power">
+      <div class="rp-troop-ratio">
         ${ratioBar(detail.ratio[sideKey] || { infantry: 0, lancer: 0, marksman: 0 }, true)}
       </div>
       <div class="rp-troop-slots">
@@ -338,11 +338,13 @@ function renderStats(detail: ReportDetail): string {
     const [troopClass, field] = stat.id.split('-') as [TroopClass, 'attack' | 'defense' | 'lethality' | 'health']
     const attacker = Number(detail.attacker.stat_bonuses?.[troopClass]?.[field] ?? 0)
     const defender = Number(detail.defender.stat_bonuses?.[troopClass]?.[field] ?? 0)
+    const attackerState = attacker > defender ? 'higher' : attacker < defender ? 'lower' : 'equal'
+    const defenderState = defender > attacker ? 'higher' : defender < attacker ? 'lower' : 'equal'
     return `
       <tr>
-        <td class="rp-stat-left">${statValue(attacker)}</td>
+        <td class="rp-stat-left" data-stat-state="${attackerState}">${statValue(attacker)}</td>
         <th scope="row">${escapeHtml(stat.label)}</th>
-        <td class="rp-stat-right">${statValue(defender)}</td>
+        <td class="rp-stat-right" data-stat-state="${defenderState}">${statValue(defender)}</td>
       </tr>`
   }).join('')
   return `
@@ -414,23 +416,54 @@ function renderBattleTroops(sideKey: SideKey, side: SideDetail): string {
     )
     .map(
       (troop) => `
-      <div class="rp-bd-troop-row">
-        <span class="rp-bd-troop-label">${classLabel(troop.class)} · T${troop.tier} · ${escapeHtml(troop.furnace || 'FC—')}</span>
-        <span class="rp-bd-troop-count">${formatNumber(troop.count)}</span>
-        <span class="rp-bd-troop-meta">${formatNumber(troop.kills)} K · ${formatNumber(troop.losses)} L · ${formatNumber(troop.injured)} Inj · ${formatNumber(troop.lightly_injured)} Lt · ${formatNumber(troop.survivors)} Surv</span>
-      </div>`,
+      <tr>
+        <th scope="row" title="${escapeHtml(`${classLabel(troop.class)} · T${troop.tier} · ${troop.furnace || 'FC—'}`)}">${classLabel(troop.class)} · T${troop.tier} · ${escapeHtml(troop.furnace || 'FC—')}</th>
+        <td>${formatNumber(troop.count)}</td>
+        <td>${formatNumber(troop.injured)}</td>
+        <td>${formatNumber(troop.losses)}</td>
+        <td>${formatNumber(troop.kills)}</td>
+        <td>${formatNumber(troop.lightly_injured)}</td>
+        <td>${formatNumber(troop.survivors)}</td>
+      </tr>`,
     )
     .join('')
   return `
     <div class="rp-bd-troop-side is-${sideKey}">
       <h4>${SIDE_LABEL[sideKey]}</h4>
-      ${rows || '<p class="rp-muted">No troop rows.</p>'}
+      ${
+        rows
+          ? `<table class="rp-bd-troop-table">
+              <caption class="sr-only">${SIDE_LABEL[sideKey]} troop results</caption>
+              <colgroup>
+                <col class="rp-bd-col-troop" />
+                <col class="rp-bd-col-troops" />
+                <col class="rp-bd-col-injured" />
+                <col class="rp-bd-col-losses" />
+                <col class="rp-bd-col-kills" />
+                <col class="rp-bd-col-slightly" />
+                <col class="rp-bd-col-survivors" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">Troop</th>
+                  <th scope="col">Troops</th>
+                  <th scope="col">Injured</th>
+                  <th scope="col">Losses</th>
+                  <th scope="col">Kills</th>
+                  <th scope="col">Slightly Injured</th>
+                  <th scope="col">Survivors</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>`
+          : '<p class="rp-muted">No troop rows.</p>'
+      }
     </div>`
 }
 
 function renderBattleDetails(detail: ReportDetail): string {
   return `
-    <section class="rp-section rp-battle-section" aria-labelledby="rp-battle-title">
+    <aside class="rp-battle-card" aria-labelledby="rp-battle-title">
       <h3 id="rp-battle-title" class="sr-only">Battle Details</h3>
       <div class="rp-battle-toggle">
         <button type="button" class="rp-battle-button" data-battle-details-toggle aria-expanded="false">
@@ -445,39 +478,28 @@ function renderBattleDetails(detail: ReportDetail): string {
           ${renderBattleTroops('attacker', detail.attacker)}
           ${renderBattleTroops('defender', detail.defender)}
         </div>
-        <p class="rp-muted rp-skill-note">Troop rows are aggregated by class, tier and FC. The archive stores joiner heroes, not per-player troop counts.</p>
       </div>
-    </section>`
+    </aside>`
 }
 
 function renderDetail(detail: ReportDetail): string {
-  const total = detail.attacker.totals.troops + detail.defender.totals.troops
-  const level = detailLevel(detail)
-  const generation = reportGeneration({
-    heroes: { attacker: detail.attacker.heroes, defender: detail.defender.heroes },
-    joiners: { attacker: detail.attacker.joiners, defender: detail.defender.joiners },
-  })
-  const rally = isRally({ joiners: { attacker: detail.attacker.joiners, defender: detail.defender.joiners } })
   return `
     <div class="rp-report">
-      <header class="rp-detail-head">
-        <div>
-          <span class="rp-kicker">${escapeHtml(generationLabel(generation))} · ${level.tier === null ? 'T—' : `T${level.tier}`} · ${level.fc === null ? 'FC—' : `FC${level.fc}`} · ${rally ? 'Rally' : '1v1'}</span>
-          <h2 id="rp-detail-title" class="rp-detail-title">${escapeHtml(resultLabel(detail.result))}</h2>
-          <p class="rp-muted">${formatNumber(total)} troops deployed</p>
-        </div>
-        <span class="rp-result ${resultClass(detail.result)}">${escapeHtml(resultShort(detail.result))}</span>
-      </header>
-      ${renderOverview(detail)}
-      ${renderHeroComparison(detail)}
-      ${renderJoiners(detail)}
-      ${renderTroopPower(detail)}
-      ${renderStats(detail)}
-      ${renderBattleDetails(detail)}
-      <div class="rp-actions">
-        <a class="rp-action" href="${reportDownloadPath(detail.id, 'json')}" download>Download JSON</a>
-        <a class="rp-action" href="${reportDownloadPath(detail.id, 'csv')}" download>Download CSV</a>
-        <button type="button" class="rp-action" data-copy-link>Copy link</button>
+      <div class="rp-report-layout">
+        <article class="rp-report-main">
+          <h2 id="rp-detail-title" class="sr-only">${escapeHtml(resultLabel(detail.result))}</h2>
+          ${renderOverview(detail)}
+          ${renderHeroComparison(detail)}
+          ${renderJoiners(detail)}
+          ${renderTroopPower(detail)}
+          ${renderStats(detail)}
+          <div class="rp-actions">
+            <a class="rp-action" href="${reportDownloadPath(detail.id, 'json')}" download>Download JSON</a>
+            <a class="rp-action" href="${reportDownloadPath(detail.id, 'csv')}" download>Download CSV</a>
+            <button type="button" class="rp-action" data-copy-link>Copy link</button>
+          </div>
+        </article>
+        ${renderBattleDetails(detail)}
       </div>
     </div>`
 }
@@ -510,6 +532,7 @@ export function initReports(): void {
   const status = must<HTMLElement>(root, '[data-report-status]')
   const dialog = must<HTMLDialogElement>(root, '[data-report-dialog]')
   const detailRoot = must<HTMLElement>(dialog, '[data-report-detail]')
+  const dialogMeta = must<HTMLElement>(dialog, '[data-report-meta]')
   const closeButton = must<HTMLButtonElement>(dialog, '[data-report-close]')
   const heroOptions = must<HTMLDataListElement>(root, '#report-hero-options')
   const joinerOptions = must<HTMLDataListElement>(root, '#report-joiner-options')
@@ -522,6 +545,18 @@ export function initReports(): void {
     total: 0,
     currentId: null,
     request: 0,
+  }
+
+  const desktopLayout = window.matchMedia('(min-width: 1024px)')
+
+  const syncBattleDetails = (): void => {
+    const panel = detailRoot.querySelector<HTMLElement>('[data-battle-details]')
+    const toggle = detailRoot.querySelector<HTMLButtonElement>('[data-battle-details-toggle]')
+    if (!panel || !toggle) return
+    const expanded = desktopLayout.matches
+    toggle.setAttribute('aria-expanded', String(expanded))
+    toggle.textContent = expanded ? 'Hide Battle Details' : 'Battle Details'
+    panel.hidden = !expanded
   }
 
   const setStatus = (text: string, error = false): void => {
@@ -644,6 +679,8 @@ export function initReports(): void {
     try {
       const detail = await fetchJson<ReportDetail>(`/v1/reports/${id}`)
       detailRoot.innerHTML = renderDetail(detail)
+      dialogMeta.textContent = detailKicker(detail)
+      syncBattleDetails()
       if (!dialog.open) dialog.showModal()
       if (push) window.history.pushState({ id }, '', `${BASE}reports/${id}/`)
       setStatus('')
@@ -659,6 +696,7 @@ export function initReports(): void {
     if (push) window.history.pushState({}, '', `${BASE}reports/`)
   }
 
+  desktopLayout.addEventListener('change', syncBattleDetails)
   form.addEventListener('submit', (event) => event.preventDefault())
   let timer: number | undefined
   form.addEventListener('input', () => {

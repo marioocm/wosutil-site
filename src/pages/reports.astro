@@ -166,7 +166,10 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     </div>
 
     <dialog data-report-dialog class="rp-dialog" aria-labelledby="rp-detail-title">
-      <button type="button" data-report-close class="rp-close" aria-label="Close report">Close</button>
+      <div class="rp-dialog-bar">
+        <span class="rp-dialog-meta" data-report-meta></span>
+        <button type="button" data-report-close class="rp-close" aria-label="Close report">Close</button>
+      </div>
       <div data-report-detail></div>
     </dialog>
   </main>
@@ -437,40 +440,10 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     color: var(--ink-subtle);
   }
 
-  .rp-result {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.2rem 0.45rem;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-xs);
-  }
-
-  .rp-result.is-attacker {
-    color: var(--positive);
-    border-color: color-mix(in srgb, var(--positive) 45%, var(--line));
-    background: color-mix(in srgb, var(--positive) 10%, transparent);
-  }
-
-  .rp-result.is-defender {
-    color: var(--negative);
-    border-color: color-mix(in srgb, var(--negative) 45%, var(--line));
-    background: color-mix(in srgb, var(--negative) 10%, transparent);
-  }
-
-  .rp-result.is-draw,
-  .rp-result.is-neutral {
-    color: var(--ink-muted);
-    background: var(--tint);
-  }
-
   .rp-dialog {
     position: fixed;
     inset: 0;
-    width: min(780px, 96vw);
+    width: min(1120px, 96vw);
     height: 92dvh;
     max-width: none;
     max-height: 92dvh;
@@ -490,12 +463,33 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     backdrop-filter: blur(3px);
   }
 
-  .rp-close {
+  .rp-dialog-bar {
     position: sticky;
     top: 0;
     z-index: 5;
-    float: right;
-    margin: 0.7rem 0.7rem 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.6rem;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rp-dialog-meta {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-subtle);
+  }
+
+  .rp-close {
+    flex: 0 0 auto;
     padding: 0.4rem 0.65rem;
     font-size: var(--text-caption);
     color: var(--ink-muted);
@@ -516,32 +510,31 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   }
 
   .rp-report {
-    padding: 1rem 1.1rem;
+    padding: 0.15rem 0.8rem 0.8rem;
   }
 
-  .rp-detail-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding-right: 4.25rem;
-    padding-bottom: 0.75rem;
+  .rp-report-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto;
   }
 
-  .rp-kicker {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--ink-subtle);
+  .rp-report-main,
+  .rp-battle-card {
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
   }
 
-  .rp-detail-title {
-    margin: 0.3rem 0 0;
-    font-size: clamp(1.8rem, 4.5vw, 2.4rem);
-    font-weight: 500;
-    line-height: 1;
-    letter-spacing: -0.02em;
+  .rp-report-main > .rp-section:first-of-type {
+    padding-top: 0;
+    border-top: 0;
   }
 
   .rp-muted {
@@ -585,8 +578,8 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     background: var(--tint);
   }
 
-  .rp-overview-head span:last-child {
-    text-align: right;
+  .rp-overview-head span {
+    text-align: center;
   }
 
   .rp-overview-row + .rp-overview-row {
@@ -605,10 +598,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     font-size: 0.95rem;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-  }
-
-  .rp-overview-right {
-    text-align: right;
+    text-align: center;
   }
 
   .rp-hero-compare {
@@ -734,73 +724,102 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     border-radius: var(--radius-sm);
   }
 
-  .rp-troop-side-head {
+  .rp-troop-ratio {
     display: grid;
-    gap: 0.25rem;
-    font-size: 0.65rem;
-    color: var(--ink-muted);
+    gap: 0.3rem;
+    width: 100%;
+    max-width: 18rem;
+    margin-inline: auto;
   }
 
   .rp-ratio-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    align-items: baseline;
+    gap: 0.25rem 0.35rem;
     font-family: var(--font-mono);
-    font-size: 0.55rem;
+    font-size: 0.58rem;
+    font-variant-numeric: tabular-nums;
     color: var(--ink-subtle);
+  }
+
+  .rp-ratio-legend-sep {
+    color: var(--line-strong);
+  }
+
+  .rp-ratio-legend-value {
+    color: var(--ink-muted);
   }
 
   .rp-troop-slots {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.35rem;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 18rem;
+    margin-inline: auto;
+  }
+
+  .rp-troop-slot {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 0.3rem;
+  }
+
+  .rp-troop-slot.is-empty {
+    opacity: 0.55;
   }
 
   .rp-troop-tile {
     position: relative;
     display: flex;
     min-width: 0;
-    min-height: 6.6rem;
-    flex-direction: column;
+    aspect-ratio: 1;
     align-items: center;
     justify-content: center;
-    gap: 0.1rem;
-    padding: 0.4rem 0.2rem;
+    padding: 0.5rem 0.25rem;
     background: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius-xs);
-  }
-
-  .rp-troop-tile.is-empty {
-    opacity: 0.55;
+    container-type: inline-size;
   }
 
   .rp-tile-class {
     position: absolute;
-    top: 0.25rem;
-    left: 0.3rem;
-    font-family: var(--font-mono);
-    font-size: 0.55rem;
-    color: var(--ink-subtle);
+    top: 4px;
+    left: 5px;
+    font-family: var(--font-primary);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--ink-muted);
   }
 
   .rp-tile-tier {
-    font-family: var(--font-mono);
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-family: var(--font-primary);
+    font-size: 1.35rem;
+    font-weight: 500;
     line-height: 1;
+    letter-spacing: -0.01em;
   }
 
   .rp-tile-t12 {
-    min-height: 0.7rem;
-    font-size: 0.55rem;
+    padding: 0.18rem 0.3rem;
+    background: var(--background);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    line-height: 1.25;
     color: var(--ink-muted);
   }
 
   .rp-tile-count {
-    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
     font-family: var(--font-mono);
     font-size: 0.68rem;
     color: var(--ink-muted);
@@ -808,12 +827,13 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   }
 
   .rp-tile-fc {
+    --troop-fc-width: 28cqw;
+    --troop-fc-height: calc(var(--troop-fc-width) * 1.154700538);
     position: absolute;
-    top: -0.35rem;
-    right: -0.3rem;
-    display: flex;
-    width: 22px;
-    height: 25px;
+    top: calc(var(--troop-fc-height) / -4);
+    right: calc(var(--troop-fc-width) / -4);
+    width: var(--troop-fc-width);
+    height: var(--troop-fc-height);
   }
 
   .rp-tile-fc .troop-fc-hex {
@@ -822,7 +842,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   }
 
   .rp-tile-fc .troop-fc-value {
-    font-size: 11px;
+    font-size: 16cqw;
   }
 
   .rp-stat-card {
@@ -851,11 +871,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     font-size: 0.62rem;
     font-weight: 500;
     color: var(--ink-subtle);
-    text-align: left;
-  }
-
-  .rp-stat-table thead th:last-child {
-    text-align: right;
+    text-align: center;
   }
 
   .rp-stat-table tbody th {
@@ -873,16 +889,19 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   }
 
   .rp-stat-left {
-    text-align: left;
+    text-align: center;
   }
 
   .rp-stat-right {
-    text-align: right;
+    text-align: center;
   }
 
-  .rp-battle-section {
-    padding: 0.8rem 0;
-    border-top: 1px solid var(--line);
+  .rp-stat-table [data-stat-state="higher"] {
+    color: var(--positive);
+  }
+
+  .rp-stat-table [data-stat-state="lower"] {
+    color: var(--negative);
   }
 
   .rp-battle-toggle {
@@ -1035,7 +1054,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
   .rp-bd-troops {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
     margin-top: 0.55rem;
   }
@@ -1058,42 +1077,74 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     color: var(--ink-subtle);
   }
 
-  .rp-bd-troop-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.1rem 0.3rem;
-    padding: 0.28rem 0;
-    font-size: 0.6rem;
+  .rp-bd-troop-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rp-bd-troop-table th,
+  .rp-bd-troop-table td {
+    padding: 0.24rem 0.15rem;
+    text-align: center;
     border-top: 1px solid var(--line);
   }
 
-  .rp-bd-troop-row:first-of-type {
+  .rp-bd-troop-table tbody td {
+    white-space: nowrap;
+  }
+
+  .rp-bd-troop-table thead th {
+    padding-top: 0;
     border-top: 0;
-  }
-
-  .rp-bd-troop-label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--ink-muted);
-  }
-
-  .rp-bd-troop-count {
-    font-family: var(--font-mono);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .rp-bd-troop-meta {
-    grid-column: 1 / -1;
-    font-family: var(--font-mono);
-    font-size: 0.53rem;
+    font-family: var(--font-primary);
+    font-size: 0.5rem;
+    font-weight: 500;
+    line-height: 1.15;
     color: var(--ink-subtle);
     white-space: normal;
   }
 
-  .rp-skill-note {
-    margin-top: 0.6rem;
+  .rp-bd-troop-table tbody th {
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-primary);
+    font-size: 0.52rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+
+  .rp-bd-troop-table .rp-bd-col-troop {
+    width: 25%;
+  }
+
+  .rp-bd-troop-table .rp-bd-col-troops {
+    width: 13%;
+  }
+
+  .rp-bd-troop-table .rp-bd-col-injured {
+    width: 12%;
+  }
+
+  .rp-bd-troop-table .rp-bd-col-losses {
+    width: 10%;
+  }
+
+  .rp-bd-troop-table .rp-bd-col-kills {
+    width: 10%;
+  }
+
+  .rp-bd-troop-table .rp-bd-col-slightly {
+    width: 16%;
+  }
+
+  .rp-bd-troop-table .rp-bd-col-survivors {
+    width: 14%;
   }
 
   .rp-actions {
@@ -1121,14 +1172,36 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     background: var(--tint);
   }
 
-  @media (max-width: 700px) {
-    .rp-report {
-      padding: 0.85rem;
+  @media (min-width: 1024px) {
+    .rp-report-layout {
+      max-width: 1060px;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     }
 
-    .rp-detail-head {
-      flex-direction: column;
-      padding-right: 3.5rem;
+    .rp-battle-toggle {
+      display: none;
+    }
+
+    .rp-battle-card .rp-battle-details {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .rp-battle-card .rp-bd-skill-head,
+    .rp-battle-card .rp-bd-skill-row {
+      grid-template-columns: minmax(0, 1fr) 2.4rem 2.4rem 2.4rem 2.4rem minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 700px) {
+    .rp-report {
+      padding: 0.15rem 0.5rem 0.5rem;
+    }
+
+    .rp-report-main,
+    .rp-battle-card {
+      padding: 0.75rem;
     }
 
     .rp-overview-head,
@@ -1160,10 +1233,6 @@ import SiteLayout from '../layouts/SiteLayout.astro'
       font-size: 0.55rem;
     }
 
-    .rp-troop-tile {
-      min-height: 6.1rem;
-    }
-
     .rp-stat-table {
       font-size: 0.66rem;
     }
@@ -1192,6 +1261,10 @@ import SiteLayout from '../layouts/SiteLayout.astro'
       height: 100dvh;
       max-height: 100dvh;
       border-radius: 0;
+    }
+
+    .rp-troop-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .rp-card {
