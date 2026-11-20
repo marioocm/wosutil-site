@@ -7,7 +7,6 @@ import {
   classLabel,
   fetchJson,
   formatNumber,
-  formatPercent,
   formatSkill,
   generationLabel,
   heroName,
@@ -614,11 +613,7 @@ export function initReports(): void {
     try {
       const stats = await fetchJson<ReportStats>('/v1/stats')
       const reportsTarget = root.querySelector<HTMLElement>('[data-stat-reports]')
-      const attackerTarget = root.querySelector<HTMLElement>('[data-stat-attacker]')
-      const defenderTarget = root.querySelector<HTMLElement>('[data-stat-defender]')
       if (reportsTarget) reportsTarget.textContent = formatNumber(stats.reports)
-      if (attackerTarget) attackerTarget.textContent = formatPercent(stats.attacker_win_rate)
-      if (defenderTarget) defenderTarget.textContent = formatPercent(stats.defender_win_rate)
     } catch {
       // The header counters are decorative.
     }
