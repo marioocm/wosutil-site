@@ -1,5 +1,5 @@
-export const DEFAULT_SECTION = 'simulator'
-export const DEFAULT_PAGE_MARKER = 'id="simulator"'
+export const DEFAULT_SECTION = 'reports'
+export const DEFAULT_PAGE_MARKER = 'id="reports"'
 
 export function defaultRedirectPaths(pathname: string): string[] {
   const segments = pathname.split('/').filter(Boolean)

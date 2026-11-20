@@ -8,7 +8,7 @@ interface Props {
 
 const { active } = Astro.props
 const navLinkClass =
-  'flex h-full items-center text-button font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
+  'flex h-full items-center whitespace-nowrap text-button font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 ---
 
 <header
@@ -19,8 +19,8 @@ const navLinkClass =
     class="mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-4 px-4 sm:h-14 sm:flex-nowrap sm:gap-x-8 sm:px-6 lg:gap-x-10 lg:px-10 xl:px-[100px]"
   >
     <a
-      href="../simulator/"
-      data-section="simulator"
+      href="../reports/"
+      data-section="reports"
       class="order-1 flex h-11 shrink-0 items-center text-[22px] font-medium leading-none tracking-[-0.03em] sm:h-full"
       aria-label="WoS Util home"
     >
@@ -28,7 +28,7 @@ const navLinkClass =
     </a>
 
     <nav
-      class="relative order-3 flex h-10 w-full items-center gap-6 border-t border-line sm:order-2 sm:h-full sm:w-auto sm:flex-1 sm:border-t-0"
+      class="relative order-3 flex h-10 w-full items-center gap-6 border-t border-line sm:order-2 sm:h-full sm:w-auto sm:flex-1 sm:gap-4 sm:border-t-0 lg:gap-6"
       aria-label="Sections"
     >
       {

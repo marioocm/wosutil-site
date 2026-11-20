@@ -146,7 +146,8 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Header
 
 - Sticky, warm paper background with hairline bottom border.
-- Wordmark left, followed by the Simulator / Countdown section links.
+- Wordmark left, followed by the Battle Reports / Countdown / Simulator section
+  links.
 - UTC clock and theme toggle right.
 - Active section: ink text with a 2px ink underline flush with the header
   border. Inactive sections: muted text that darkens on hover.
@@ -286,7 +287,8 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Outlined --paper card with a centered “Stats Bonuses” title.
 - Three-column table: left-side values centered in their column, the stat name
-  centered in the middle, and right-side values centered in their column.
+  centered in the middle, and right-side values centered in their column. The
+  Attacker/Defender headers sit centered over their columns, not at the cell edges.
 - The twelve rows follow the game order: Infantry / Lancer / Marksman × Attack /
   Defense / Lethality / Health.
 - Values are percentage inputs with at most two decimals; extra decimals are blocked
