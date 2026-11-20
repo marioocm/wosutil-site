@@ -16,11 +16,12 @@ import {
   parseShareFromHash,
 } from '../lib/share'
 import { clamp, clampInput, pad2, padInput, parseSecondsInput, splitSeconds } from '../lib/timer'
-import { setShareHandler } from './site-chrome'
 
 const TICK_MS = 250
 const MAX_MINUTES = 99
 const MAX_SECONDS = 59
+const SHARE_LABEL = 'Share config'
+const SHARE_RESET_MS = 1500
 
 function getElement(id: string): HTMLElement {
   const element = document.getElementById(id)
@@ -81,6 +82,7 @@ export function initCountdown(): void {
   const pauseIcon = getElement('pause-icon')
   const resetButton = getElement('reset-button') as HTMLButtonElement
   const clearButton = getElement('clear-button') as HTMLButtonElement
+  const shareButton = getElement('share-button') as HTMLButtonElement
   const rallyCallers = mountRallyCallers(getElement('rally-panel'))
   const enemyCallers = mountRallyCallers(getElement('enemy-panel'), {
     storageKey: ENEMY_STORAGE_KEY,
@@ -96,6 +98,7 @@ export function initCountdown(): void {
   let running = false
   let finished = false
   let endTime = 0
+  let shareResetTimer: number | undefined
 
   function readMinutes(): number {
     return clamp(parseSecondsInput(minutesInput.value), 0, MAX_MINUTES)
@@ -196,7 +199,7 @@ export function initCountdown(): void {
     render()
   }
 
-  async function onShare(): Promise<boolean> {
+  async function onShare(): Promise<void> {
     const url = buildShareUrl(
       window.location.href,
       collectShareState(
@@ -205,7 +208,13 @@ export function initCountdown(): void {
         rallyCallers.getSelection(),
       ),
     )
-    return copyText(url)
+    const ok = await copyText(url)
+    shareButton.textContent = ok ? 'Copied!' : 'Copy failed'
+    window.clearTimeout(shareResetTimer)
+    shareResetTimer = window.setTimeout(() => {
+      if (!shareButton.isConnected) return
+      shareButton.textContent = SHARE_LABEL
+    }, SHARE_RESET_MS)
   }
 
   function render(): void {
@@ -234,6 +243,9 @@ export function initCountdown(): void {
   playButton.addEventListener('click', onPlay)
   resetButton.addEventListener('click', onReset)
   clearButton.addEventListener('click', onClear)
+  shareButton.addEventListener('click', () => {
+    void onShare()
+  })
   rallyCallers.onSelectionChange(syncQueueSelection)
   rallyQueue.onApplyBuffer((bufferSec) => {
     if (running) return
@@ -247,7 +259,6 @@ export function initCountdown(): void {
     render()
   })
 
-  setShareHandler(onShare)
   syncQueueSelection()
   render()
 

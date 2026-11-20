@@ -147,17 +147,13 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Sticky, warm paper background with hairline bottom border.
 - Wordmark left, followed by the Simulator / Countdown section links.
-- UTC clock, theme toggle and Share action (countdown only) right.
+- UTC clock and theme toggle right.
 - Active section: ink text with a 2px ink underline flush with the header
   border. Inactive sections: muted text that darkens on hover.
 - Hovering (or focusing) a section slides the single underline under it; it
   returns to the active section when the pointer/focus leaves. Clicking
   navigates immediately, with no click delay. Reduced-motion users get instant
   moves.
-- The Share action belongs to the countdown page. When leaving it, the
-  destination page renders a visual-only Share and slides it behind the right
-  edge of its slot (320ms, linear) while UTC/theme move to that page's
-  positions; countdown load plays the reverse. The click itself is immediate.
 - On narrow/touch viewports the sticky header hides on scroll down
   (`translateY(-100%)`, 220ms) and returns on scroll up, near the top, or when
   a header control receives focus.
@@ -189,6 +185,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Caller panels
 
 - Outlined --paper cards with a single text title.
+- The Rally callers card carries a small secondary `Share config` action at
+  the right edge of its title row; it copies the current rally and enemy
+  configuration link and shows `Copied!` / `Copy failed` for 1.5s.
 - Rows: outlined sub-cards on the page background, 4px radius.
 - Row hover: border darkens and background picks up a light `--tint` wash.
 - Selected row: `--tint` background with an `--ink` border and square check.
