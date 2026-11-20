@@ -17,7 +17,17 @@ import SiteLayout from '../layouts/SiteLayout.astro'
         aria-label="Rally callers"
         class="flex w-full flex-col gap-4 rounded-card border border-line bg-paper p-5"
       >
-        <h2 class="text-p1 font-medium tracking-[-0.01em]">Rally callers</h2>
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-p1 font-medium tracking-[-0.01em]">Rally callers</h2>
+          <button
+            type="button"
+            id="share-button"
+            title="Copy share link with your rally setup"
+            class="shrink-0 cursor-pointer rounded-sm border border-line-strong bg-transparent px-3 py-1.5 text-caption font-medium text-ink transition-colors hover:border-ink hover:bg-tint/40 active:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Share config
+          </button>
+        </div>
       </section>
 
       <section
