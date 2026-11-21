@@ -108,6 +108,10 @@ describe('reports helpers', () => {
       name: 'seo-yoon',
       side: 'defender',
     })
+    expect(parseReportFilterEntry('hank:both')).toEqual({
+      name: 'hank',
+      side: 'both',
+    })
     expect(parseReportFilterEntry('hank:unknown')).toEqual({
       name: 'hank:unknown',
       side: 'any',
@@ -117,9 +121,11 @@ describe('reports helpers', () => {
     expect(reportFilterEntryValue({ name: 'hank', side: 'defender' })).toBe(
       'hank:defender',
     )
+    expect(reportFilterEntryValue({ name: 'hank', side: 'both' })).toBe('hank:both')
     expect(reportFilterSideLabel('any')).toBe('Any')
     expect(reportFilterSideLabel('attacker')).toBe('Attacker')
     expect(reportFilterSideLabel('defender')).toBe('Defender')
+    expect(reportFilterSideLabel('both')).toBe('Both')
   })
 
   it('keeps filterQuery free of pagination parameters', () => {

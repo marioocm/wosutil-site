@@ -47,7 +47,7 @@ const ROW_VISUAL_CLASS =
   'relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted'
 const ROW_VALUE_CLASS = 'min-w-0 flex-1 truncate'
 const SIDE_GROUP_CLASS =
-  'grid grid-cols-3 gap-0.5 rounded-sm border border-line bg-paper p-0.5'
+  'grid grid-cols-4 gap-0.5 rounded-sm border border-line bg-paper p-0.5'
 const SIDE_BUTTON_CLASS =
   'cursor-pointer rounded-xs px-1 py-1 text-[10px] leading-none text-ink-muted transition-colors hover:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
