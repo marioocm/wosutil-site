@@ -106,13 +106,21 @@ export interface ReportStats {
 }
 
 export interface ReportFilters {
-  hero?: string
-  joiner?: string
+  heroes?: ReportHeroFilter[]
+  joiners?: ReportHeroFilter[]
   result?: string
   tier?: string
   fc?: string
   max_gen?: number
   has_t12?: boolean
+}
+
+export const REPORT_FILTER_SIDES = ['any', 'attacker', 'defender'] as const
+export type ReportFilterSide = (typeof REPORT_FILTER_SIDES)[number]
+
+export interface ReportHeroFilter {
+  name: string
+  side: ReportFilterSide
 }
 
 const SPECIAL_HEROES: Record<string, string> = {
@@ -228,6 +236,34 @@ export function parseGeneration(value: string | null | undefined): number | null
   return Number.isInteger(number) && number > 0 ? number : null
 }
 
+export function isReportFilterSide(value: string): value is ReportFilterSide {
+  return (REPORT_FILTER_SIDES as readonly string[]).includes(value)
+}
+
+export function parseReportFilterEntry(value: string): ReportHeroFilter | null {
+  const text = value.trim()
+  if (!text) return null
+  const separator = text.lastIndexOf(':')
+  if (separator > 0) {
+    const side = text.slice(separator + 1).trim().toLowerCase()
+    if (isReportFilterSide(side)) {
+      const name = text.slice(0, separator).trim().toLowerCase()
+      return name ? { name, side } : null
+    }
+  }
+  return { name: text.toLowerCase(), side: 'any' }
+}
+
+export function reportFilterEntryValue(entry: ReportHeroFilter): string {
+  return entry.side === 'any' ? entry.name : `${entry.name}:${entry.side}`
+}
+
+export function reportFilterSideLabel(side: ReportFilterSide): string {
+  if (side === 'attacker') return 'Attacker'
+  if (side === 'defender') return 'Defender'
+  return 'Any'
+}
+
 export function isRally(item: { joiners: Record<SideKey, string[]> }): boolean {
   return (item.joiners.attacker?.length ?? 0) + (item.joiners.defender?.length ?? 0) > 0
 }
@@ -246,15 +282,24 @@ export function ratioText(ratio: Ratio): string {
   return `${formatShare(ratio.infantry)} / ${formatShare(ratio.lancer)} / ${formatShare(ratio.marksman)}`
 }
 
-export function buildQuery(filters: ReportFilters, cursor?: number | null, limit = 24): string {
+export function filterQuery(filters: ReportFilters): URLSearchParams {
   const params = new URLSearchParams()
-  if (filters.hero?.trim()) params.set('hero', filters.hero.trim())
-  if (filters.joiner?.trim()) params.set('joiner', filters.joiner.trim())
+  for (const entry of filters.heroes ?? []) {
+    if (entry.name.trim()) params.append('hero', reportFilterEntryValue(entry))
+  }
+  for (const entry of filters.joiners ?? []) {
+    if (entry.name.trim()) params.append('joiner', reportFilterEntryValue(entry))
+  }
   if (filters.result) params.set('result', filters.result)
   if (filters.tier) params.set('tier', filters.tier)
   if (filters.fc) params.set('fc', filters.fc)
   if (filters.max_gen) params.set('max_gen', String(filters.max_gen))
   if (filters.has_t12) params.set('has_t12', 'true')
+  return params
+}
+
+export function buildQuery(filters: ReportFilters, cursor?: number | null, limit = 24): string {
+  const params = filterQuery(filters)
   if (cursor !== undefined && cursor !== null) params.set('cursor', String(cursor))
   params.set('limit', String(limit))
   return params.toString()

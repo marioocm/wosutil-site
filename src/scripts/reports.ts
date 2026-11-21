@@ -6,6 +6,7 @@ import {
   buildQuery,
   classLabel,
   fetchJson,
+  filterQuery,
   formatNumber,
   formatSkill,
   generationLabel,
@@ -669,11 +670,7 @@ export function initReports(): void {
 
   const syncUrl = (): void => {
     if (state.currentId) return
-    const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(state.filters)) {
-      if (value) params.set(key, String(value))
-    }
-    const query = params.toString()
+    const query = filterQuery(state.filters).toString()
     window.history.replaceState({}, '', `${BASE}reports/${query ? `?${query}` : ''}`)
   }
 
@@ -717,7 +714,6 @@ export function initReports(): void {
   }
 
   const loadPage = async (reset: boolean): Promise<void> => {
-    if (state.loading) return
     state.loading = true
     const request = ++state.request
     if (reset) {
@@ -834,6 +830,7 @@ export function initReports(): void {
   })
 
   const initialId = parsePathId() || new URLSearchParams(window.location.search).get('id')
+  if (!initialId) syncUrl()
   void loadMeta()
   void loadStats()
   void loadPage(true)

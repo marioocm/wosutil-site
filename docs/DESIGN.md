@@ -378,15 +378,23 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   upper bound: every main hero and joiner in the report must be that generation
   or older, so newer heroes exclude the report. Choosing a lower generation
   clears any selected hero or joiner that no longer fits.
-- Hero and Joiner are full-width triggers showing the selected portrait, name,
-  or `Any hero` / `Any joiner`. They open one shared paper `<dialog>` with a
-  search field and the same hero rows used by the simulator (portrait, name and
-  `Gen N` / `Epic`); a leading `Any hero` / `Any joiner` row clears the filter.
-  Options are ordered newest generation first, epics last, and hide heroes newer
-  than the selected generation. Both pickers are disabled until `/v1/meta`
-  returns the archive's hero lists.
+- Hero and Joiner are stacks of full-width trigger rows. Hero allows up to 6
+  selected heroes; Joiner allows up to 8 selected joiners. Each selected row
+  shows the portrait and name plus a three-segment `Any` / `Attacker` /
+  `Defender` toggle (Any by default) that constrains which side must hold that
+  hero. An empty `Any hero` / `Any joiner` row appears below while there is room,
+  so every selection adds another slot. All selected entries are ANDed; missing
+  entries exclude the report.
+- A row opens the shared paper `<dialog>` with a search field and the same hero
+  rows used by the simulator (portrait, name and `Gen N` / `Epic`). Options are
+  ordered newest generation first, epics last, hide heroes newer than the
+  selected generation, and hide heroes already used by another row. A leading
+  `Any hero` / `Any joiner` row clears that selection. Both pickers are disabled
+  until `/v1/meta` returns the archive's hero lists.
 - Result, Tier and Furnace stay compact native selects; Furnace keeps `FC0` for
-  troops with no fire crystal. The `Has T12 skill` checkbox closes the card.
+  troops with no fire crystal. Result options with no reports in the archive are
+  hidden (the archive currently has no `No wipe` reports). The `Has T12 skill`
+  checkbox closes the card.
 - Report cards show `FC0` when the report has troops but no fire crystal level,
   and Gen `—` only when no main hero or joiner is recognized.
 

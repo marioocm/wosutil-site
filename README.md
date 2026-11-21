@@ -6,7 +6,7 @@ Live site: [wosutil.mariocm.dev](https://wosutil.mariocm.dev/)
 
 ## Features
 
-- **Battle Reports:** searchable public battle archive with generation, hero, joiner, result, tier, FC and T12 filters, report details, JSON/CSV downloads and a full JSONL export.
+- **Battle Reports:** searchable public battle archive with generation, multi-hero and multi-joiner filters (with attacker/defender side), result, tier, FC and T12 filters, report details, JSON/CSV downloads and a full JSONL export.
 - **Countdown:** duration-based timer, rally and enemy callers, call queue, shareable setup and UTC clock.
 - **Simulator:** generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses, plus Battle Overview and Battle Details from the `wosutil-sim` engine.
 - **Optimise Ratio:** sweeps one side's inf/lan/mar split on the engine and lists the best ratios; click a result to apply it to Troop Power.
