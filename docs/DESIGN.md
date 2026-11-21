@@ -380,9 +380,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   clears any selected hero or joiner that no longer fits.
 - Hero and Joiner are stacks of full-width trigger rows. Hero allows up to 6
   selected heroes; Joiner allows up to 8 selected joiners. Each selected row
-  shows the portrait and name plus a three-segment `Any` / `Attacker` /
-  `Defender` toggle (Any by default) that constrains which side must hold that
-  hero. An empty `Any hero` / `Any joiner` row appears below while there is room,
+  shows the portrait and name plus a four-segment `Any` / `Attacker` /
+  `Defender` / `Both` toggle (Any by default) that constrains which side must
+  hold that hero. `Both` requires the hero on the attacker and defender sides.
+  An empty `Any hero` / `Any joiner` row appears below while there is room,
   so every selection adds another slot. All selected entries are ANDed; missing
   entries exclude the report.
 - A row opens the shared paper `<dialog>` with a search field and the same hero

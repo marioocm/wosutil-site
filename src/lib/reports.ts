@@ -115,7 +115,7 @@ export interface ReportFilters {
   has_t12?: boolean
 }
 
-export const REPORT_FILTER_SIDES = ['any', 'attacker', 'defender'] as const
+export const REPORT_FILTER_SIDES = ['any', 'attacker', 'defender', 'both'] as const
 export type ReportFilterSide = (typeof REPORT_FILTER_SIDES)[number]
 
 export interface ReportHeroFilter {
@@ -261,6 +261,7 @@ export function reportFilterEntryValue(entry: ReportHeroFilter): string {
 export function reportFilterSideLabel(side: ReportFilterSide): string {
   if (side === 'attacker') return 'Attacker'
   if (side === 'defender') return 'Defender'
+  if (side === 'both') return 'Both'
   return 'Any'
 }
 
