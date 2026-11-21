@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildQuery,
   classLabel,
+  filterQuery,
   formatNumber,
   formatPercent,
   formatSkill,
@@ -12,7 +13,10 @@ import {
   isRally,
   maxTroopLevel,
   parseGeneration,
+  parseReportFilterEntry,
   ratioText,
+  reportFilterEntryValue,
+  reportFilterSideLabel,
   reportGeneration,
   resultLabel,
   survivorRate,
@@ -69,19 +73,57 @@ describe('reports helpers', () => {
     expect(ratioText({ infantry: 40, lancer: 30, marksman: 30 })).toBe('40% / 30% / 30%')
   })
 
-  it('builds a query without empty filters', () => {
+  it('builds a query with repeated hero and joiner filters', () => {
     const query = buildQuery(
-      { hero: ' Hank ', result: 'attacker', max_gen: 10, has_t12: true },
+      {
+        heroes: [
+          { name: 'hank', side: 'attacker' },
+          { name: 'edith', side: 'any' },
+        ],
+        joiners: [{ name: 'mia', side: 'defender' }],
+        result: 'attacker',
+        max_gen: 10,
+        has_t12: true,
+      },
       120,
       24,
     )
     const params = new URLSearchParams(query)
-    expect(params.get('hero')).toBe('Hank')
+    expect(params.getAll('hero')).toEqual(['hank:attacker', 'edith'])
+    expect(params.getAll('joiner')).toEqual(['mia:defender'])
     expect(params.get('result')).toBe('attacker')
     expect(params.get('max_gen')).toBe('10')
     expect(params.get('has_t12')).toBe('true')
     expect(params.get('cursor')).toBe('120')
     expect(params.get('limit')).toBe('24')
-    expect(params.get('joiner')).toBeNull()
+  })
+
+  it('parses and serializes hero side filters', () => {
+    expect(parseReportFilterEntry('Hank')).toEqual({ name: 'hank', side: 'any' })
+    expect(parseReportFilterEntry(' hank:ATTACKER ')).toEqual({
+      name: 'hank',
+      side: 'attacker',
+    })
+    expect(parseReportFilterEntry('seo-yoon:defender')).toEqual({
+      name: 'seo-yoon',
+      side: 'defender',
+    })
+    expect(parseReportFilterEntry('hank:unknown')).toEqual({
+      name: 'hank:unknown',
+      side: 'any',
+    })
+    expect(parseReportFilterEntry('  ')).toBeNull()
+    expect(reportFilterEntryValue({ name: 'hank', side: 'any' })).toBe('hank')
+    expect(reportFilterEntryValue({ name: 'hank', side: 'defender' })).toBe(
+      'hank:defender',
+    )
+    expect(reportFilterSideLabel('any')).toBe('Any')
+    expect(reportFilterSideLabel('attacker')).toBe('Attacker')
+    expect(reportFilterSideLabel('defender')).toBe('Defender')
+  })
+
+  it('keeps filterQuery free of pagination parameters', () => {
+    const params = filterQuery({ heroes: [{ name: 'hank', side: 'any' }] })
+    expect(params.toString()).toBe('hero=hank')
   })
 })

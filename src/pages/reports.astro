@@ -39,7 +39,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     </header>
 
     <div class="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
-      <aside class="lg:sticky lg:top-24">
+      <aside class="lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
         <form
           data-report-filters
           class="rounded-card border border-line bg-paper p-5"
@@ -86,77 +86,19 @@ import SiteLayout from '../layouts/SiteLayout.astro'
             </div>
 
             <div class="grid gap-1.5">
-              <span class="text-micro font-medium text-ink-muted">Hero</span>
-              <button
-                type="button"
-                data-report-picker-trigger="hero"
-                data-selected="false"
-                disabled
-                aria-haspopup="dialog"
-                aria-controls="report-picker"
-                aria-label="Filter by hero: Any hero"
-                class="group flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60"
-              >
-                <span
-                  data-report-hero-visual
-                  class="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted"
-                  aria-hidden="true"
-                >
-                  +
-                </span>
-                <span data-report-hero-value class="min-w-0 flex-1 truncate">Any hero</span>
-                <svg
-                  viewBox="0 0 16 16"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                  class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
-                >
-                  <path d="m4 6 4 4 4-4"></path>
-                </svg>
-              </button>
+              <div class="flex items-baseline justify-between gap-2">
+                <span class="text-micro font-medium text-ink-muted">Hero</span>
+                <span class="text-[10px] text-ink-subtle">Up to 6</span>
+              </div>
+              <div data-report-hero-rows class="grid gap-1.5"></div>
             </div>
 
             <div class="grid gap-1.5">
-              <span class="text-micro font-medium text-ink-muted">Joiner</span>
-              <button
-                type="button"
-                data-report-picker-trigger="joiner"
-                data-selected="false"
-                disabled
-                aria-haspopup="dialog"
-                aria-controls="report-picker"
-                aria-label="Filter by joiner: Any joiner"
-                class="group flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60"
-              >
-                <span
-                  data-report-joiner-visual
-                  class="relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted"
-                  aria-hidden="true"
-                >
-                  +
-                </span>
-                <span data-report-joiner-value class="min-w-0 flex-1 truncate">Any joiner</span>
-                <svg
-                  viewBox="0 0 16 16"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                  class="shrink-0 text-ink-muted transition-colors group-hover:text-ink"
-                >
-                  <path d="m4 6 4 4 4-4"></path>
-                </svg>
-              </button>
+              <div class="flex items-baseline justify-between gap-2">
+                <span class="text-micro font-medium text-ink-muted">Joiner</span>
+                <span class="text-[10px] text-ink-subtle">Up to 8</span>
+              </div>
+              <div data-report-joiner-rows class="grid gap-1.5"></div>
             </div>
 
             <label class="grid gap-1.5">
@@ -169,7 +111,6 @@ import SiteLayout from '../layouts/SiteLayout.astro'
                 <option value="attacker">Attacker victory</option>
                 <option value="defender">Defender victory</option>
                 <option value="draw">Draw</option>
-                <option value="none">No wipe</option>
               </select>
             </label>
 
@@ -351,9 +292,14 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
 <style is:global>
   [data-report-generation-trigger][data-selected="true"],
-  [data-report-picker-trigger][data-selected="true"] {
+  [data-report-row-trigger][data-selected="true"] {
     border-color: var(--line-strong);
     background: color-mix(in srgb, var(--tint) 55%, var(--paper));
+  }
+
+  [data-report-side][data-selected="true"] {
+    color: var(--invert-fg);
+    background: var(--invert);
   }
 
   .rp-picker::backdrop {
