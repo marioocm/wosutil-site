@@ -384,8 +384,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   `Defender` / `Both` toggle (Any by default) that constrains which side must
   hold that hero. `Both` requires the hero on the attacker and defender sides.
   An empty `Any hero` / `Any joiner` row appears below while there is room,
-  so every selection adds another slot. All selected entries are ANDed; missing
-  entries exclude the report.
+  so every selection adds another slot. A selected row has an X control next to
+  the picker chevron that removes that filter directly. All selected entries are
+  ANDed; missing entries exclude the report.
 - A row opens the shared paper `<dialog>` with a search field and the same hero
   rows used by the simulator (portrait, name and `Gen N` / `Epic`). Options are
   ordered newest generation first, epics last, hide heroes newer than the

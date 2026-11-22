@@ -42,7 +42,9 @@ const GENERATION_LABEL_CLASS =
   'font-primary text-p2 font-medium leading-none tabular-nums'
 const GENERATION_META_CLASS = 'font-mono text-[10px] leading-none text-ink-muted'
 const ROW_TRIGGER_CLASS =
-  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60'
+  'group flex h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm border border-line bg-background px-2.5 text-left text-p3 text-ink transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60'
+const ROW_CLEAR_CLASS =
+  'flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line bg-background text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 const ROW_VISUAL_CLASS =
   'relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted'
 const ROW_VALUE_CLASS = 'min-w-0 flex-1 truncate'
@@ -132,6 +134,22 @@ function chevronIcon(): SVGSVGElement {
   svg.setAttribute('class', 'shrink-0 text-ink-muted transition-colors group-hover:text-ink')
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
   path.setAttribute('d', 'm4 6 4 4 4-4')
+  svg.append(path)
+  return svg
+}
+
+function closeIcon(): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 16 16')
+  svg.setAttribute('width', '16')
+  svg.setAttribute('height', '16')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '1.4')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('d', 'm4 4 8 8M12 4l-8 8')
   svg.append(path)
   return svg
 }
@@ -251,7 +269,25 @@ export function initReportFilters(
     value.textContent = entry ? heroName(entry.name) : `Any ${kind}`
 
     trigger.append(visual, value, chevronIcon())
-    row.append(trigger)
+
+    const top = document.createElement('div')
+    top.className = 'flex items-center gap-1.5'
+    top.append(trigger)
+
+    if (entry) {
+      const clear = document.createElement('button')
+      clear.type = 'button'
+      clear.className = ROW_CLEAR_CLASS
+      clear.dataset['reportRowClear'] = 'true'
+      clear.dataset['reportRowClearKind'] = kind
+      clear.dataset['index'] = String(index)
+      clear.setAttribute('aria-label', `Remove ${kind} ${heroName(entry.name)}`)
+      clear.title = `Remove ${kind}`
+      clear.append(closeIcon())
+      top.append(clear)
+    }
+
+    row.append(top)
 
     if (entry) {
       const group = document.createElement('div')
@@ -456,6 +492,16 @@ export function initReportFilters(
     notify()
   }
 
+  function clearEntry(kind: PickerKind, index: number): void {
+    const entries = entriesFor(kind)
+    if (index < 0 || index >= entries.length) return
+    entries.splice(index, 1)
+    setEntries(kind, entries)
+    renderRows(kind)
+    rowTrigger(kind, Math.min(index, entries.length))?.focus()
+    notify()
+  }
+
   function selectSide(kind: PickerKind, index: number, side: ReportFilterSide): void {
     const entries = entriesFor(kind)
     const entry = entries[index]
@@ -499,6 +545,12 @@ export function initReportFilters(
 
   function handleRowsClick(kind: PickerKind, event: Event): void {
     if (!(event.target instanceof Element)) return
+    const clear = event.target.closest<HTMLButtonElement>('[data-report-row-clear]')
+    if (clear && clear.dataset['reportRowClearKind'] === kind) {
+      const index = Number(clear.dataset['index'])
+      if (Number.isInteger(index)) clearEntry(kind, index)
+      return
+    }
     const sideButton = event.target.closest<HTMLButtonElement>('[data-report-side]')
     if (sideButton && sideButton.dataset['reportSideKind'] === kind) {
       const index = Number(sideButton.dataset['index'])
