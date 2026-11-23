@@ -136,10 +136,10 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
         <dialog
           id="report-generation-picker"
-          class="rp-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          class="rp-picker m-auto w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-card border border-line bg-paper p-0 text-ink"
           aria-labelledby="report-generation-picker-title"
         >
-          <div class="flex max-h-[inherit] flex-col">
+          <div class="flex max-h-[min(80dvh,38rem)] flex-col">
             <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
               <div class="min-w-0">
                 <h3
@@ -181,10 +181,10 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
         <dialog
           id="report-picker"
-          class="rp-picker m-auto max-h-[min(80dvh,38rem)] w-[min(24rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink"
+          class="rp-picker m-auto w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-card border border-line bg-paper p-0 text-ink"
           aria-labelledby="report-picker-title"
         >
-          <div class="flex max-h-[inherit] flex-col">
+          <div class="flex max-h-[min(80dvh,38rem)] flex-col">
             <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
               <div class="min-w-0">
                 <h3 id="report-picker-title" class="text-p1 font-medium tracking-[-0.01em]">
@@ -1370,13 +1370,15 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     width: 14%;
   }
 
-  .rp-actions {
+  .rp-report-actions {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.45rem;
     align-items: center;
-    padding-top: 0.8rem;
-    border-top: 1px solid var(--line);
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto 0.7rem;
   }
 
   .rp-action {
@@ -1395,7 +1397,24 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     background: var(--tint);
   }
 
+  .rp-action.is-primary {
+    color: var(--invert-fg);
+    background: var(--invert);
+    border-color: var(--invert);
+    font-weight: 500;
+  }
+
+  .rp-action.is-primary:hover {
+    background: var(--invert);
+    border-color: var(--invert);
+    opacity: 0.85;
+  }
+
   @media (min-width: 1024px) {
+    .rp-report-actions {
+      max-width: 1060px;
+    }
+
     .rp-report-layout {
       max-width: 1060px;
       grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);

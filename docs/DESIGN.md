@@ -425,7 +425,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   style. All four values start at `Any`; clicking a tile or hexagon opens a paper
   `<dialog>` picker with an `Any tier` / `Any FC level` option followed by the
   T1-T12 or FC0-FC10 grid. Choosing a value fills the control, and choosing
-  `Any` clears that bound. Both controls come from
+  `Any` clears that bound. The FC hexagon keeps the simulator's inverted fill and
+  reads `Any` when unset, so both pages render the same badge from
+  `src/components/fc-hex.ts`. Both controls come from
   `src/components/troop-level-control.ts`. The API compares the report's highest
   tier and that tier's FC - the values shown on the cards - so `FC0` keeps
   meaning troops with no fire crystal.
@@ -440,6 +442,13 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - The `Has T12 skill` checkbox closes the card.
 - Report cards show `FC0` when the report has troops but no fire crystal level,
   and Gen `—` only when no main hero or joiner is recognized.
+
+### Battle Reports detail
+
+- The detail dialog opens with a right-aligned action row above the cards and
+  outside them: primary inverted `Simulate`, outlined `Copy link`, then outlined
+  `Download JSON` (no CSV). `Simulate` opens the simulator with the battle
+  loaded for editing.
 
 ### Footer
 

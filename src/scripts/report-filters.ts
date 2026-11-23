@@ -16,6 +16,7 @@ import {
   type Hero,
 } from '../lib/heroes'
 import {
+  allJoinerPackHeroes,
   compareJoinerHeroes,
   expandJoinerMatches,
   groupJoinerItems,
@@ -127,15 +128,17 @@ function choiceFor(name: string): HeroChoice {
   }
 }
 
-function buildChoices(names: string[]): HeroChoice[] {
+function buildChoices(names: string[], extraHeroes: readonly Hero[] = []): HeroChoice[] {
   const seen = new Set<string>()
   const choices: HeroChoice[] = []
-  for (const name of names) {
+  const add = (name: string): void => {
     const choice = choiceFor(name)
-    if (!choice.value || seen.has(choice.value)) continue
-    seen.add(choice.value)
+    if (!choice.value || seen.has(choice.hero.id)) return
+    seen.add(choice.hero.id)
     choices.push(choice)
   }
+  for (const name of names) add(name)
+  for (const hero of extraHeroes) add(hero.name)
   return choices.sort(
     (left, right) =>
       (right.hero.generation ?? 0) - (left.hero.generation ?? 0) ||
@@ -869,7 +872,9 @@ export function initReportFilters(
     },
     setMeta(meta: ReportMeta): void {
       heroChoices = buildChoices(meta.heroes)
-      joinerChoices = buildChoices(meta.joiners)
+      // The archive only lists joiners it has already seen, so complete every
+      // Same S1 pack from the roster (e.g. Bahiti is in Sergey's pack).
+      joinerChoices = buildChoices(meta.joiners, allJoinerPackHeroes())
       metaReady = true
       renderTriggers()
       applyResultAvailability(meta)

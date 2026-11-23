@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getAllHeroes, getHeroById, HEROES } from './heroes'
 import {
   JOINER_PACKS,
+  allJoinerPackHeroes,
   compareJoinerHeroes,
   expandJoinerMatches,
   getJoinerPack,
@@ -65,6 +66,27 @@ describe('JOINER_PACKS', () => {
       'Xura',
       'Karol',
     ])
+  })
+})
+
+describe('allJoinerPackHeroes', () => {
+  it('returns every pack member once, including Bahiti', () => {
+    const heroes = allJoinerPackHeroes()
+    const ids = heroes.map((hero) => hero.id)
+    expect(ids).toContain('bahiti')
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.length).toBe(
+      JOINER_PACKS.reduce((count, pack) => count + pack.members.length, 0),
+    )
+  })
+
+  it('uses the joiners picker order (epics first)', () => {
+    const heroes = allJoinerPackHeroes()
+    const firstLegendary = heroes.findIndex((hero) => hero.generation !== null)
+    expect(firstLegendary).toBeGreaterThan(0)
+    expect(heroes.slice(0, firstLegendary).every((hero) => hero.generation === null)).toBe(
+      true,
+    )
   })
 })
 

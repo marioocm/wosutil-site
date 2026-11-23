@@ -3,7 +3,8 @@ import {
   getGenerationPreset,
   onGenerationChange,
 } from '../lib/generations'
-import type { TroopType } from '../lib/heroes'
+import { TROOP_TYPES, type TroopType } from '../lib/heroes'
+import { onSimulatorLoad } from '../lib/simulator-load'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_RATIO,
@@ -41,6 +42,7 @@ interface DragState {
 
 interface TroopSideController {
   applyLoadout: (total: number, ratio: TroopRatio) => void
+  applyCounts: (counts: Record<TroopType, number>) => void
 }
 
 const DRAG_THRESHOLD_PX = 4
@@ -308,6 +310,25 @@ function initSide(side: HTMLElement): TroopSideController | null {
     render()
   }
 
+  function applyCounts(next: Record<TroopType, number>): void {
+    const values = TROOP_TYPES.map(({ id }) => {
+      const count = Number(next[id])
+      return Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0
+    }) as [number, number, number]
+    const total = values[0] + values[1] + values[2]
+    state.total = total
+    state.counts = total > 0 ? values : null
+    state.ratio =
+      total > 0
+        ? [
+            (values[0] / total) * 100,
+            (values[1] / total) * 100,
+            (values[2] / total) * 100,
+          ]
+        : DEFAULT_TROOP_RATIO
+    render()
+  }
+
   function endDrag(): void {
     if (!drag) return
     const active = controls.get(drag.control)
@@ -450,7 +471,7 @@ function initSide(side: HTMLElement): TroopSideController | null {
 
   render()
 
-  return { applyLoadout }
+  return { applyLoadout, applyCounts }
 }
 
 export function initTroopPower(): void {
@@ -605,6 +626,26 @@ export function initTroopPower(): void {
       loadout.fc = preset.fc
       loadout.t12 = preset.t12Skills
       renderLoadout(loadout)
+    }
+  })
+
+  onSimulatorLoad((detail) => {
+    for (const side of ['left', 'right'] as const) {
+      const troops = detail[side].troops
+      sideControllers.get(side)?.applyCounts({
+        infantry: troops.infantry.count,
+        lancer: troops.lancer.count,
+        marksman: troops.marksman.count,
+      })
+      for (const { id } of TROOP_TYPES) {
+        const loadout = loadouts.get(`${side}:${id}`)
+        if (!loadout) continue
+        const next = troops[id]
+        loadout.tier = Math.min(Math.max(next.tier, 1), 12)
+        loadout.fc = Math.min(Math.max(next.fc, 0), 10)
+        loadout.t12 = Math.min(Math.max(next.t12, 0), 24)
+        renderLoadout(loadout)
+      }
     }
   })
 }

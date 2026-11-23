@@ -115,6 +115,22 @@ export function joinerPackNames(pack: JoinerPack): string[] {
   })
 }
 
+/**
+ * Every hero that belongs to a Same S1 pack, in picker order. The archive
+ * picker needs the full roster: a pack can be useful even when the archive
+ * has no report with one of its members yet (e.g. Bahiti).
+ */
+export function allJoinerPackHeroes(): Hero[] {
+  return sortJoinerHeroes(
+    JOINER_PACKS.flatMap((pack) =>
+      pack.members.flatMap((memberId) => {
+        const hero = getHeroById(memberId)
+        return hero ? [hero] : []
+      }),
+    ),
+  )
+}
+
 export type JoinerSortable = Pick<Hero, 'generation' | 'name'>
 
 /** Epics first, then legendaries from oldest to newest generation. */
