@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-ARG SITE_URL=https://wosutil.mariocm.dev
+ARG SITE_URL=https://wosutil.tech
 ARG BASE_PATH=/
 ARG PUBLIC_SIM_API=/sim
 ENV SITE_URL=${SITE_URL} \
