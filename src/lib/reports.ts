@@ -439,6 +439,11 @@ export function reportPath(id: string): string {
   return `${apiBase()}/v1/reports/${encodeURIComponent(id)}`
 }
 
-export function reportDownloadPath(id: string, extension: 'json' | 'csv'): string {
-  return `${reportPath(id)}.${extension}`
+export function reportDownloadPath(id: string): string {
+  return `${reportPath(id)}.json`
+}
+
+/** Simulator URL that loads one archive battle into its widgets. */
+export function simulatorBattlePath(id: string): string {
+  return `${import.meta.env.BASE_URL}simulator/?battle=${encodeURIComponent(id)}`
 }

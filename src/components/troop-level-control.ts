@@ -1,4 +1,5 @@
 import { TROOP_FC_LEVELS, TROOP_TIERS } from '../lib/troop-power'
+import { createFcHex } from './fc-hex'
 
 export interface TroopLevelValue {
   tier: number | null
@@ -149,16 +150,10 @@ export function createTroopLevelControl(
   fcButton.setAttribute('aria-haspopup', 'dialog')
   fcButton.setAttribute('aria-controls', dialog.id)
 
-  const fcHex = document.createElement('span')
-  fcHex.className = 'troop-fc-hex pointer-events-none'
-  fcHex.setAttribute('aria-hidden', 'true')
-
-  const fcValue = document.createElement('span')
-  fcValue.className = 'troop-fc-value'
+  const fcHex = createFcHex(current.fc)
 
   tierButton.append(tierLabel, tierValue)
-  fcHex.append(fcValue)
-  fcButton.append(fcHex)
+  fcButton.append(fcHex.element)
   tile.append(tierButton, fcButton)
   element.append(caption, tile)
 
@@ -173,8 +168,7 @@ export function createTroopLevelControl(
     )
 
     const hasFc = current.fc !== null
-    fcValue.textContent = hasFc ? String(current.fc) : '—'
-    fcHex.classList.toggle('is-any', !hasFc)
+    fcHex.setValue(current.fc)
     fcButton.setAttribute(
       'aria-label',
       `${options.label} fire crystal level: ${hasFc ? `FC${current.fc}` : 'Any'}`,

@@ -21,9 +21,11 @@ import {
 import {
   composeEffectiveStats,
   effectiveBuckets,
+  emptyBuffs,
   maxBuffs,
   rawStat,
 } from '../lib/stat-buffs'
+import { onSimulatorLoad, type SimulatorLoadDetail } from '../lib/simulator-load'
 import {
   compareStatBonuses,
   formatStatBonus,
@@ -303,6 +305,35 @@ export function initStatBonuses(): void {
     displaySide(detail.side)
   }
 
+  function applySimulatorLoad(detail: SimulatorLoadDetail): void {
+    for (const side of ['left', 'right'] as const) {
+      const load = detail[side]
+      const heroes = TROOP_TYPES.flatMap(({ id }) => {
+        const name = load.heroes[id]
+        const hero = name ? getHeroByName(name) : null
+        return hero ? [hero] : []
+      })
+      updateWidgetSummary(side, heroes)
+
+      const buckets = effectiveBuckets(
+        emptyBuffs(),
+        emptyBuffs(),
+        heroWidgetCounts(heroes, side),
+      )
+      for (const type of TROOP_TYPES) {
+        COMBAT_STATS.forEach((stat, index) => {
+          const effective = Number(load.stats[type.id][index] ?? 0)
+          rawPanels[side][type.id][stat] = rawStat(
+            Number.isFinite(effective) ? effective : 0,
+            stat,
+            buckets,
+          )
+        })
+      }
+      displaySide(side, heroes)
+    }
+  }
+
   // Seed the raw panel from any pre-filled inputs (currently empty on load).
   for (const side of ['left', 'right'] as const) {
     for (const type of TROOP_TYPES) {
@@ -316,6 +347,7 @@ export function initStatBonuses(): void {
 
   onGenerationChange(applyGeneration)
   onHeroChange(applyHeroDelta)
+  onSimulatorLoad(applySimulatorLoad)
   onModifierChange(() => displayAll())
 
   table.addEventListener('input', (event) => {

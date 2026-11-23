@@ -11,6 +11,7 @@ import {
 } from '../lib/generations'
 import {
   getHeroById,
+  getHeroByName,
   getHeroesByType,
   getTroopTypeLabel,
   isHeroAvailable,
@@ -18,6 +19,7 @@ import {
   type TroopType,
 } from '../lib/heroes'
 import { dispatchHeroChange } from '../lib/hero-events'
+import { onSimulatorLoad } from '../lib/simulator-load'
 
 type Side = 'left' | 'right'
 
@@ -147,6 +149,17 @@ export function initHeroComparison(): void {
   }
 
   onGenerationChange(applyGeneration)
+
+  onSimulatorLoad((detail) => {
+    for (const slot of root.querySelectorAll<HTMLButtonElement>('[data-hero-slot]')) {
+      const type = slot.dataset['heroType'] as TroopType
+      const side = slot.dataset['heroSide'] as Side
+      const hero = getHeroByName(detail[side].heroes[type] ?? '')
+      if (hero) selections.set(slotKey(type, side), hero)
+      else selections.delete(slotKey(type, side))
+      renderSlot(slot)
+    }
+  })
 
   closeButton.addEventListener('click', closePicker)
   bindPickerKeyboard(options, 'hero')

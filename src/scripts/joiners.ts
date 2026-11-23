@@ -10,6 +10,7 @@ import {
   filterHeroes,
   getAllHeroes,
   getHeroById,
+  getHeroByName,
   getTroopTypeShortLabel,
   isHeroAvailable,
   type Hero,
@@ -23,6 +24,7 @@ import {
   sortJoinerHeroes,
   type JoinerPack,
 } from '../lib/joiner-packs'
+import { onSimulatorLoad } from '../lib/simulator-load'
 
 type Side = 'left' | 'right'
 
@@ -278,6 +280,26 @@ export function initJoiners(): void {
   }
 
   onGenerationChange(applyGeneration)
+
+  onSimulatorLoad((detail) => {
+    let hasSelection = false
+    for (const slot of root.querySelectorAll<HTMLButtonElement>('[data-joiner-slot]')) {
+      const side = slot.dataset['joinerSide'] as Side
+      const index = Number(slot.dataset['joinerIndex'])
+      const name = detail[side].joiners[index - 1] ?? null
+      const hero = name ? getHeroByName(name) : null
+      const key = slotKey(side, index)
+      if (hero) {
+        selections.set(key, hero)
+        hasSelection = true
+      } else {
+        selections.delete(key)
+      }
+      renderSlot(slot)
+    }
+    renderPackNote()
+    if (hasSelection) setJoinersExpanded?.(true)
+  })
 
   closeButton.addEventListener('click', closePicker)
   search.addEventListener('input', () => {

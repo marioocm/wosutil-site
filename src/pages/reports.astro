@@ -1370,13 +1370,15 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     width: 14%;
   }
 
-  .rp-actions {
+  .rp-report-actions {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.45rem;
     align-items: center;
-    padding-top: 0.8rem;
-    border-top: 1px solid var(--line);
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto 0.7rem;
   }
 
   .rp-action {
@@ -1395,7 +1397,24 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     background: var(--tint);
   }
 
+  .rp-action.is-primary {
+    color: var(--invert-fg);
+    background: var(--invert);
+    border-color: var(--invert);
+    font-weight: 500;
+  }
+
+  .rp-action.is-primary:hover {
+    background: var(--invert);
+    border-color: var(--invert);
+    opacity: 0.85;
+  }
+
   @media (min-width: 1024px) {
+    .rp-report-actions {
+      max-width: 1060px;
+    }
+
     .rp-report-layout {
       max-width: 1060px;
       grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);

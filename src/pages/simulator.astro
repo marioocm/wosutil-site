@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
+import { fcHexMarkup } from '../components/fc-hex'
 import { TROOP_TYPES } from '../lib/heroes'
 import { STAT_BONUSES } from '../lib/stat-bonuses'
 import { CITY_PRESETS } from '../lib/stat-buffs'
@@ -55,6 +56,13 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     id="simulator"
     class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14 xl:px-[100px]"
   >
+    <p
+      data-battle-load-status
+      role="status"
+      aria-live="polite"
+      hidden
+      class="mx-auto mb-4 w-full max-w-[78rem] rounded-sm border border-line bg-paper px-3 py-2 text-center text-micro leading-snug text-ink-muted"
+    ></p>
     <div
       class="mx-auto grid w-full max-w-[78rem] grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)_minmax(0,1fr)] lg:items-start lg:gap-6"
     >
@@ -546,11 +554,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                         aria-controls="troop-fc-picker"
                         aria-label={`${side.label} ${type.label} fire crystal level`}
                       >
-                        <span class="troop-fc-hex pointer-events-none" aria-hidden="true">
-                          <span class="troop-fc-value" data-troop-fc-value>
-                            {DEFAULT_TROOP_FC}
-                          </span>
-                        </span>
+                        <Fragment set:html={fcHexMarkup(DEFAULT_TROOP_FC)} />
                       </button>
 
                       <input
@@ -1276,6 +1280,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     import { initModifierControls } from '../lib/modifier-controls'
     import { initOptimiseRatio } from '../scripts/optimise-ratio'
     import { initSimulation } from '../scripts/simulate'
+    import { initSimulatorBattle } from '../scripts/simulator-battle'
     import { initStatBonuses } from '../scripts/stat-bonuses'
     import { initTroopPower } from '../scripts/troop-power'
 
@@ -1286,6 +1291,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     initStatBonuses()
     initSimulation()
     initOptimiseRatio()
+    initSimulatorBattle()
 
     async function loadPresets(): Promise<void> {
       const controller = new AbortController()

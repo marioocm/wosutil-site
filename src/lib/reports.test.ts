@@ -27,6 +27,7 @@ import {
   reportGeneration,
   reportModeLabel,
   resultLabel,
+  simulatorBattlePath,
   survivorRate,
 } from './reports'
 
@@ -208,6 +209,12 @@ describe('reports helpers', () => {
     expect(isReportMode('any')).toBe(false)
     expect(reportModeLabel('rally')).toBe('Rally')
     expect(reportModeLabel('1v1')).toBe('1v1')
+  })
+
+  it('builds the simulator battle link', () => {
+    expect(simulatorBattlePath('68b10c6c6f8d30a0')).toMatch(
+      /\/simulator\/\?battle=68b10c6c6f8d30a0$/,
+    )
   })
 
   it('keeps filterQuery free of pagination parameters', () => {

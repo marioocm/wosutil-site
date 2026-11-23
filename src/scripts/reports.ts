@@ -1,3 +1,4 @@
+import { fcHexMarkup } from '../components/fc-hex'
 import { STAT_BONUSES } from '../lib/stat-bonuses'
 import {
   formatHeroGeneration,
@@ -30,6 +31,7 @@ import {
   reportDownloadPath,
   reportGeneration,
   resultLabel,
+  simulatorBattlePath,
   survivorRate,
   type ReportDetail,
   type ReportFilters,
@@ -364,7 +366,7 @@ function troopTile(side: SideDetail, troopClass: TroopClass): string {
         <span class="rp-tile-tier">T${summary.tier === null ? '—' : summary.tier.toFixed(1)}</span>
         ${
           summary.groups.length
-            ? `<span class="rp-tile-fc"><span class="troop-fc-hex"><span class="troop-fc-value">${fc}</span></span></span>`
+            ? `<span class="rp-tile-fc">${fcHexMarkup(fc)}</span>`
             : ''
         }
       </span>
@@ -563,6 +565,15 @@ function renderBattleDetails(detail: ReportDetail): string {
 function renderDetail(detail: ReportDetail): string {
   return `
     <div class="rp-report">
+      <div class="rp-report-actions">
+        <a
+          class="rp-action is-primary"
+          href="${simulatorBattlePath(detail.id)}"
+          title="Load this battle in the simulator"
+        >Simulate</a>
+        <button type="button" class="rp-action" data-copy-link>Copy link</button>
+        <a class="rp-action" href="${reportDownloadPath(detail.id)}" download>Download JSON</a>
+      </div>
       <div class="rp-report-layout">
         <article class="rp-report-main">
           <h2 id="rp-detail-title" class="sr-only">${escapeHtml(resultLabel(detail.result))}</h2>
@@ -571,11 +582,6 @@ function renderDetail(detail: ReportDetail): string {
           ${renderJoiners(detail)}
           ${renderTroopPower(detail)}
           ${renderStats(detail)}
-          <div class="rp-actions">
-            <a class="rp-action" href="${reportDownloadPath(detail.id, 'json')}" download>Download JSON</a>
-            <a class="rp-action" href="${reportDownloadPath(detail.id, 'csv')}" download>Download CSV</a>
-            <button type="button" class="rp-action" data-copy-link>Copy link</button>
-          </div>
         </article>
         ${renderBattleDetails(detail)}
       </div>
