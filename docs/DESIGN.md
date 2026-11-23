@@ -352,24 +352,27 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   scroll.
 - Container queries keep the report legible in the narrow sidebar: under
   `12rem` the Total Troops and average-survivor rows stack their centered label
-  above the two side values and the triggered headers shorten to `Trig.`;
-  above `12rem` they use the left-value / centered-label / right-value layout
-  and the full `Triggered` header.
+  above the two side values and the metric headers shorten to `Trig.`; above
+  `12rem` they use the left-value / centered-label / right-value layout and the
+  full `Triggered` header. Both widths keep `Kills` under the triggered label.
 - `Battle Overview`: centered section title, then a compact winrate split with
   each side's label and percentage at its end of a two-segment monochrome bar,
   followed by Total Troops and average-survivor rows in three centered columns
   like Stats Bonuses.
 - `Battle Details`: centered title with the Joiners-style chevron button at the
   right. It starts collapsed and expands with the same height animation into a
-  five-column table with a narrow spacer between the two triggered columns.
-  Each troop class keeps its three fixed hero-skill slots (missing hero/skill
-  slots stay in place with a dash), then lists that class's troop skills from
-  the API, aligned across both sides by skill name; a skill missing on one side
-  leaves the opposite cell empty with a dash. A dash marks an empty slot or a
-  skill the engine did not report, which is distinct from a reported zero.
-  Reported activations show one decimal (the mean over seeds). Three mirrored
-  rows below show average survivors for INF, LAN and MAR. The bottom of the card
-  shows the mean rounds with the min/max, then the seeds/elapsed metadata.
+  five-column table with a narrow spacer between the two metric columns. Each
+  side's metric cell stacks the mean triggered activations above the game's mean
+  kills, so both values stay visible without widening the sidebar. Each troop
+  class keeps its three fixed hero-skill slots (missing hero/skill slots stay in
+  place with a dash), then lists that class's troop skills from the API, aligned
+  across both sides by skill name; a skill missing on one side leaves the
+  opposite cell empty with a dash. A dash marks an empty slot or a skill the
+  engine did not report, which is distinct from a reported zero. Reported
+  activations show one decimal and kills are rounded to whole numbers (compact
+  notation from one million), all as means over seeds. Three mirrored rows
+  below show average survivors for INF, LAN and MAR. The bottom of the card shows
+  the mean rounds with the min/max, then the seeds/elapsed metadata.
 - The winrate bar uses neutral ink tints only and mono numerals for the
   percentages. Run metadata (seeds and elapsed time) and warnings sit below the
   sections in small muted text.

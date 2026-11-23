@@ -393,11 +393,17 @@ export function buildOptimizeCase(state: SimulatorState): EngineCase {
 export interface BattleSkillRow {
   label: string
   activations: number | null
+  kills: number | null
+}
+
+interface SkillValues {
+  activations: number
+  kills: number
 }
 
 interface HeroActivations {
-  bySkill: Map<string, number>
-  bySlot: Map<string, number>
+  bySkill: Map<string, SkillValues>
+  bySlot: Map<string, SkillValues>
 }
 
 function indexSkillActivations(skills: readonly SkillActivation[]): Map<string, HeroActivations> {
@@ -406,8 +412,9 @@ function indexSkillActivations(skills: readonly SkillActivation[]): Map<string, 
     if (skill.kind !== 'hero') continue
     const owner = skill.owner.toLowerCase()
     const entry = index.get(owner) ?? { bySkill: new Map(), bySlot: new Map() }
-    entry.bySkill.set(skill.skill.toLowerCase(), skill.activations_mean)
-    if (skill.slot) entry.bySlot.set(skill.slot.toUpperCase(), skill.activations_mean)
+    const values = { activations: skill.activations_mean, kills: skill.kills_mean }
+    entry.bySkill.set(skill.skill.toLowerCase(), values)
+    if (skill.slot) entry.bySlot.set(skill.slot.toUpperCase(), values)
     index.set(owner, entry)
   }
   return index
@@ -436,9 +443,9 @@ export function buildSkillRows(
     const hero = heroes[id]
     if (!hero) {
       return [
-        { label: '', activations: null },
-        { label: '', activations: null },
-        { label: '', activations: null },
+        { label: '', activations: null, kills: null },
+        { label: '', activations: null, kills: null },
+        { label: '', activations: null, kills: null },
       ]
     }
 
@@ -450,10 +457,13 @@ export function buildSkillRows(
       const value = labeled
         ? activations?.bySlot.get(slot) ??
           (skillName ? activations?.bySkill.get(skillName.toLowerCase()) : undefined) ??
-          activations?.bySkill.get(slot.toLowerCase()) ??
-          null
-        : null
-      return { label: labeled ? `${hero} ${slot}` : '', activations: value }
+          activations?.bySkill.get(slot.toLowerCase())
+        : undefined
+      return {
+        label: labeled ? `${hero} ${slot}` : '',
+        activations: value?.activations ?? null,
+        kills: value?.kills ?? null,
+      }
     })
   })
 }
@@ -478,6 +488,7 @@ const TROOP_SKILL_ORDER: Record<TroopType, readonly string[]> = {
 interface TroopSkillActivation {
   name: string
   activations: number
+  kills: number
 }
 
 function troopTypeFromOwner(owner: string): TroopType | null {
@@ -500,6 +511,7 @@ function indexTroopActivations(
     byName.set(skill.skill.toLowerCase(), {
       name: skill.skill,
       activations: skill.activations_mean,
+      kills: skill.kills_mean,
     })
     index.set(type, byName)
   }
@@ -549,8 +561,8 @@ export function buildBattleSkillRows(
       const index = classIndex * 3 + slot
       rows.push({
         kind: 'hero',
-        left: leftHeroRows[index] ?? { label: '', activations: null },
-        right: rightHeroRows[index] ?? { label: '', activations: null },
+        left: leftHeroRows[index] ?? { label: '', activations: null, kills: null },
+        right: rightHeroRows[index] ?? { label: '', activations: null, kills: null },
       })
     }
 
@@ -565,11 +577,19 @@ export function buildBattleSkillRows(
       rows.push({
         kind: 'troop',
         left: leftEntry
-          ? { label: formatTroopSkillName(leftEntry.name), activations: leftEntry.activations }
-          : { label: '', activations: null },
+          ? {
+              label: formatTroopSkillName(leftEntry.name),
+              activations: leftEntry.activations,
+              kills: leftEntry.kills,
+            }
+          : { label: '', activations: null, kills: null },
         right: rightEntry
-          ? { label: formatTroopSkillName(rightEntry.name), activations: rightEntry.activations }
-          : { label: '', activations: null },
+          ? {
+              label: formatTroopSkillName(rightEntry.name),
+              activations: rightEntry.activations,
+              kills: rightEntry.kills,
+            }
+          : { label: '', activations: null, kills: null },
       })
     }
   })
@@ -578,9 +598,20 @@ export function buildBattleSkillRows(
 }
 
 const COUNT_FORMAT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+const COMPACT_KILLS_FORMAT = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
 
 export function formatBattleCount(value: number): string {
   return Number.isFinite(value) ? COUNT_FORMAT.format(Math.max(0, Math.round(value))) : '–'
+}
+
+export function formatSkillKills(value: number | null): string {
+  if (value === null) return '–'
+  const kills = Math.round(value)
+  if (!Number.isFinite(kills)) return '–'
+  return kills >= 1_000_000 ? COMPACT_KILLS_FORMAT.format(kills) : formatBattleCount(kills)
 }
 
 export function formatWinRate(value: number): string {
