@@ -37,20 +37,31 @@ describe('JOINER_PACKS', () => {
     expect(getJoinerPack('gwen')).toBeNull()
   })
 
+  it('lists epics first and then legendaries from oldest to newest', () => {
+    for (const pack of JOINER_PACKS) {
+      const heroes = pack.members.map((heroId) => getHeroById(heroId)!)
+      const firstLegendary = heroes.findIndex((hero) => hero.generation !== null)
+      const legendaries = firstLegendary === -1 ? [] : heroes.slice(firstLegendary)
+      expect(legendaries.every((hero) => hero.generation !== null)).toBe(true)
+      const generations = legendaries.map((hero) => hero.generation!)
+      expect(generations).toEqual([...generations].sort((left, right) => left - right))
+    }
+  })
+
   it('lists the other members of one pack', () => {
     expect(getJoinerPackMates('jessie').map((hero) => hero.id)).toEqual([
       'jasser',
-      'bertha',
-      'hank',
-      'hervor',
-      'blanchette',
       'jeronimo',
+      'blanchette',
+      'hervor',
+      'hank',
+      'bertha',
     ])
     expect(joinerPackNames(getJoinerPack('sergey')!)).toEqual([
       'Sergey',
       'Bahiti',
-      'Karol',
       'Xura',
+      'Karol',
     ])
   })
 })
@@ -62,11 +73,11 @@ describe('groupJoinerItems', () => {
     expect(jessie?.items.map((hero) => hero.id)).toEqual([
       'jessie',
       'jasser',
-      'bertha',
-      'hank',
-      'hervor',
-      'blanchette',
       'jeronimo',
+      'blanchette',
+      'hervor',
+      'hank',
+      'bertha',
     ])
   })
 

@@ -9,7 +9,7 @@ export interface JoinerPack {
   id: string
   /** Short description of the shared S1 effect. */
   effect: string
-  /** Member ids, with epics first and then newest generation first. */
+  /** Member ids, with epics first and then oldest generation first. */
   members: readonly string[]
 }
 
@@ -17,72 +17,72 @@ export const JOINER_PACKS: readonly JoinerPack[] = [
   {
     id: 'jessie-s1',
     effect: '+25% Lethality',
-    members: ['jessie', 'jasser', 'bertha', 'hank', 'hervor', 'blanchette', 'jeronimo'],
+    members: ['jessie', 'jasser', 'jeronimo', 'blanchette', 'hervor', 'hank', 'bertha'],
   },
   {
     id: 'seoyoon-s1',
     effect: '+25% Attack',
-    members: ['seo-yoon', 'viveca', 'rufus', 'magnus', 'bradley'],
+    members: ['seo-yoon', 'bradley', 'magnus', 'rufus', 'viveca'],
   },
   {
     id: 'sergey-s1',
     effect: '-20% Damage taken',
-    members: ['sergey', 'bahiti', 'karol', 'xura'],
+    members: ['sergey', 'bahiti', 'xura', 'karol'],
   },
   {
     id: 'patrick-s1',
     effect: '+25% Health',
-    members: ['patrick', 'seigel', 'eleonora'],
+    members: ['patrick', 'eleonora', 'seigel'],
   },
   {
     id: 'lumak-bokan-s1',
     effect: '-20% Enemy lethality',
-    members: ['lumak-bokan', 'cara', 'lloyd', 'fred'],
+    members: ['lumak-bokan', 'fred', 'lloyd', 'cara'],
   },
   {
     id: 'ling-xue-s1',
     effect: '-20% Enemy attack',
-    members: ['ling-xue', 'vulcanus', 'freya', 'logan'],
+    members: ['ling-xue', 'logan', 'freya', 'vulcanus'],
   },
   {
     id: 'molly-s1',
     effect: '-50% Damage taken',
-    members: ['hector', 'molly', 'natalia'],
+    members: ['molly', 'natalia', 'hector'],
   },
   {
     id: 'gatot-s1',
     effect: '+30% Defense',
-    members: ['gisela', 'gatot'],
+    members: ['gatot', 'gisela'],
   },
   {
     id: 'gatot-s3',
     effect: '-25% Enemy attack',
-    members: ['ursar', 'elif'],
+    members: ['elif', 'ursar'],
   },
   {
     id: 'hendrik-s1',
     effect: '-25% Enemy defense',
-    members: ['eleanor', 'estrella', 'ligeia', 'hendrik'],
+    members: ['hendrik', 'ligeia', 'estrella', 'eleanor'],
   },
   {
     id: 'alonso-s1',
     effect: '+50% Lethality',
-    members: ['lynn', 'alonso'],
+    members: ['alonso', 'lynn'],
   },
   {
     id: 'mia-s1',
     effect: '+50% Target damage taken',
-    members: ['flora', 'mia'],
+    members: ['mia', 'flora'],
   },
   {
     id: 'philly-s1',
     effect: '+15% Attack, +10% Defense',
-    members: ['gregory', 'philly'],
+    members: ['philly', 'gregory'],
   },
   {
     id: 'wu-ming-s2',
     effect: '+20% Damage dealt',
-    members: ['aisling', 'dominic', 'sonya'],
+    members: ['sonya', 'dominic', 'aisling'],
   },
 ]
 

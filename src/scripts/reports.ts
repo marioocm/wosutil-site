@@ -1,6 +1,7 @@
 import { STAT_BONUSES } from '../lib/stat-bonuses'
 import { getHeroByName, heroInitials } from '../lib/heroes'
 import { getHeroImage } from '../lib/hero-images'
+import { getJoinerPack, joinerPackNames } from '../lib/joiner-packs'
 import {
   TROOP_CLASSES,
   buildQuery,
@@ -88,6 +89,14 @@ function heroAvatar(name: string | null | undefined, extra = ''): string {
       <span class="rp-avatar-fallback">${escapeHtml(initials)}</span>
       ${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}
     </span>`
+}
+
+function joinerInfo(name: string): string {
+  const hero = getHeroByName(name)
+  const pack = hero ? getJoinerPack(hero.id) : null
+  if (!pack) return ''
+  const equivalents = joinerPackNames(pack).filter((label) => label !== hero?.name)
+  return `S1 effect: ${pack.effect} · Same S1 as ${equivalents.join(', ')}`
 }
 
 function heroCell(name: string | null | undefined, troopClass: TroopClass, side: SideKey): string {
@@ -254,13 +263,14 @@ function renderJoiners(detail: ReportDetail): string {
         ${
           sideDetail.joiners.length
             ? sideDetail.joiners
-                .map(
-                  (name) => `
-              <span class="rp-joiner">
+                .map((name) => {
+                  const info = joinerInfo(name)
+                  return `
+              <span class="rp-joiner"${info ? ` title="${escapeHtml(info)}"` : ''}>
                 ${heroAvatar(name, 'rp-avatar-sm')}
                 <span>${escapeHtml(heroName(name))}</span>
-              </span>`,
-                )
+              </span>`
+                })
                 .join('')
             : '<span class="rp-muted">No joiners · 1v1</span>'
         }

@@ -258,9 +258,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   the same paper panel, backdrop and close control as Hero Comparison.
 - Joiners only apply their S1 skill, so heroes whose S1 is identical are grouped
   into one `Same S1` pack card with the shared effect in its header; every member
-  stays individually selectable. Searching for one member shows the full pack.
-  A selected slot shows a small `=` badge in the tile, and the expanded card lists
-  each active pack (`Same S1 (<effect>): <names>`) below the two grids.
+  stays individually selectable. Epics come first, then legendaries from oldest
+  to newest generation. Searching for one member shows the full pack. A selected
+  slot shows a small `=` badge in the tile, and the expanded card lists each
+  active pack (`Same S1 (<effect>): <names>`) below the two grids.
 
 ### Troop Power
 
@@ -398,9 +399,8 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   selected generation, and hide heroes already used by another row. A leading
   `Any hero` / `Any joiner` row clears that selection. Both pickers are disabled
   until `/v1/meta` returns the archive's hero lists. Joiner options group heroes
-  with the same S1 into `Same S1` pack cards; a selected joiner row shows a
-  `Same S1` chip and a note below the rows lists the active packs using only the
-  joiners present in the archive.
+  with the same S1 into `Same S1` pack cards. In the report detail, hovering a
+  joiner shows its S1 effect and the heroes that are interchangeable with it.
 - Result, Tier and Furnace stay compact native selects; Furnace keeps `FC0` for
   troops with no fire crystal. Result options with no reports in the archive are
   hidden (the archive currently has no `No wipe` reports). The `Has T12 skill`
