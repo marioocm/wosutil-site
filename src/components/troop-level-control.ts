@@ -81,11 +81,11 @@ export function createTroopLevelControl(
   const titleId = `${pickerId}-title`
   dialog.id = pickerId
   dialog.className =
-    'troop-picker m-auto max-h-[min(80dvh,38rem)] w-[min(20rem,calc(100vw-2rem))] rounded-card border border-line bg-paper p-0 text-ink'
+    'troop-picker m-auto w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-card border border-line bg-paper p-0 text-ink'
   dialog.setAttribute('aria-labelledby', titleId)
 
   const shell = document.createElement('div')
-  shell.className = 'flex max-h-[inherit] flex-col'
+  shell.className = 'flex max-h-[min(80dvh,38rem)] flex-col'
 
   const header = document.createElement('div')
   header.className = 'flex items-start justify-between gap-4 border-b border-line px-5 py-4'
