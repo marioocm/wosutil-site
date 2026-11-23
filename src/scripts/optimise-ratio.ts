@@ -1,6 +1,7 @@
 import { createSegmentedToggle } from '../components/segmented-toggle'
 import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
+import { distributeTroopCounts, parseTroopCount } from '../lib/troop-power'
 import {
   buildOptimizeCase,
   createSeedBase,
@@ -71,12 +72,19 @@ function applyCounts(
   if (!root) return false
   let trigger: HTMLInputElement | null = null
   for (const { id } of TROOP_TYPES) {
-    const input = root.querySelector<HTMLInputElement>(
-      `[data-troop-type="${id}"] input[data-troop-count]`,
-    )
-    if (!input) continue
-    input.value = String(Math.max(0, Math.round(counts[id] ?? 0)))
-    trigger = input
+    const inputs = [
+      ...root.querySelectorAll<HTMLInputElement>(
+        `[data-troop-type="${id}"] input[data-troop-count]`,
+      ),
+    ]
+    if (inputs.length === 0) continue
+    const weights = inputs.map((input) => parseTroopCount(input.value) ?? 0)
+    const classTotal = Math.max(0, Math.round(counts[id] ?? 0))
+    const next = distributeTroopCounts(classTotal, weights)
+    inputs.forEach((input, index) => {
+      input.value = String(next[index] ?? 0)
+    })
+    trigger = inputs.at(-1) ?? trigger
   }
   trigger?.dispatchEvent(new Event('input', { bubbles: true }))
   return trigger !== null

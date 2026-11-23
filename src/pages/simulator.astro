@@ -479,6 +479,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 role="group"
                 aria-label={`${side.label} side troop power`}
                 data-troop-power-side={side.id}
+                data-troop-power-label={side.label}
               >
                 <label class="flex flex-col items-center gap-1">
                   <span
@@ -498,154 +499,197 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                   />
                 </label>
 
-                <div class="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  {TROOP_TYPES.map((type) => (
+                <div class="flex flex-col gap-3" data-troop-rows>
+                  <div class="flex flex-col gap-2" data-troop-row>
                     <div
-                      class="relative flex min-w-0 flex-col items-center gap-1"
-                      data-troop-type={type.id}
-                      data-troop-side-label={side.label}
-                      data-troop-type-label={type.label}
+                      class="hidden items-center justify-between gap-2"
+                      data-troop-row-header
                     >
+                      <span
+                        class="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-subtle"
+                        data-troop-row-label
+                      ></span>
                       <button
                         type="button"
-                        class="relative flex aspect-square w-full cursor-pointer items-end justify-center rounded-sm border border-line bg-background p-0 pb-1 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:items-center sm:pb-0"
-                        data-troop-tier-slot
-                        aria-haspopup="dialog"
-                        aria-controls="troop-tier-picker"
-                        aria-label={`${side.label} ${type.label} tier`}
+                        class="cursor-pointer rounded-xs px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted transition-colors hover:bg-tint/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        data-troop-remove-row
                       >
-                        <span
-                          class="pointer-events-none absolute left-1 top-1 text-[10px] font-medium leading-none text-ink-muted"
-                          aria-hidden="true"
-                        >
-                          {type.shortLabel}
-                        </span>
-                        <span
-                          class="pointer-events-none font-primary text-p1 font-medium leading-none tabular-nums text-ink"
-                          data-troop-tier-label
-                          aria-hidden="true"
-                        >
-                          T{DEFAULT_TROOP_TIER}
-                        </span>
+                        Remove
                       </button>
-
-                      <button
-                        type="button"
-                        class="w-full cursor-pointer rounded-xs border border-line bg-background px-1 py-0.5 text-center font-mono text-[10px] font-medium leading-tight tabular-nums text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/40 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                        data-troop-t12-slot
-                        aria-haspopup="dialog"
-                        aria-controls="troop-t12-picker"
-                        aria-label={`${side.label} ${type.label} ${TROOP_T12_SKILL_NAMES[type.id]} level`}
-                      >
-                        <span data-troop-t12-value>Lv {DEFAULT_TROOP_T12_SKILL}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        class="troop-fc-badge absolute z-20 flex cursor-pointer items-center justify-center rounded-full transition-shadow hover:ring-2 hover:ring-ink/20 focus-visible:ring-2 focus-visible:ring-ink/30"
-                        data-troop-fc-slot
-                        aria-haspopup="dialog"
-                        aria-controls="troop-fc-picker"
-                        aria-label={`${side.label} ${type.label} fire crystal level`}
-                      >
-                        <Fragment set:html={fcHexMarkup(DEFAULT_TROOP_FC)} />
-                      </button>
-
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        spellcheck="false"
-                        placeholder="—"
-                        data-troop-count
-                        aria-label={`${side.label} ${type.label} troop count`}
-                        class="w-full min-w-0 rounded-xs bg-transparent px-0.5 py-0.5 text-center font-mono text-[10px] leading-tight tabular-nums text-ink-muted transition-colors placeholder:text-ink-muted/60 hover:bg-tint/40 focus:bg-tint/40 focus:text-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
-                      />
                     </div>
-                  ))}
+
+                    <div class="grid grid-cols-3 gap-2 sm:gap-2.5">
+                      {TROOP_TYPES.map((type) => (
+                        <div
+                          class="relative flex min-w-0 flex-col items-center gap-1"
+                          data-troop-type={type.id}
+                          data-troop-side-label={side.label}
+                          data-troop-type-label={type.label}
+                        >
+                          <button
+                            type="button"
+                            class="relative flex aspect-square w-full cursor-pointer items-end justify-center rounded-sm border border-line bg-background p-0 pb-1 transition-colors hover:border-line-strong hover:bg-tint/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:items-center sm:pb-0"
+                            data-troop-tier-slot
+                            aria-haspopup="dialog"
+                            aria-controls="troop-tier-picker"
+                            aria-label={`${side.label} ${type.label} tier`}
+                          >
+                            <span
+                              class="pointer-events-none absolute left-1 top-1 text-[10px] font-medium leading-none text-ink-muted"
+                              aria-hidden="true"
+                            >
+                              {type.shortLabel}
+                            </span>
+                            <span
+                              class="pointer-events-none font-primary text-p1 font-medium leading-none tabular-nums text-ink"
+                              data-troop-tier-label
+                              aria-hidden="true"
+                            >
+                              T{DEFAULT_TROOP_TIER}
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            class="w-full cursor-pointer rounded-xs border border-line bg-background px-1 py-0.5 text-center font-mono text-[10px] font-medium leading-tight tabular-nums text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/40 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                            data-troop-t12-slot
+                            aria-haspopup="dialog"
+                            aria-controls="troop-t12-picker"
+                            aria-label={`${side.label} ${type.label} ${TROOP_T12_SKILL_NAMES[type.id]} level`}
+                          >
+                            <span data-troop-t12-value>Lv {DEFAULT_TROOP_T12_SKILL}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            class="troop-fc-badge absolute z-20 flex cursor-pointer items-center justify-center rounded-full transition-shadow hover:ring-2 hover:ring-ink/20 focus-visible:ring-2 focus-visible:ring-ink/30"
+                            data-troop-fc-slot
+                            aria-haspopup="dialog"
+                            aria-controls="troop-fc-picker"
+                            aria-label={`${side.label} ${type.label} fire crystal level`}
+                          >
+                            <Fragment set:html={fcHexMarkup(DEFAULT_TROOP_FC)} />
+                          </button>
+
+                          <input
+                            type="text"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="—"
+                            data-troop-count
+                            aria-label={`${side.label} ${type.label} troop count`}
+                            class="w-full min-w-0 rounded-xs bg-transparent px-0.5 py-0.5 text-center font-mono text-[10px] leading-tight tabular-nums text-ink-muted transition-colors placeholder:text-ink-muted/60 hover:bg-tint/40 focus:bg-tint/40 focus:text-ink focus:outline-none focus:ring-2 focus:ring-ink/10"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                <div
-                  class="troop-ratio-track"
-                  role="group"
-                  aria-label={`${side.label} troop ratio`}
-                  data-troop-ratio-track
-                >
-                  <span
-                    class="troop-ratio-fill troop-ratio-fill-infantry"
-                    aria-hidden="true"
-                    data-troop-ratio-fill="infantry"
-                    style={`left: 0%; width: ${initialFirstDivider}%`}
-                  ></span>
-                  <span
-                    class="troop-ratio-fill troop-ratio-fill-lancer"
-                    aria-hidden="true"
-                    data-troop-ratio-fill="lancer"
-                    style={`left: ${initialFirstDivider}%; width: ${DEFAULT_TROOP_RATIO[1] ?? 0}%`}
-                  ></span>
-                  <span
-                    class="troop-ratio-fill troop-ratio-fill-marksman"
-                    aria-hidden="true"
-                    data-troop-ratio-fill="marksman"
-                    style={`left: ${initialSecondDivider}%; width: ${initialMarksman}%`}
-                  ></span>
-
-                  <div class="troop-ratio-labels" aria-hidden="true">
-                    <span data-troop-share>{initialInfantryText}</span>
-                    <span data-troop-share>{initialLancerText}</span>
-                    <span data-troop-share>{initialMarksmanText}</span>
-                  </div>
+                <div class="flex flex-col gap-3">
+                  <button
+                    type="button"
+                    data-troop-add-row
+                    aria-label={`Add more troops to the ${side.label} side`}
+                    class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-sm border border-dashed border-line bg-transparent px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted transition-colors hover:border-line-strong hover:bg-tint/40 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  >
+                    <span class="text-p2 leading-none" aria-hidden="true">+</span>
+                    Add more troops
+                  </button>
 
                   <div
-                    role="slider"
-                    tabindex="0"
-                    aria-orientation="horizontal"
-                    aria-label={`${side.label} Infantry and Lancer divider`}
-                    aria-valuemin="0"
-                    aria-valuemax={Math.round(initialSecondDivider)}
-                    aria-valuenow={Math.round(initialFirstDivider)}
-                    aria-valuetext={`Infantry ${initialInfantryText}, Lancer ${initialLancerText}`}
-                    aria-keyshortcuts="ArrowLeft ArrowRight"
-                    title="Drag to adjust Infantry and Lancer. Click, then use ←/→ for 1% steps."
-                    class="troop-ratio-handle"
-                    data-troop-ratio-control="infantry-lancer"
-                    style={`left: ${initialFirstDivider}%`}
+                    class="troop-ratio-track"
+                    role="group"
+                    aria-label={`${side.label} troop ratio`}
+                    data-troop-ratio-track
                   >
-                    <span></span>
+                    <span
+                      class="troop-ratio-fill troop-ratio-fill-infantry"
+                      aria-hidden="true"
+                      data-troop-ratio-fill="infantry"
+                      style={`left: 0%; width: ${initialFirstDivider}%`}
+                    ></span>
+                    <span
+                      class="troop-ratio-fill troop-ratio-fill-lancer"
+                      aria-hidden="true"
+                      data-troop-ratio-fill="lancer"
+                      style={`left: ${initialFirstDivider}%; width: ${DEFAULT_TROOP_RATIO[1] ?? 0}%`}
+                    ></span>
+                    <span
+                      class="troop-ratio-fill troop-ratio-fill-marksman"
+                      aria-hidden="true"
+                      data-troop-ratio-fill="marksman"
+                      style={`left: ${initialSecondDivider}%; width: ${initialMarksman}%`}
+                    ></span>
+
+                    <div class="troop-ratio-labels" aria-hidden="true">
+                      <span data-troop-share>{initialInfantryText}</span>
+                      <span data-troop-share>{initialLancerText}</span>
+                      <span data-troop-share>{initialMarksmanText}</span>
+                    </div>
+
+                    <div
+                      role="slider"
+                      tabindex="0"
+                      aria-orientation="horizontal"
+                      aria-label={`${side.label} Infantry and Lancer divider`}
+                      aria-valuemin="0"
+                      aria-valuemax={Math.round(initialSecondDivider)}
+                      aria-valuenow={Math.round(initialFirstDivider)}
+                      aria-valuetext={`Infantry ${initialInfantryText}, Lancer ${initialLancerText}`}
+                      aria-keyshortcuts="ArrowLeft ArrowRight"
+                      title="Drag to adjust Infantry and Lancer. Click, then use ←/→ for 1% steps."
+                      class="troop-ratio-handle"
+                      data-troop-ratio-control="infantry-lancer"
+                      style={`left: ${initialFirstDivider}%`}
+                    >
+                      <span></span>
+                    </div>
+                    <div
+                      role="slider"
+                      tabindex="0"
+                      aria-orientation="horizontal"
+                      aria-label={`${side.label} Lancer segment; keep Lancer fixed and transfer between Infantry and Marksman`}
+                      aria-valuemin="0"
+                      aria-valuemax={Math.round(100 - (DEFAULT_TROOP_RATIO[1] ?? 0))}
+                      aria-valuenow={Math.round(initialFirstDivider)}
+                      aria-valuetext={`Infantry ${initialInfantryText}, Lancer fixed at ${initialLancerText}, Marksman ${initialMarksmanText}`}
+                      aria-keyshortcuts="ArrowLeft ArrowRight"
+                      title="Drag to keep Lancer fixed. Click, then use ←/→ to transfer 1% between Infantry and Marksman."
+                      class="troop-ratio-segment"
+                      data-troop-ratio-control="lancer"
+                      style={`left: ${initialFirstDivider}%; width: ${DEFAULT_TROOP_RATIO[1] ?? 0}%`}
+                    >
+                      <span class="troop-ratio-grip" aria-hidden="true"></span>
+                    </div>
+                    <div
+                      role="slider"
+                      tabindex="0"
+                      aria-orientation="horizontal"
+                      aria-label={`${side.label} Lancer and Marksman divider`}
+                      aria-valuemin={Math.round(initialFirstDivider)}
+                      aria-valuemax="100"
+                      aria-valuenow={Math.round(initialSecondDivider)}
+                      aria-valuetext={`Lancer ${initialLancerText}, Marksman ${initialMarksmanText}`}
+                      aria-keyshortcuts="ArrowLeft ArrowRight"
+                      title="Drag to adjust Lancer and Marksman. Click, then use ←/→ for 1% steps."
+                      class="troop-ratio-handle"
+                      data-troop-ratio-control="lancer-marksman"
+                      style={`left: ${initialSecondDivider}%`}
+                    >
+                      <span></span>
+                    </div>
                   </div>
-                  <div
-                    role="slider"
-                    tabindex="0"
-                    aria-orientation="horizontal"
-                    aria-label={`${side.label} Lancer segment; keep Lancer fixed and transfer between Infantry and Marksman`}
-                    aria-valuemin="0"
-                    aria-valuemax={Math.round(100 - (DEFAULT_TROOP_RATIO[1] ?? 0))}
-                    aria-valuenow={Math.round(initialFirstDivider)}
-                    aria-valuetext={`Infantry ${initialInfantryText}, Lancer fixed at ${initialLancerText}, Marksman ${initialMarksmanText}`}
-                    aria-keyshortcuts="ArrowLeft ArrowRight"
-                    title="Drag to keep Lancer fixed. Click, then use ←/→ to transfer 1% between Infantry and Marksman."
-                    class="troop-ratio-segment"
-                    data-troop-ratio-control="lancer"
-                    style={`left: ${initialFirstDivider}%; width: ${DEFAULT_TROOP_RATIO[1] ?? 0}%`}
-                  >
-                    <span class="troop-ratio-grip" aria-hidden="true"></span>
-                  </div>
-                  <div
-                    role="slider"
-                    tabindex="0"
-                    aria-orientation="horizontal"
-                    aria-label={`${side.label} Lancer and Marksman divider`}
-                    aria-valuemin={Math.round(initialFirstDivider)}
-                    aria-valuemax="100"
-                    aria-valuenow={Math.round(initialSecondDivider)}
-                    aria-valuetext={`Lancer ${initialLancerText}, Marksman ${initialMarksmanText}`}
-                    aria-keyshortcuts="ArrowLeft ArrowRight"
-                    title="Drag to adjust Lancer and Marksman. Click, then use ←/→ for 1% steps."
-                    class="troop-ratio-handle"
-                    data-troop-ratio-control="lancer-marksman"
-                    style={`left: ${initialSecondDivider}%`}
-                  >
-                    <span></span>
+
+                  <div class="min-h-[0.875rem]">
+                    <p
+                      class="text-center text-[10px] leading-tight text-ink-subtle"
+                      data-troop-ratio-note
+                      hidden
+                    >
+                      Ratio follows the troop rows.
+                    </p>
                   </div>
                 </div>
               </div>

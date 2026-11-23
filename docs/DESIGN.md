@@ -289,16 +289,27 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   troop tier (T1–T12); a grayscale hexagon badge overlapping its top-right corner
   selects the fire crystal level (FC0–FC10) and shows the number inside. The
   troop count sits below the tile in an editable field (a dash until data is
-  entered). Editing a count makes the total the sum of the three and derives the
-  ratio; editing the total or ratio reallocates the counts.
+  entered). With one row, editing a count makes the total the sum of the three
+  and derives the ratio; editing the total or ratio reallocates the counts.
+- A full-width dashed `+ Add more troops` button below the tiles adds another
+  row to that side, up to as many mixed groups as needed. Each extra row repeats
+  the three tier/FC/count cells and gets a `Row N` / `Remove` header separated
+  by a hairline; the first row cannot be removed. T12 boxes are never duplicated:
+  they stay on the first row.
+- With more than one row, the total input becomes the read-only sum of every row
+  and the ratio bar derives itself from the aggregate class counts. Its handles
+  and Lancer segment are hidden and inert, and a muted `Ratio follows the troop
+  rows.` caption sits below the bar. Removing the extra rows restores the
+  editable total and ratio.
 - Tier and FC are chosen in paper `<dialog>` pickers with dark translucent
   backdrops, a close control and native Escape handling. Options are large
   buttons in a four-column grid, with the current value selected.
-- A T12 troop also shows a compact `Lv N` box directly below its tile. It opens
-  the T12 skill picker, titled with the troop's skill name (Indomitable Wall,
-  Meridian Phalanx or Starfire) and current level, with options from 0 to 24 in a
-  five-column grid. The box hides again for T1–T11 troops.
-- Below the tiles, one horizontal ratio bar is split into three monochrome tinted
+- A compact `Lv N` box directly below the first row's tile edits that class's
+  T12 skill. It opens the T12 skill picker, titled with the troop's skill name
+  (Indomitable Wall, Meridian Phalanx or Starfire) and current level, with
+  options from 0 to 24 in a five-column grid. The box shows when any row of that
+  class is T12, because the engine gates the class's T12 level globally.
+- Below the rows, one horizontal ratio bar is split into three monochrome tinted
   segments and shows each troop type's share as a percentage inside its third.
   Two dividers adjust Infantry/Lancer and Lancer/Marksman; dragging the middle
   Lancer segment transfers troops between Infantry and Marksman while keeping
@@ -383,8 +394,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   separate `Current` line. The run metadata (`256 seeds · 830 ms`) sits centered
   at the bottom, like the Simulation card.
 - Rows are hairline-separated buttons; clicking one writes the three troop counts
-  to that side's Troop Power inputs and confirms it in the status line. No new
-  colors or shadows.
+  to that side's Troop Power inputs and confirms it in the status line. When the
+  side has mixed rows, each class total is split across its rows in proportion
+  to their current counts (evenly when all are empty), mirroring the engine. No
+  new colors or shadows.
 - While the request runs the button is disabled and reads `Optimising...`; no
   progress copy is shown. The small live status line below the toggle reports
   any API error or confirms an applied ratio, and stays empty during a run.

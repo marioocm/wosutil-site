@@ -624,6 +624,16 @@ input[type="number"]::-webkit-outer-spin-button {
   display: none;
 }
 
+[data-troop-power-side][data-troop-mixed="true"] .troop-ratio-handle,
+[data-troop-power-side][data-troop-mixed="true"] .troop-ratio-segment {
+  display: none;
+}
+
+[data-troop-power-side][data-troop-mixed="true"] [data-troop-total] {
+  cursor: default;
+  background: color-mix(in srgb, var(--tint) 45%, var(--background));
+}
+
 .optimise-ratio-table {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;

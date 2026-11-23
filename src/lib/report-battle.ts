@@ -9,6 +9,7 @@ import {
 import type {
   SimulatorBattleSide,
   SimulatorLoadDetail,
+  SimulatorTroopGroup,
   SimulatorTroopLoadout,
 } from './simulator-load'
 import { DEFAULT_TROOP_FC, DEFAULT_TROOP_TIER } from './troop-power'
@@ -45,41 +46,36 @@ function troopRows(side: SideDetail, troopClass: TroopClass): Troop[] {
   )
 }
 
-/** The simulator accepts one tier/FC per class; keep the largest group. */
-function dominantTroop(rows: readonly Troop[]): Troop | null {
-  let best: Troop | null = null
-  for (const row of rows) {
-    if (
-      !best ||
-      row.count > best.count ||
-      (row.count === best.count && row.tier > best.tier) ||
-      (row.count === best.count &&
-        row.tier === best.tier &&
-        (furnaceLevel(row.furnace) ?? 0) > (furnaceLevel(best.furnace) ?? 0))
-    ) {
-      best = row
-    }
-  }
-  return best
+/** Keep every mixed group, largest first; empty classes keep one default row. */
+function troopGroups(
+  side: SideDetail,
+  troopClass: TroopClass,
+): SimulatorTroopGroup[] {
+  const groups = troopRows(side, troopClass)
+    .map((troop) => ({
+      tier: clamp(Math.round(finite(troop.tier)), 1, 12),
+      fc: clamp(furnaceLevel(troop.furnace) ?? 0, 0, 10),
+      count: Math.max(0, Math.round(finite(troop.count))),
+    }))
+    .filter((group) => group.count > 0)
+    .sort((a, b) => b.count - a.count || b.tier - a.tier || b.fc - a.fc)
+
+  return groups.length > 0
+    ? groups
+    : [{ tier: DEFAULT_TROOP_TIER, fc: DEFAULT_TROOP_FC, count: 0 }]
 }
 
 function troopLoadout(
   side: SideDetail,
   troopClass: TroopClass,
 ): SimulatorTroopLoadout {
-  const rows = troopRows(side, troopClass)
-  const dominant = dominantTroop(rows)
-  const count = rows.reduce(
-    (total, troop) => total + Math.max(0, Math.round(finite(troop.count))),
-    0,
-  )
   return {
-    tier: dominant ? clamp(Math.round(finite(dominant.tier)), 1, 12) : DEFAULT_TROOP_TIER,
-    fc: dominant
-      ? clamp(furnaceLevel(dominant.furnace) ?? 0, 0, 10)
-      : DEFAULT_TROOP_FC,
-    count,
-    t12: clamp(Math.round(finite(side.t12_skills?.[troopClass])), 0, MAX_T12_LEVEL),
+    groups: troopGroups(side, troopClass),
+    t12: clamp(
+      Math.round(finite(side.t12_skills?.[troopClass])),
+      0,
+      MAX_T12_LEVEL,
+    ),
   }
 }
 

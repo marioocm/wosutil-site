@@ -12,17 +12,21 @@ import {
 
 export type SimulatorSide = 'left' | 'right'
 
-export interface TroopLoadout {
+export interface TroopGroupLoadout {
   tier: number
   fc: number
   count: number
+}
+
+export interface TroopClassLoadout {
+  groups: TroopGroupLoadout[]
   t12: number
 }
 
 export interface SimulatorSideState {
   heroes: Partial<Record<TroopType, string>>
   joiners: (string | null)[]
-  troops: Record<TroopType, TroopLoadout>
+  troops: Record<TroopType, TroopClassLoadout>
   stats: Record<string, number>
   modifiers?: SideBuffs
 }
@@ -54,7 +58,7 @@ export interface EngineSide {
   name: string
   heroes: EngineHero[]
   joiner_heroes: EngineJoiner[]
-  troops: Partial<Record<TroopType, EngineTroopGroup>>
+  troops: Partial<Record<TroopType, EngineTroopGroup[]>>
   stats: { inf: number[]; lanc: number[]; mark: number[] }
   t12: Record<TroopType, number>
 }
@@ -206,27 +210,43 @@ function readSide(root: ParentNode, side: SimulatorSide): SimulatorSideState {
     ),
   )
 
-  const troops = {} as Record<TroopType, TroopLoadout>
+  const rows = [
+    ...root.querySelectorAll<HTMLElement>(
+      `[data-troop-power-side="${side}"] [data-troop-row]`,
+    ),
+  ]
+  const firstRow = rows[0]
+  const troops = {} as Record<TroopType, TroopClassLoadout>
   for (const { id } of TROOP_TYPES) {
-    const card = root.querySelector<HTMLElement>(
-      `[data-troop-power-side="${side}"] [data-troop-type="${id}"]`,
-    )
-    const tier = parseLabeledInt(
-      card?.querySelector<HTMLElement>('[data-troop-tier-label]')?.textContent,
-      DEFAULT_TROOP_TIER,
-    )
-    const fc = parseLabeledInt(
-      card?.querySelector<HTMLElement>('[data-troop-fc-value]')?.textContent,
-      DEFAULT_TROOP_FC,
-    )
+    const groups = rows.flatMap((row) => {
+      const card = row.querySelector<HTMLElement>(`[data-troop-type="${id}"]`)
+      if (!card) return []
+      const tier = parseLabeledInt(
+        card.querySelector<HTMLElement>('[data-troop-tier-label]')?.textContent,
+        DEFAULT_TROOP_TIER,
+      )
+      const fc = parseLabeledInt(
+        card.querySelector<HTMLElement>('[data-troop-fc-value]')?.textContent,
+        DEFAULT_TROOP_FC,
+      )
+      return [
+        {
+          tier: Math.min(Math.max(tier, 1), 12),
+          fc: Math.min(Math.max(fc, 0), 10),
+          count: parseCount(
+            card.querySelector<HTMLInputElement>('input[data-troop-count]')?.value,
+          ),
+        },
+      ]
+    })
     const t12 = parseLabeledInt(
-      card?.querySelector<HTMLElement>('[data-troop-t12-value]')?.textContent,
+      firstRow?.querySelector<HTMLElement>(
+        `[data-troop-type="${id}"] [data-troop-t12-value]`,
+      )?.textContent,
       DEFAULT_TROOP_T12_SKILL,
     )
     troops[id] = {
-      tier: Math.min(Math.max(tier, 1), 12),
-      fc: Math.min(Math.max(fc, 0), 10),
-      count: parseCount(card?.querySelector<HTMLInputElement>('input[data-troop-count]')?.value),
+      groups,
       t12: Math.min(Math.max(t12, 0), 24),
     }
   }
@@ -246,7 +266,15 @@ export function readSimulatorState(root: ParentNode = document): SimulatorState 
 }
 
 function sideTotal(side: SimulatorSideState): number {
-  return TROOP_TYPES.reduce((total, type) => total + side.troops[type.id].count, 0)
+  return TROOP_TYPES.reduce(
+    (total, type) =>
+      total +
+      side.troops[type.id].groups.reduce(
+        (sum, group) => sum + group.count,
+        0,
+      ),
+    0,
+  )
 }
 
 export function validateSimulatorState(state: SimulatorState): string | null {
@@ -327,12 +355,12 @@ function buildSide(
   const joiners = side.joiners.flatMap((joiner) =>
     joiner ? [{ name: joiner, s1: SKILL_LEVEL }] : [],
   )
-  const troops: Partial<Record<TroopType, EngineTroopGroup>> = {}
+  const troops: Partial<Record<TroopType, EngineTroopGroup[]>> = {}
   for (const { id } of TROOP_TYPES) {
-    const loadout = side.troops[id]
-    if (loadout.count > 0 || includeEmpty) {
-      troops[id] = { tier: loadout.tier, fc: loadout.fc, count: loadout.count }
-    }
+    const groups = side.troops[id].groups.filter(
+      (group) => group.count > 0 || includeEmpty,
+    )
+    if (groups.length > 0) troops[id] = groups
   }
   return {
     name,
