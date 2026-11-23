@@ -547,6 +547,10 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     color: var(--ink-subtle);
   }
 
+  html.rp-report-open {
+    overflow: hidden;
+  }
+
   .rp-dialog {
     position: fixed;
     inset: 0;
@@ -563,6 +567,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
     border-radius: var(--radius-lg);
     box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
     overflow: auto;
+    overscroll-behavior: contain;
   }
 
   .rp-dialog::backdrop {
