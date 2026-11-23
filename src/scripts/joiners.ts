@@ -20,6 +20,7 @@ import {
   getJoinerPackMates,
   groupJoinerItems,
   joinerPackNames,
+  sortJoinerHeroes,
   type JoinerPack,
 } from '../lib/joiner-packs'
 
@@ -176,7 +177,7 @@ export function initJoiners(): void {
 
   function renderOptions(): void {
     const query = search.value
-    const allHeroes = getAllHeroes(maxGeneration)
+    const allHeroes = sortJoinerHeroes(getAllHeroes(maxGeneration))
     const matching = filterHeroes(allHeroes, query)
     const heroes = expandJoinerMatches(allHeroes, matching, (hero) => hero.id)
     const current = currentSelection()

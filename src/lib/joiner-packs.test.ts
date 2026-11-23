@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { getAllHeroes, getHeroById, HEROES } from './heroes'
 import {
   JOINER_PACKS,
+  compareJoinerHeroes,
   expandJoinerMatches,
   getJoinerPack,
   getJoinerPackMates,
   groupJoinerItems,
   joinerPackNames,
+  sortJoinerHeroes,
 } from './joiner-packs'
 
 const ALL = getAllHeroes()
@@ -62,6 +64,29 @@ describe('JOINER_PACKS', () => {
       'Bahiti',
       'Xura',
       'Karol',
+    ])
+  })
+})
+
+describe('sortJoinerHeroes', () => {
+  it('puts epics first and then generations from oldest to newest', () => {
+    const heroes = sortJoinerHeroes(ALL)
+    const firstLegendary = heroes.findIndex((hero) => hero.generation !== null)
+    expect(heroes.slice(0, firstLegendary).every((hero) => hero.generation === null)).toBe(true)
+    const legendaries = heroes.slice(firstLegendary)
+    const generations = legendaries.map((hero) => hero.generation ?? 0)
+    expect(generations).toEqual([...generations].sort((left, right) => left - right))
+    expect(heroes[0]?.name).toBe('Bahiti')
+  })
+
+  it('sorts same-generation legendaries by name', () => {
+    const older = { name: 'Zed', generation: 1 }
+    const newer = { name: 'Amy', generation: 2 }
+    const epic = { name: 'Mia', generation: null }
+    expect([newer, epic, older].sort(compareJoinerHeroes).map((hero) => hero.name)).toEqual([
+      'Mia',
+      'Zed',
+      'Amy',
     ])
   })
 })

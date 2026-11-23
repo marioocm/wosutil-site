@@ -415,9 +415,11 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   ordered newest generation first, epics last, hide heroes newer than the
   selected generation, and hide heroes already used by another row. A leading
   `Any hero` / `Any joiner` row clears that selection. Both pickers are disabled
-  until `/v1/meta` returns the archive's hero lists. Joiner options group heroes
-  with the same S1 into `Same S1` pack cards. In the report detail, hovering a
-  joiner shows its S1 effect and the heroes that are interchangeable with it.
+  until `/v1/meta` returns the archive's hero lists. Joiner options sort epics
+  first, then legendaries from oldest to newest generation, and group heroes with
+  the same S1 into `Same S1` pack cards. In the report detail, hovering or
+  focusing a joiner opens a floating `Same S1` card with its effect and the
+  interchangeable heroes.
 - Tier and FC use two side-by-side range controls (`Min` and `Max`), each a
   square tier tile with an overlapping FC hexagon in the simulator's Troop Power
   style. All four values start at `Any`; clicking a tile or hexagon opens a paper

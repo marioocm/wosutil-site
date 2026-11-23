@@ -1,7 +1,17 @@
 import { STAT_BONUSES } from '../lib/stat-bonuses'
-import { getHeroByName, heroInitials } from '../lib/heroes'
+import {
+  formatHeroGeneration,
+  getHeroById,
+  getHeroByName,
+  heroInitials,
+} from '../lib/heroes'
 import { getHeroImage } from '../lib/hero-images'
-import { getJoinerPack, joinerPackNames } from '../lib/joiner-packs'
+import {
+  JOINER_PACKS,
+  getJoinerPack,
+  joinerPackNames,
+  type JoinerPack,
+} from '../lib/joiner-packs'
 import {
   TROOP_CLASSES,
   averageTroopLevel,
@@ -96,6 +106,27 @@ function joinerInfo(name: string): string {
   if (!pack) return ''
   const equivalents = joinerPackNames(pack).filter((label) => label !== hero?.name)
   return `S1 effect: ${pack.effect} · Same S1 as ${equivalents.join(', ')}`
+}
+
+function joinerTooltipHtml(pack: JoinerPack, activeId: string): string {
+  const members = pack.members
+    .flatMap((heroId) => {
+      const hero = getHeroById(heroId)
+      if (!hero) return []
+      return `
+        <span class="rp-joiner-tip-member${hero.id === activeId ? ' is-active' : ''}">
+          ${heroAvatar(hero.name, 'rp-avatar-sm', '')}
+          <span class="rp-joiner-tip-name">${escapeHtml(hero.name)}</span>
+          <span class="rp-joiner-tip-gen">${escapeHtml(formatHeroGeneration(hero.generation))}</span>
+        </span>`
+    })
+    .join('')
+  return `
+    <span class="rp-joiner-tip-head">
+      <span class="rp-joiner-tip-tag">Same S1</span>
+      <span class="rp-joiner-tip-effect">${escapeHtml(pack.effect)}</span>
+    </span>
+    <span class="rp-joiner-tip-grid">${members}</span>`
 }
 
 function heroCell(name: string | null | undefined, troopClass: TroopClass, side: SideKey): string {
@@ -263,15 +294,22 @@ function renderJoiners(detail: ReportDetail): string {
           sideDetail.joiners.length
             ? sideDetail.joiners
                 .map((name) => {
+                  const hero = getHeroByName(name)
+                  const pack = hero ? getJoinerPack(hero.id) : null
                   const info = joinerInfo(name)
+                  const attrs =
+                    pack && hero
+                      ? ` data-joiner-pack="${escapeHtml(pack.id)}" data-joiner-id="${escapeHtml(hero.id)}" tabindex="0"`
+                      : ''
                   return `
-              <span class="rp-joiner"${info ? ` title="${escapeHtml(info)}"` : ''}>
-                ${heroAvatar(name, 'rp-avatar-sm', info || undefined)}
+              <span class="rp-joiner"${attrs}>
+                ${heroAvatar(name, 'rp-avatar-sm', '')}
                 <span>${escapeHtml(heroName(name))}</span>
+                ${info ? `<span class="sr-only">${escapeHtml(info)}</span>` : ''}
               </span>`
                 })
                 .join('')
-            : '<span class="rp-muted">No joiners · 1v1</span>'
+            : '<span class="rp-muted">No joiners</span>'
         }
       </div>
     </div>`
@@ -757,6 +795,46 @@ export function initReports(): void {
     }
   }
 
+  const joinerTip = document.createElement('div')
+  joinerTip.className = 'rp-joiner-tip'
+  joinerTip.setAttribute('popover', 'manual')
+  joinerTip.setAttribute('role', 'tooltip')
+  document.body.append(joinerTip)
+  let joinerTipAnchor: HTMLElement | null = null
+
+  const hideJoinerTip = (): void => {
+    joinerTipAnchor = null
+    if (joinerTip.matches(':popover-open')) joinerTip.hidePopover()
+  }
+
+  const showJoinerTip = (chip: HTMLElement): void => {
+    const packId = chip.dataset['joinerPack']
+    const pack = packId
+      ? JOINER_PACKS.find((entry) => entry.id === packId)
+      : undefined
+    if (!pack) {
+      hideJoinerTip()
+      return
+    }
+    joinerTip.innerHTML = joinerTooltipHtml(pack, chip.dataset['joinerId'] ?? '')
+    joinerTipAnchor = chip
+    if (!joinerTip.matches(':popover-open')) joinerTip.showPopover()
+
+    const rect = chip.getBoundingClientRect()
+    joinerTip.style.left = '0px'
+    joinerTip.style.top = '0px'
+    const tipRect = joinerTip.getBoundingClientRect()
+    const margin = 8
+    let left = rect.left + rect.width / 2 - tipRect.width / 2
+    left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin))
+    let top = rect.top - tipRect.height - 8
+    if (top < margin) {
+      top = Math.min(window.innerHeight - tipRect.height - margin, rect.bottom + 8)
+    }
+    joinerTip.style.left = `${Math.round(left)}px`
+    joinerTip.style.top = `${Math.round(top)}px`
+  }
+
   const openDetail = async (id: string, push = true): Promise<void> => {
     if (!/^[0-9a-f]{16,64}$/.test(id)) return
     scrollAnimation += 1
@@ -764,6 +842,7 @@ export function initReports(): void {
     setStatus('Loading report…')
     try {
       const detail = await fetchJson<ReportDetail>(`/v1/reports/${id}`)
+      hideJoinerTip()
       detailRoot.innerHTML = renderDetail(detail)
       dialogMeta.textContent = detailKicker(detail)
       syncBattleDetails()
@@ -779,6 +858,7 @@ export function initReports(): void {
   const closeDetail = (push = true): void => {
     scrollAnimation += 1
     state.currentId = null
+    hideJoinerTip()
     if (dialog.open) dialog.close()
     if (push) window.history.pushState({}, '', `${BASE}reports/`)
   }
@@ -804,6 +884,34 @@ export function initReports(): void {
   dialog.addEventListener('close', () => {
     if (state.currentId) closeDetail(false)
   })
+  const joinerChip = (target: EventTarget | null): HTMLElement | null =>
+    target instanceof Element
+      ? target.closest<HTMLElement>('.rp-joiner[data-joiner-pack]')
+      : null
+
+  detailRoot.addEventListener('pointerover', (event) => {
+    const chip = joinerChip(event.target)
+    if (!chip) return
+    if (event.relatedTarget instanceof Node && chip.contains(event.relatedTarget)) return
+    showJoinerTip(chip)
+  })
+  detailRoot.addEventListener('pointerout', (event) => {
+    const chip = joinerChip(event.target)
+    if (!chip) return
+    if (event.relatedTarget instanceof Node && chip.contains(event.relatedTarget)) return
+    if (joinerTipAnchor === chip) hideJoinerTip()
+  })
+  detailRoot.addEventListener('focusin', (event) => {
+    const chip = joinerChip(event.target)
+    if (chip) showJoinerTip(chip)
+  })
+  detailRoot.addEventListener('focusout', (event) => {
+    const chip = joinerChip(event.target)
+    if (chip && joinerTipAnchor === chip) hideJoinerTip()
+  })
+  dialog.addEventListener('scroll', hideJoinerTip, true)
+  window.addEventListener('resize', hideJoinerTip)
+
   detailRoot.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
     const copy = target.closest<HTMLElement>('[data-copy-link]')
