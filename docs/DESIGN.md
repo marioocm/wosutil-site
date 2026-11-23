@@ -276,8 +276,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   into one `Same S1` pack card with the shared effect in its header; every member
   stays individually selectable. Epics come first, then legendaries from oldest
   to newest generation. Searching for one member shows the full pack. A selected
-  slot shows a small `=` badge in the tile, and the expanded card lists each
-  active pack (`Same S1 (<effect>): <names>`) below the two grids.
+  slot shows a small `=` badge in the tile, and hovering or focusing a slot with
+  a pack opens the same floating `Same S1` card as the report detail, with the
+  effect and the interchangeable heroes.
 
 ### Troop Power
 

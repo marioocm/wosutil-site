@@ -4,6 +4,7 @@ import {
   createHeroOption,
   createHeroPackOption,
 } from '../components/hero-option'
+import { createJoinerTip } from '../components/joiner-tip'
 import { fillHeroVisual } from '../components/hero-visual'
 import { getGenerationLineup, getGenerationPreset, onGenerationChange } from '../lib/generations'
 import {
@@ -20,9 +21,7 @@ import {
   getJoinerPack,
   getJoinerPackMates,
   groupJoinerItems,
-  joinerPackNames,
   sortJoinerHeroes,
-  type JoinerPack,
 } from '../lib/joiner-packs'
 import { onSimulatorLoad } from '../lib/simulator-load'
 
@@ -40,6 +39,7 @@ export function initJoiners(): void {
   const section = document.querySelector<HTMLElement>('[data-joiners]')
   if (!section) return
   const root: HTMLElement = section
+  const joinerTip = createJoinerTip()
 
   const toggle = section.querySelector<HTMLButtonElement>('[data-joiners-toggle]')
   const content = section.querySelector<HTMLElement>('[data-joiners-content]')
@@ -57,6 +57,7 @@ export function initJoiners(): void {
       toggle.setAttribute('aria-label', next ? 'Hide joiners' : 'Show joiners')
       toggle.title = next ? 'Hide joiners' : 'Show joiners'
       icon?.classList.toggle('rotate-180', next)
+      if (!next) joinerTip.hide()
     }
     setJoinersExpanded = setExpanded
     toggle.addEventListener('click', () => setExpanded(!expanded))
@@ -78,39 +79,31 @@ export function initJoiners(): void {
   const sideText: HTMLElement = pickerSide
   const search: HTMLInputElement = searchElement
   const options: HTMLElement = optionsElement
-  const equivalenceNote = section.querySelector<HTMLElement>('[data-joiner-equivalence]')
   const selections = new Map<string, Hero>()
   let activeSlot: HTMLButtonElement | null = null
   let maxGeneration: number | null = null
-
-  function renderPackNote(): void {
-    if (!equivalenceNote) return
-    const packs = new Map<string, JoinerPack>()
-    for (const hero of selections.values()) {
-      const pack = getJoinerPack(hero.id)
-      if (pack) packs.set(pack.id, pack)
-    }
-    if (packs.size === 0) {
-      equivalenceNote.hidden = true
-      equivalenceNote.replaceChildren()
-      return
-    }
-    equivalenceNote.hidden = false
-    equivalenceNote.replaceChildren(
-      ...[...packs.values()].map((pack) => {
-        const line = document.createElement('span')
-        line.className = 'block'
-        line.textContent = `Same S1 (${pack.effect}): ${joinerPackNames(pack).join(', ')}`
-        return line
-      }),
-    )
-  }
 
   function currentSelection(): Hero | null {
     if (!activeSlot) return null
     const side = activeSlot.dataset['joinerSide'] as Side
     const index = Number(activeSlot.dataset['joinerIndex'])
     return selections.get(slotKey(side, index)) ?? null
+  }
+
+  function heroForSlot(button: HTMLButtonElement): Hero | null {
+    const side = button.dataset['joinerSide'] as Side
+    const index = Number(button.dataset['joinerIndex'])
+    return selections.get(slotKey(side, index)) ?? null
+  }
+
+  function showSlotTip(button: HTMLButtonElement): void {
+    const hero = heroForSlot(button)
+    const pack = hero ? getJoinerPack(hero.id) : null
+    if (!hero || !pack) {
+      joinerTip.hide()
+      return
+    }
+    joinerTip.show(button, pack, hero.id)
   }
 
   function renderSlot(button: HTMLButtonElement): void {
@@ -133,11 +126,6 @@ export function initJoiners(): void {
     const mates = hero ? getJoinerPackMates(hero.id) : []
     if (equivalent) {
       equivalent.hidden = mates.length === 0
-      if (pack && mates.length > 0) {
-        equivalent.title = `Same S1 (${pack.effect}): ${joinerPackNames(pack).join(', ')}`
-      } else {
-        equivalent.removeAttribute('title')
-      }
     }
     if (equivalentText) {
       equivalentText.textContent =
@@ -145,10 +133,6 @@ export function initJoiners(): void {
           ? `Same S1 as ${mates.map((mate) => mate.name).join(', ')} (${pack.effect}).`
           : ''
     }
-    button.title =
-      pack && mates.length > 0
-        ? `Same S1: ${joinerPackNames(pack).join(', ')} (${pack.effect})`
-        : ''
 
     button.dataset['joinerSelected'] = hero ? 'true' : 'false'
   }
@@ -163,7 +147,7 @@ export function initJoiners(): void {
     const index = Number(activeSlot.dataset['joinerIndex'])
     selections.set(slotKey(side, index), hero)
     renderSlot(activeSlot)
-    renderPackNote()
+    joinerTip.hide()
     closePicker()
   }
 
@@ -173,7 +157,7 @@ export function initJoiners(): void {
     const index = Number(activeSlot.dataset['joinerIndex'])
     selections.delete(slotKey(side, index))
     renderSlot(activeSlot)
-    renderPackNote()
+    joinerTip.hide()
     closePicker()
   }
 
@@ -236,6 +220,7 @@ export function initJoiners(): void {
     title.textContent = `Select joiner ${index}`
     sideText.textContent = sideLabel(side)
     search.value = ''
+    joinerTip.hide()
     renderOptions()
     dialog.showModal()
     search.focus()
@@ -269,7 +254,7 @@ export function initJoiners(): void {
       renderSlot(slot)
     }
 
-    renderPackNote()
+    joinerTip.hide()
     if (hasSelection) setJoinersExpanded?.(true)
     if (dialog.open) renderOptions()
   }
@@ -278,6 +263,32 @@ export function initJoiners(): void {
     renderSlot(slot)
     slot.addEventListener('click', () => openPicker(slot))
   }
+
+  const slotFromEvent = (target: EventTarget | null): HTMLButtonElement | null =>
+    target instanceof Element
+      ? target.closest<HTMLButtonElement>('[data-joiner-slot]')
+      : null
+
+  root.addEventListener('pointerover', (event) => {
+    const slot = slotFromEvent(event.target)
+    if (!slot) return
+    if (event.relatedTarget instanceof Node && slot.contains(event.relatedTarget)) return
+    showSlotTip(slot)
+  })
+  root.addEventListener('pointerout', (event) => {
+    const slot = slotFromEvent(event.target)
+    if (!slot) return
+    if (event.relatedTarget instanceof Node && slot.contains(event.relatedTarget)) return
+    if (joinerTip.anchoredTo(slot)) joinerTip.hide()
+  })
+  root.addEventListener('focusin', (event) => {
+    const slot = slotFromEvent(event.target)
+    if (slot) showSlotTip(slot)
+  })
+  root.addEventListener('focusout', (event) => {
+    const slot = slotFromEvent(event.target)
+    if (slot && joinerTip.anchoredTo(slot)) joinerTip.hide()
+  })
 
   onGenerationChange(applyGeneration)
 
@@ -297,7 +308,7 @@ export function initJoiners(): void {
       }
       renderSlot(slot)
     }
-    renderPackNote()
+    joinerTip.hide()
     if (hasSelection) setJoinersExpanded?.(true)
   })
 
