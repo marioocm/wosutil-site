@@ -226,7 +226,8 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   simplicity:` heading, a muted `Choose your current Generation` label and a
   full-width outlined trigger showing `All Gens` by default or the chosen
   `Gen N` with a chevron. A short muted line explains that it loads the era
-  loadout and hides newer heroes.
+  loadout and hides newer heroes, and a credit line links Piddlyminx's sim and
+  credits him and the WoS Nerds community.
 - The trigger opens a paper `<dialog>` picker with a dark translucent backdrop,
   a close control and native Escape handling. Options are large buttons in a
   three-column grid, one per generation returned by the API, showing `Gen N`
