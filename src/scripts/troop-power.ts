@@ -4,7 +4,7 @@ import {
   onGenerationChange,
 } from '../lib/generations'
 import { TROOP_TYPES, type TroopType } from '../lib/heroes'
-import { onSimulatorLoad } from '../lib/simulator-load'
+import { onSimulatorLoad, type SimulatorTroopLoadout } from '../lib/simulator-load'
 import {
   DEFAULT_TROOP_FC,
   DEFAULT_TROOP_RATIO,
@@ -21,10 +21,68 @@ import {
   parseTroopCount,
   sanitizeTroopCountInput,
   shiftTroopRatioMiddle,
+  troopClassShares,
   troopRatioPositions,
   type TroopRatio,
   type TroopRatioControl,
 } from '../lib/troop-power'
+
+interface LevelControl {
+  tier: number
+  fc: number
+  sideLabel: string
+  typeLabel: string
+  tierButton: HTMLButtonElement
+  fcButton: HTMLButtonElement
+  tierLabel: HTMLElement
+  fcValue: HTMLElement
+}
+
+interface T12Control {
+  level: number
+  sideLabel: string
+  typeId: TroopType
+  typeLabel: string
+  button: HTMLButtonElement
+  value: HTMLElement
+}
+
+interface RowControl {
+  element: HTMLElement
+  header: HTMLElement | null
+  label: HTMLElement | null
+  removeButton: HTMLButtonElement | null
+  levels: Map<TroopType, LevelControl>
+  counts: Map<TroopType, HTMLInputElement>
+}
+
+interface PickerTarget {
+  sideLabel: string
+  title: string
+  value: number
+  setValue: (value: number) => void
+}
+
+interface LoadoutPicker {
+  open: (target: PickerTarget, trigger: HTMLElement) => void
+}
+
+interface Pickers {
+  tier: LoadoutPicker | null
+  fc: LoadoutPicker | null
+  t12: LoadoutPicker | null
+}
+
+interface SideController {
+  applyPreset: (
+    total: number,
+    ratio: TroopRatio,
+    tier: number,
+    fc: number,
+    t12: number,
+  ) => void
+  applyTroops: (troops: Record<TroopType, SimulatorTroopLoadout>) => void
+}
 
 interface SideState {
   total: number | null
@@ -40,14 +98,27 @@ interface DragState {
   moved: boolean
 }
 
-interface TroopSideController {
-  applyLoadout: (total: number, ratio: TroopRatio) => void
-  applyCounts: (counts: Record<TroopType, number>) => void
+interface LoadoutPickerConfig {
+  dialog: HTMLDialogElement
+  titleElement: HTMLElement
+  sideElement: HTMLElement
+  options: HTMLElement
+  closeButton: HTMLButtonElement
+  values: readonly number[]
+  format: (value: number) => string
+  columns: number
 }
 
 const DRAG_THRESHOLD_PX = 4
 
-function setPosition(element: HTMLElement | undefined, left: number, width?: number): void {
+const PICKER_OPTION_CLASS =
+  'flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-line bg-background px-2 py-2 font-primary text-p2 font-medium tabular-nums text-ink transition-colors hover:border-line-strong hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
+
+function setPosition(
+  element: HTMLElement | undefined,
+  left: number,
+  width?: number,
+): void {
   if (!element) return
   element.style.left = `${left}%`
   if (width !== undefined) element.style.width = `${width}%`
@@ -67,87 +138,54 @@ function setSliderAttributes(
   element.setAttribute('aria-valuetext', valueText)
 }
 
-interface TroopLoadout {
-  tier: number
-  fc: number
-  t12: number
-  tierButton: HTMLButtonElement
-  fcButton: HTMLButtonElement
-  t12Button: HTMLButtonElement
-  tierLabel: HTMLElement
-  fcValue: HTMLElement
-  t12Value: HTMLElement
-  sideLabel: string
-  typeId: TroopType
-  typeLabel: string
+function parseLabeledInt(raw: string | null | undefined, fallback: number): number {
+  const match = (raw ?? '').match(/\d+/)
+  return match ? Number(match[0]) : fallback
 }
 
-type LoadoutField = 'tier' | 'fc' | 't12'
-
-interface LoadoutPickerConfig {
-  dialog: HTMLDialogElement
-  titleElement: HTMLElement
-  sideElement: HTMLElement
-  options: HTMLElement
-  closeButton: HTMLButtonElement
-  field: LoadoutField
-  values: readonly number[]
-  format: (value: number) => string
-  title: (loadout: TroopLoadout) => string
-  columns: number
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max)
 }
 
-const PICKER_OPTION_CLASS =
-  'flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-line bg-background px-2 py-2 font-primary text-p2 font-medium tabular-nums text-ink transition-colors hover:border-line-strong hover:bg-tint/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
-
-function renderLoadout(loadout: TroopLoadout): void {
-  loadout.tierLabel.textContent = `T${loadout.tier}`
-  loadout.fcValue.textContent = String(loadout.fc)
-  loadout.t12Value.textContent = `Lv ${loadout.t12}`
-  loadout.t12Button.hidden = loadout.tier !== 12
-  loadout.tierButton.setAttribute(
+function renderLevel(level: LevelControl): void {
+  level.tierLabel.textContent = `T${level.tier}`
+  level.fcValue.textContent = String(level.fc)
+  level.tierButton.setAttribute(
     'aria-label',
-    `${loadout.sideLabel} ${loadout.typeLabel} tier, T${loadout.tier}`,
+    `${level.sideLabel} ${level.typeLabel} tier, T${level.tier}`,
   )
-  loadout.fcButton.setAttribute(
+  level.fcButton.setAttribute(
     'aria-label',
-    `${loadout.sideLabel} ${loadout.typeLabel} fire crystal level, FC${loadout.fc}`,
-  )
-  loadout.t12Button.setAttribute(
-    'aria-label',
-    `${loadout.sideLabel} ${loadout.typeLabel} ${TROOP_T12_SKILL_NAMES[loadout.typeId]} level, Lv ${loadout.t12}`,
+    `${level.sideLabel} ${level.typeLabel} fire crystal level, FC${level.fc}`,
   )
 }
 
-function createLoadoutPicker(config: LoadoutPickerConfig): {
-  open: (loadout: TroopLoadout, trigger: HTMLElement) => void
-} {
+function renderT12(control: T12Control): void {
+  control.value.textContent = `Lv ${control.level}`
+  control.button.setAttribute(
+    'aria-label',
+    `${control.sideLabel} ${control.typeLabel} ${TROOP_T12_SKILL_NAMES[control.typeId]} level, Lv ${control.level}`,
+  )
+}
+
+function createLoadoutPicker(config: LoadoutPickerConfig): LoadoutPicker {
   const {
     dialog,
     titleElement,
     sideElement,
     options,
     closeButton,
-    field,
     values,
     format,
-    title,
     columns,
   } = config
-  let active: TroopLoadout | null = null
+  let active: PickerTarget | null = null
   let trigger: HTMLElement | null = null
 
-  function currentValue(loadout: TroopLoadout): number {
-    if (field === 'tier') return loadout.tier
-    if (field === 'fc') return loadout.fc
-    return loadout.t12
-  }
-
-  function renderOptions(loadout: TroopLoadout): void {
-    const current = currentValue(loadout)
+  function renderOptions(target: PickerTarget): void {
     options.replaceChildren(
       ...values.map((value) => {
-        const selected = value === current
+        const selected = value === target.value
         const button = document.createElement('button')
         button.type = 'button'
         button.className = PICKER_OPTION_CLASS
@@ -157,10 +195,7 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
         button.textContent = format(value)
         button.addEventListener('click', () => {
           if (!active) return
-          if (field === 'tier') active.tier = value
-          else if (field === 'fc') active.fc = value
-          else active.t12 = value
-          renderLoadout(active)
+          active.setValue(value)
           dialog.close()
         })
         return button
@@ -168,12 +203,12 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
     )
   }
 
-  function open(loadout: TroopLoadout, newTrigger: HTMLElement): void {
-    active = loadout
+  function open(target: PickerTarget, newTrigger: HTMLElement): void {
+    active = target
     trigger = newTrigger
-    titleElement.textContent = title(loadout)
-    sideElement.textContent = `${loadout.sideLabel} side`
-    renderOptions(loadout)
+    titleElement.textContent = target.title
+    sideElement.textContent = `${target.sideLabel} side`
+    renderOptions(target)
     dialog.showModal()
 
     const selected = options.querySelector<HTMLElement>('[data-selected="true"]')
@@ -217,12 +252,32 @@ function createLoadoutPicker(config: LoadoutPickerConfig): {
   return { open }
 }
 
-function initSide(side: HTMLElement): TroopSideController | null {
+function initSide(
+  side: HTMLElement,
+  pickers: Pickers,
+  reduceMotion: MediaQueryList,
+): SideController | null {
   const totalElement = side.querySelector<HTMLInputElement>('[data-troop-total]')
   const trackElement = side.querySelector<HTMLElement>('[data-troop-ratio-track]')
-  if (!totalElement || !trackElement) return null
+  const rowsElement = side.querySelector<HTMLElement>('[data-troop-rows]')
+  const addButton = side.querySelector<HTMLButtonElement>('[data-troop-add-row]')
+  const ratioNote = side.querySelector<HTMLElement>('[data-troop-ratio-note]')
+  if (
+    !totalElement ||
+    !trackElement ||
+    !rowsElement ||
+    !addButton ||
+    !ratioNote ||
+    !rowsElement.querySelector<HTMLElement>('[data-troop-row]')
+  ) {
+    return null
+  }
   const totalInput: HTMLInputElement = totalElement
   const track: HTMLElement = trackElement
+  const rowsRoot: HTMLElement = rowsElement
+  const addRowButton: HTMLButtonElement = addButton
+  const note: HTMLElement = ratioNote
+  const sideLabel = side.dataset['troopPowerLabel'] ?? 'Attacker'
 
   const fills = new Map<string, HTMLElement>()
   for (const fill of side.querySelectorAll<HTMLElement>('[data-troop-ratio-fill]')) {
@@ -237,11 +292,72 @@ function initSide(side: HTMLElement): TroopSideController | null {
   }
 
   const shares = [...side.querySelectorAll<HTMLElement>('[data-troop-share]')]
-  const counts = [...side.querySelectorAll<HTMLInputElement>('input[data-troop-count]')]
-  const state: SideState = { total: null, ratio: DEFAULT_TROOP_RATIO, counts: null }
+  const state: SideState = {
+    total: null,
+    ratio: DEFAULT_TROOP_RATIO,
+    counts: null,
+  }
+  const rows: RowControl[] = []
+  const t12 = new Map<TroopType, T12Control>()
+  let mixed = false
   let drag: DragState | null = null
 
-  function render(skipCount?: HTMLInputElement): void {
+  const firstRow = rowsRoot.querySelector<HTMLElement>('[data-troop-row]')
+  if (!firstRow) return null
+
+  function refreshT12Visibility(): void {
+    for (const [typeId, control] of t12) {
+      const hasT12 = rows.some((row) => row.levels.get(typeId)?.tier === 12)
+      control.button.hidden = !hasT12
+    }
+  }
+
+  function updateRowHeader(row: RowControl, index: number): void {
+    const extra = index > 0
+    row.header?.classList.toggle('hidden', !extra)
+    row.header?.classList.toggle('flex', extra)
+    row.element.classList.toggle('border-t', extra)
+    row.element.classList.toggle('border-line', extra)
+    row.element.classList.toggle('pt-3', extra)
+    row.element.setAttribute('role', 'group')
+    row.element.setAttribute(
+      'aria-label',
+      `${sideLabel} troop row ${index + 1}`,
+    )
+    if (row.label) row.label.textContent = `Row ${index + 1}`
+    if (row.removeButton) {
+      row.removeButton.hidden = !extra
+      row.removeButton.setAttribute(
+        'aria-label',
+        `Remove ${sideLabel} troop row ${index + 1}`,
+      )
+    }
+  }
+
+  function updateRowLabels(): void {
+    rows.forEach((row, index) => {
+      for (const { id } of TROOP_TYPES) {
+        const input = row.counts.get(id)
+        const label = row.levels.get(id)?.typeLabel ?? 'Troop'
+        input?.setAttribute(
+          'aria-label',
+          `${sideLabel} ${label} troop count, row ${index + 1}`,
+        )
+      }
+    })
+  }
+
+  function rowCount(row: RowControl, type: TroopType): number | null {
+    return parseTroopCount(row.counts.get(type)?.value)
+  }
+
+  function classTotals(): [number, number, number] {
+    return TROOP_TYPES.map(({ id }) =>
+      rows.reduce((sum, row) => sum + (rowCount(row, id) ?? 0), 0),
+    ) as [number, number, number]
+  }
+
+  function renderChrome(): void {
     const [infantry, lancer, marksman] = state.ratio
     const [first, second] = troopRatioPositions(state.ratio)
     const infantryText = formatTroopPercent(infantry)
@@ -289,44 +405,327 @@ function initSide(side: HTMLElement): TroopSideController | null {
     const totalValue = state.total === null ? '' : String(state.total)
     if (totalInput.value !== totalValue) totalInput.value = totalValue
 
-    counts.forEach((input, index) => {
-      if (input === skipCount) return
+    track.setAttribute(
+      'aria-label',
+      mixed
+        ? `${sideLabel} troop ratio, Infantry ${infantryText}, Lancer ${lancerText}, Marksman ${marksmanText}`
+        : `${sideLabel} troop ratio`,
+    )
+  }
+
+  function writeSingleRowCounts(): void {
+    if (mixed) return
+    const row = rows[0]
+    if (!row) return
+    for (const [index, { id }] of TROOP_TYPES.entries()) {
+      const input = row.counts.get(id)
+      if (!input) continue
       const count = state.counts?.[index]
-      const nextValue = count === undefined ? '' : String(count)
+      const nextValue =
+        count === undefined || count === null ? '' : String(count)
       if (input.value !== nextValue) input.value = nextValue
+    }
+  }
+
+  function syncFromCounts(): void {
+    if (!mixed) {
+      const row = rows[0]
+      if (!row) return
+      const values = TROOP_TYPES.map(({ id }) => rowCount(row, id))
+      if (values.every((value) => value === null)) {
+        state.total = null
+        state.counts = null
+        renderChrome()
+        return
+      }
+
+      const numbers: [number, number, number] = [
+        values[0] ?? 0,
+        values[1] ?? 0,
+        values[2] ?? 0,
+      ]
+      const total = numbers[0] + numbers[1] + numbers[2]
+      state.counts = numbers
+      state.total = total
+      if (total > 0) state.ratio = troopClassShares(numbers)
+      renderChrome()
+      return
+    }
+
+    const totals = classTotals()
+    const total = totals[0] + totals[1] + totals[2]
+    state.total = total > 0 ? total : null
+    state.ratio = total > 0 ? troopClassShares(totals) : DEFAULT_TROOP_RATIO
+    renderChrome()
+  }
+
+  function applyRowMode(): void {
+    mixed = rows.length > 1
+    side.dataset['troopMixed'] = mixed ? 'true' : 'false'
+    totalInput.readOnly = mixed
+    if (mixed) {
+      totalInput.setAttribute('aria-readonly', 'true')
+      totalInput.setAttribute(
+        'aria-label',
+        `${sideLabel} total troops, sum of every row`,
+      )
+      totalInput.title = 'Sum of every troop row'
+      track.setAttribute(
+        'aria-description',
+        'The ratio follows the troop rows and cannot be adjusted.',
+      )
+    } else {
+      totalInput.removeAttribute('aria-readonly')
+      totalInput.setAttribute('aria-label', `${sideLabel} total troops`)
+      totalInput.removeAttribute('title')
+      track.removeAttribute('aria-description')
+    }
+
+    for (const control of controls.values()) {
+      if (mixed) {
+        control.setAttribute('aria-disabled', 'true')
+        control.tabIndex = -1
+      } else {
+        control.removeAttribute('aria-disabled')
+        control.tabIndex = 0
+      }
+    }
+
+    note.hidden = !mixed
+    rows.forEach((row, index) => updateRowHeader(row, index))
+    updateRowLabels()
+    refreshT12Visibility()
+    renderChrome()
+  }
+
+  function clearCounts(row: RowControl): void {
+    for (const input of row.counts.values()) input.value = ''
+  }
+
+  function appendRow(): RowControl | null {
+    const source = rows[0]?.element
+    if (!source) return null
+    const clone = source.cloneNode(true) as HTMLElement
+    for (const t12Button of clone.querySelectorAll('[data-troop-t12-slot]')) {
+      t12Button.remove()
+    }
+    clone.dataset['troopRowIndex'] = String(rows.length)
+    rowsRoot.append(clone)
+
+    const seed = rows.at(-1)?.levels
+    const row = initRow(clone, rows.length, seed)
+    clearCounts(row)
+    rows.push(row)
+    return row
+  }
+
+  function addRow(): void {
+    const row = appendRow()
+    if (!row) return
+    applyRowMode()
+    syncFromCounts()
+    row.element.scrollIntoView({
+      block: 'nearest',
+      behavior: reduceMotion.matches ? 'auto' : 'smooth',
     })
   }
 
-  function setRatio(next: TroopRatio): void {
-    state.ratio = next
-    state.counts = state.total === null ? null : allocateTroopCounts(state.total, next)
-    render()
+  function removeRow(row: RowControl): void {
+    const index = rows.indexOf(row)
+    if (index <= 0) return
+    rows.splice(index, 1)
+    row.element.remove()
+    applyRowMode()
+    syncFromCounts()
+    addRowButton.focus()
   }
 
-  function applyLoadout(total: number, ratio: TroopRatio): void {
+  function initRow(
+    element: HTMLElement,
+    index: number,
+    seed?: ReadonlyMap<TroopType, { tier: number; fc: number }>,
+  ): RowControl {
+    const header = element.querySelector<HTMLElement>('[data-troop-row-header]')
+    const label = element.querySelector<HTMLElement>('[data-troop-row-label]')
+    const removeButton = element.querySelector<HTMLButtonElement>(
+      '[data-troop-remove-row]',
+    )
+    const levels = new Map<TroopType, LevelControl>()
+    const counts = new Map<TroopType, HTMLInputElement>()
+
+    for (const card of element.querySelectorAll<HTMLElement>('[data-troop-type]')) {
+      const typeId = card.dataset['troopType'] as TroopType | undefined
+      const typeLabel = card.dataset['troopTypeLabel'] ?? 'Troop'
+      const tierButton = card.querySelector<HTMLButtonElement>('[data-troop-tier-slot]')
+      const fcButton = card.querySelector<HTMLButtonElement>('[data-troop-fc-slot]')
+      const tierLabel = card.querySelector<HTMLElement>('[data-troop-tier-label]')
+      const fcValue = card.querySelector<HTMLElement>('[data-troop-fc-value]')
+      const countInput = card.querySelector<HTMLInputElement>('input[data-troop-count]')
+      if (
+        !typeId ||
+        !tierButton ||
+        !fcButton ||
+        !tierLabel ||
+        !fcValue ||
+        !countInput
+      ) {
+        continue
+      }
+
+      const seedLevel = seed?.get(typeId)
+      const level: LevelControl = {
+        tier:
+          seedLevel?.tier ??
+          parseLabeledInt(tierLabel.textContent, DEFAULT_TROOP_TIER),
+        fc:
+          seedLevel?.fc ??
+          parseLabeledInt(fcValue.textContent, DEFAULT_TROOP_FC),
+        sideLabel,
+        typeLabel,
+        tierButton,
+        fcButton,
+        tierLabel,
+        fcValue,
+      }
+      renderLevel(level)
+      levels.set(typeId, level)
+      counts.set(typeId, countInput)
+
+      tierButton.addEventListener('click', () => {
+        pickers.tier?.open(
+          {
+            sideLabel,
+            title: `Select ${typeLabel} tier`,
+            value: level.tier,
+            setValue: (value) => {
+              level.tier = value
+              renderLevel(level)
+              refreshT12Visibility()
+            },
+          },
+          tierButton,
+        )
+      })
+
+      fcButton.addEventListener('click', () => {
+        pickers.fc?.open(
+          {
+            sideLabel,
+            title: `Select ${typeLabel} FC level`,
+            value: level.fc,
+            setValue: (value) => {
+              level.fc = value
+              renderLevel(level)
+            },
+          },
+          fcButton,
+        )
+      })
+    }
+
+    const control: RowControl = {
+      element,
+      header,
+      label,
+      removeButton,
+      levels,
+      counts,
+    }
+    if (index > 0) {
+      removeButton?.addEventListener('click', () => removeRow(control))
+    }
+    return control
+  }
+
+  function applyRows(count: number): void {
+    while (rows.length > count) {
+      const row = rows.pop()
+      row?.element.remove()
+    }
+    while (rows.length < count) {
+      if (!appendRow()) break
+    }
+    applyRowMode()
+  }
+
+  function applyPreset(
+    total: number,
+    ratio: TroopRatio,
+    tier: number,
+    fc: number,
+    t12Level: number,
+  ): void {
+    applyRows(1)
+    const row = rows[0]
+    if (!row) return
+    for (const level of row.levels.values()) {
+      level.tier = clamp(tier, 1, 12)
+      level.fc = clamp(fc, 0, 10)
+      renderLevel(level)
+    }
+    for (const control of t12.values()) {
+      control.level = clamp(t12Level, 0, 24)
+      renderT12(control)
+    }
+    refreshT12Visibility()
     state.total = total
     state.ratio = ratio
     state.counts = allocateTroopCounts(total, ratio)
-    render()
+    writeSingleRowCounts()
+    applyRowMode()
+    renderChrome()
   }
 
-  function applyCounts(next: Record<TroopType, number>): void {
-    const values = TROOP_TYPES.map(({ id }) => {
-      const count = Number(next[id])
-      return Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0
-    }) as [number, number, number]
-    const total = values[0] + values[1] + values[2]
-    state.total = total
-    state.counts = total > 0 ? values : null
-    state.ratio =
-      total > 0
-        ? [
-            (values[0] / total) * 100,
-            (values[1] / total) * 100,
-            (values[2] / total) * 100,
-          ]
-        : DEFAULT_TROOP_RATIO
-    render()
+  function applyTroops(
+    troops: Record<TroopType, SimulatorTroopLoadout>,
+  ): void {
+    const rowCount = Math.max(
+      1,
+      ...TROOP_TYPES.map(({ id }) => troops[id]?.groups.length ?? 0),
+    )
+    applyRows(rowCount)
+
+    for (const { id } of TROOP_TYPES) {
+      const loadout = troops[id]
+      if (!loadout) continue
+      const fallback = loadout.groups[0]
+      rows.forEach((row, index) => {
+        const level = row.levels.get(id)
+        const input = row.counts.get(id)
+        const group = loadout.groups[index]
+        if (level) {
+          level.tier = clamp(
+            group?.tier ?? fallback?.tier ?? DEFAULT_TROOP_TIER,
+            1,
+            12,
+          )
+          level.fc = clamp(group?.fc ?? fallback?.fc ?? DEFAULT_TROOP_FC, 0, 10)
+          renderLevel(level)
+        }
+        if (input) {
+          input.value =
+            group && group.count > 0 ? String(Math.round(group.count)) : ''
+        }
+      })
+
+      const control = t12.get(id)
+      if (control) {
+        control.level = clamp(loadout.t12, 0, 24)
+        renderT12(control)
+      }
+    }
+
+    refreshT12Visibility()
+    syncFromCounts()
+  }
+
+  function setRatio(next: TroopRatio): void {
+    if (mixed) return
+    state.ratio = next
+    state.counts =
+      state.total === null ? null : allocateTroopCounts(state.total, next)
+    writeSingleRowCounts()
+    renderChrome()
   }
 
   function endDrag(): void {
@@ -337,7 +736,7 @@ function initSide(side: HTMLElement): TroopSideController | null {
   }
 
   function updateFromDrag(clientX: number): void {
-    if (!drag) return
+    if (!drag || mixed) return
     if (!drag.moved && Math.abs(clientX - drag.startX) < DRAG_THRESHOLD_PX) return
     drag.moved = true
 
@@ -357,7 +756,51 @@ function initSide(side: HTMLElement): TroopSideController | null {
     }
   }
 
+  /* Initialise the first row and its per-class T12 boxes. */
+  rows.push(initRow(firstRow, 0))
+
+  for (const card of firstRow.querySelectorAll<HTMLElement>('[data-troop-type]')) {
+    const typeId = card.dataset['troopType'] as TroopType | undefined
+    const typeLabel = card.dataset['troopTypeLabel'] ?? 'Troop'
+    const button = card.querySelector<HTMLButtonElement>('[data-troop-t12-slot]')
+    const value = card.querySelector<HTMLElement>('[data-troop-t12-value]')
+    if (!typeId || !button || !value) continue
+
+    const control: T12Control = {
+      level: clamp(
+        parseLabeledInt(value.textContent, DEFAULT_TROOP_T12_SKILL),
+        0,
+        24,
+      ),
+      sideLabel,
+      typeId,
+      typeLabel,
+      button,
+      value,
+    }
+    renderT12(control)
+    t12.set(typeId, control)
+
+    button.addEventListener('click', () => {
+      pickers.t12?.open(
+        {
+          sideLabel,
+          title: `${TROOP_T12_SKILL_NAMES[typeId]} Level: ${control.level}`,
+          value: control.level,
+          setValue: (level) => {
+            control.level = level
+            renderT12(control)
+          },
+        },
+        button,
+      )
+    })
+  }
+
+  refreshT12Visibility()
+
   totalInput.addEventListener('input', () => {
+    if (mixed) return
     const caret = totalInput.selectionStart ?? totalInput.value.length
     const edit = sanitizeTroopCountInput(totalInput.value, caret)
     if (edit.value !== totalInput.value) {
@@ -366,56 +809,29 @@ function initSide(side: HTMLElement): TroopSideController | null {
     }
     state.total = parseTroopCount(totalInput.value)
     state.counts =
-      state.total === null ? null : allocateTroopCounts(state.total, state.ratio)
-    render()
+      state.total === null
+        ? null
+        : allocateTroopCounts(state.total, state.ratio)
+    writeSingleRowCounts()
+    renderChrome()
   })
 
-  for (const input of counts) {
-    input.addEventListener('input', () => {
-      const values = counts.map((countInput) => {
-        if (countInput === input) {
-          const caret = countInput.selectionStart ?? countInput.value.length
-          const edit = sanitizeTroopCountInput(countInput.value, caret)
-          if (edit.value !== countInput.value) {
-            countInput.value = edit.value
-            countInput.setSelectionRange(edit.caret, edit.caret)
-          }
-        }
-        return parseTroopCount(countInput.value)
-      })
-
-      if (values.every((value) => value === null)) {
-        state.total = null
-        state.counts = null
-        render(input)
-        return
-      }
-
-      const numbers: [number, number, number] = [
-        values[0] ?? 0,
-        values[1] ?? 0,
-        values[2] ?? 0,
-      ]
-      const total = numbers[0] + numbers[1] + numbers[2]
-      state.counts = numbers
-      state.total = total
-      if (total > 0) {
-        state.ratio = [
-          (numbers[0] / total) * 100,
-          (numbers[1] / total) * 100,
-          (numbers[2] / total) * 100,
-        ]
-      }
-      render(input)
-    })
-
-    input.addEventListener('blur', () => {
-      render()
-    })
-  }
+  side.addEventListener('input', (event) => {
+    const target = event.target
+    if (!(target instanceof HTMLInputElement)) return
+    if (!target.matches('input[data-troop-count]')) return
+    const caret = target.selectionStart ?? target.value.length
+    const edit = sanitizeTroopCountInput(target.value, caret)
+    if (edit.value !== target.value) {
+      target.value = edit.value
+      target.setSelectionRange(edit.caret, edit.caret)
+    }
+    syncFromCounts()
+  })
 
   for (const [control, element] of controls) {
     element.addEventListener('keydown', (event) => {
+      if (mixed) return
       let direction: 1 | -1 | null = null
       if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
         direction = -1
@@ -430,7 +846,7 @@ function initSide(side: HTMLElement): TroopSideController | null {
   }
 
   track.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return
+    if (mixed || event.button !== 0) return
     const target =
       event.target instanceof Element
         ? event.target.closest<HTMLElement>('[data-troop-ratio-control]')
@@ -468,22 +884,19 @@ function initSide(side: HTMLElement): TroopSideController | null {
 
   track.addEventListener('pointercancel', endDrag)
   track.addEventListener('lostpointercapture', endDrag)
+  addRowButton.addEventListener('click', addRow)
 
-  render()
+  applyRowMode()
+  renderChrome()
 
-  return { applyLoadout, applyCounts }
+  return { applyPreset, applyTroops }
 }
 
 export function initTroopPower(): void {
   const section = document.querySelector<HTMLElement>('[data-troop-power]')
   if (!section) return
 
-  const sideControllers = new Map<string, TroopSideController>()
-  for (const side of section.querySelectorAll<HTMLElement>('[data-troop-power-side]')) {
-    const controller = initSide(side)
-    const sideId = side.dataset['troopPowerSide']
-    if (controller && sideId) sideControllers.set(sideId, controller)
-  }
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
 
   const tierDialog = section.querySelector<HTMLDialogElement>('#troop-tier-picker')
   const tierTitle = section.querySelector<HTMLElement>('#troop-tier-picker-title')
@@ -509,107 +922,53 @@ export function initTroopPower(): void {
     '#troop-t12-picker [data-troop-picker-close]',
   )
 
-  const tierPicker =
-    tierDialog && tierTitle && tierSide && tierOptions && tierClose
-      ? createLoadoutPicker({
-          dialog: tierDialog,
-          titleElement: tierTitle,
-          sideElement: tierSide,
-          options: tierOptions,
-          closeButton: tierClose,
-          field: 'tier',
-          values: TROOP_TIERS,
-          format: (value) => `T${value}`,
-          title: (loadout) => `Select ${loadout.typeLabel} tier`,
-          columns: 4,
-        })
-      : null
+  const pickers: Pickers = {
+    tier:
+      tierDialog && tierTitle && tierSide && tierOptions && tierClose
+        ? createLoadoutPicker({
+            dialog: tierDialog,
+            titleElement: tierTitle,
+            sideElement: tierSide,
+            options: tierOptions,
+            closeButton: tierClose,
+            values: TROOP_TIERS,
+            format: (value) => `T${value}`,
+            columns: 4,
+          })
+        : null,
+    fc:
+      fcDialog && fcTitle && fcSide && fcOptions && fcClose
+        ? createLoadoutPicker({
+            dialog: fcDialog,
+            titleElement: fcTitle,
+            sideElement: fcSide,
+            options: fcOptions,
+            closeButton: fcClose,
+            values: TROOP_FC_LEVELS,
+            format: (value) => `FC${value}`,
+            columns: 4,
+          })
+        : null,
+    t12:
+      t12Dialog && t12Title && t12Side && t12Options && t12Close
+        ? createLoadoutPicker({
+            dialog: t12Dialog,
+            titleElement: t12Title,
+            sideElement: t12Side,
+            options: t12Options,
+            closeButton: t12Close,
+            values: TROOP_T12_SKILL_LEVELS,
+            format: (value) => `Lv ${value}`,
+            columns: 5,
+          })
+        : null,
+  }
 
-  const fcPicker =
-    fcDialog && fcTitle && fcSide && fcOptions && fcClose
-      ? createLoadoutPicker({
-          dialog: fcDialog,
-          titleElement: fcTitle,
-          sideElement: fcSide,
-          options: fcOptions,
-          closeButton: fcClose,
-          field: 'fc',
-          values: TROOP_FC_LEVELS,
-          format: (value) => `FC${value}`,
-          title: (loadout) => `Select ${loadout.typeLabel} FC level`,
-          columns: 4,
-        })
-      : null
-
-  const t12Picker =
-    t12Dialog && t12Title && t12Side && t12Options && t12Close
-      ? createLoadoutPicker({
-          dialog: t12Dialog,
-          titleElement: t12Title,
-          sideElement: t12Side,
-          options: t12Options,
-          closeButton: t12Close,
-          field: 't12',
-          values: TROOP_T12_SKILL_LEVELS,
-          format: (value) => `Lv ${value}`,
-          title: (loadout) =>
-            `${TROOP_T12_SKILL_NAMES[loadout.typeId]} Level: ${loadout.t12}`,
-          columns: 5,
-        })
-      : null
-
-  const loadouts = new Map<string, TroopLoadout>()
-
-  for (const card of section.querySelectorAll<HTMLElement>('[data-troop-type]')) {
-    const tierButton = card.querySelector<HTMLButtonElement>('[data-troop-tier-slot]')
-    const fcButton = card.querySelector<HTMLButtonElement>('[data-troop-fc-slot]')
-    const t12Button = card.querySelector<HTMLButtonElement>('[data-troop-t12-slot]')
-    const tierLabel = card.querySelector<HTMLElement>('[data-troop-tier-label]')
-    const fcValue = card.querySelector<HTMLElement>('[data-troop-fc-value]')
-    const t12Value = card.querySelector<HTMLElement>('[data-troop-t12-value]')
-    const typeId = card.dataset['troopType'] as TroopType | undefined
-    if (
-      !tierButton ||
-      !fcButton ||
-      !t12Button ||
-      !tierLabel ||
-      !fcValue ||
-      !t12Value ||
-      !typeId
-    ) {
-      continue
-    }
-
-    const loadout: TroopLoadout = {
-      tier: DEFAULT_TROOP_TIER,
-      fc: DEFAULT_TROOP_FC,
-      t12: DEFAULT_TROOP_T12_SKILL,
-      tierButton,
-      fcButton,
-      t12Button,
-      tierLabel,
-      fcValue,
-      t12Value,
-      sideLabel: card.dataset['troopSideLabel'] ?? 'Attacker',
-      typeId,
-      typeLabel: card.dataset['troopTypeLabel'] ?? 'Troop',
-    }
-    renderLoadout(loadout)
-
-    const sideId = card.closest<HTMLElement>('[data-troop-power-side]')?.dataset[
-      'troopPowerSide'
-    ]
-    if (sideId) loadouts.set(`${sideId}:${typeId}`, loadout)
-
-    if (tierPicker) {
-      tierButton.addEventListener('click', () => tierPicker.open(loadout, tierButton))
-    }
-    if (fcPicker) {
-      fcButton.addEventListener('click', () => fcPicker.open(loadout, fcButton))
-    }
-    if (t12Picker) {
-      t12Button.addEventListener('click', () => t12Picker.open(loadout, t12Button))
-    }
+  const sideControllers = new Map<string, SideController>()
+  for (const side of section.querySelectorAll<HTMLElement>('[data-troop-power-side]')) {
+    const controller = initSide(side, pickers, reduceMotion)
+    const sideId = side.dataset['troopPowerSide']
+    if (controller && sideId) sideControllers.set(sideId, controller)
   }
 
   onGenerationChange((generation) => {
@@ -618,34 +977,19 @@ export function initTroopPower(): void {
 
     for (const [side, controller] of sideControllers) {
       const lineup = getGenerationLineup(preset, side === 'right' ? 'right' : 'left')
-      controller.applyLoadout(preset.totalTroops, lineup.ratio)
-    }
-
-    for (const loadout of loadouts.values()) {
-      loadout.tier = preset.tier
-      loadout.fc = preset.fc
-      loadout.t12 = preset.t12Skills
-      renderLoadout(loadout)
+      controller.applyPreset(
+        preset.totalTroops,
+        lineup.ratio,
+        preset.tier,
+        preset.fc,
+        preset.t12Skills,
+      )
     }
   })
 
   onSimulatorLoad((detail) => {
     for (const side of ['left', 'right'] as const) {
-      const troops = detail[side].troops
-      sideControllers.get(side)?.applyCounts({
-        infantry: troops.infantry.count,
-        lancer: troops.lancer.count,
-        marksman: troops.marksman.count,
-      })
-      for (const { id } of TROOP_TYPES) {
-        const loadout = loadouts.get(`${side}:${id}`)
-        if (!loadout) continue
-        const next = troops[id]
-        loadout.tier = Math.min(Math.max(next.tier, 1), 12)
-        loadout.fc = Math.min(Math.max(next.fc, 0), 10)
-        loadout.t12 = Math.min(Math.max(next.t12, 0), 24)
-        renderLoadout(loadout)
-      }
+      sideControllers.get(side)?.applyTroops(detail[side].troops)
     }
   })
 }

@@ -2,10 +2,15 @@ import type { TroopType } from './heroes'
 
 export type SimulatorLoadSide = 'left' | 'right'
 
-export interface SimulatorTroopLoadout {
+export interface SimulatorTroopGroup {
   tier: number
   fc: number
   count: number
+}
+
+export interface SimulatorTroopLoadout {
+  /** Mixed-tier groups of one class, largest group first. */
+  groups: SimulatorTroopGroup[]
   t12: number
 }
 

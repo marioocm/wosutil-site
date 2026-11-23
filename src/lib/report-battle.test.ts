@@ -70,7 +70,7 @@ describe('buildSimulatorBattle', () => {
     expect(battle.left.troops.infantry.t12).toBe(20)
   })
 
-  it('keeps the largest troop group and the class total', () => {
+  it('keeps every mixed troop group, largest first', () => {
     const attacker = side({
       troops: [
         troop({ class: 'infantry', tier: 12, furnace: 'FC10', count: 100 }),
@@ -83,21 +83,19 @@ describe('buildSimulatorBattle', () => {
     const battle = buildSimulatorBattle(report(attacker, side()))
 
     expect(battle.left.troops.infantry).toEqual({
-      tier: 11,
-      fc: 9,
-      count: 1200,
+      groups: [
+        { tier: 11, fc: 9, count: 900 },
+        { tier: 10, fc: 7, count: 200 },
+        { tier: 12, fc: 10, count: 100 },
+      ],
       t12: 20,
     })
     expect(battle.left.troops.lancer).toEqual({
-      tier: 12,
-      fc: 8,
-      count: 400,
+      groups: [{ tier: 12, fc: 8, count: 400 }],
       t12: 4,
     })
     expect(battle.left.troops.marksman).toEqual({
-      tier: 11,
-      fc: 0,
-      count: 50,
+      groups: [{ tier: 11, fc: 0, count: 50 }],
       t12: 0,
     })
   })
@@ -106,9 +104,7 @@ describe('buildSimulatorBattle', () => {
     const battle = buildSimulatorBattle(report(side(), side()))
 
     expect(battle.left.troops.infantry).toEqual({
-      tier: 12,
-      fc: 10,
-      count: 0,
+      groups: [{ tier: 12, fc: 10, count: 0 }],
       t12: 20,
     })
   })

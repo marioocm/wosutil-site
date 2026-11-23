@@ -24,9 +24,9 @@ function state(overrides: Partial<SimulatorState> = {}): SimulatorState {
       heroes: { infantry: 'Ahmose', lancer: 'Reina', marksman: 'Lynn' },
       joiners: ['Jessie', null, null, null],
       troops: {
-        infantry: { tier: 12, fc: 10, count: 1000, t12: 24 },
-        lancer: { tier: 11, fc: 8, count: 2000, t12: 7 },
-        marksman: { tier: 10, fc: 0, count: 3000, t12: 0 },
+        infantry: { groups: [{ tier: 12, fc: 10, count: 1000 }], t12: 24 },
+        lancer: { groups: [{ tier: 11, fc: 8, count: 2000 }], t12: 7 },
+        marksman: { groups: [{ tier: 10, fc: 0, count: 3000 }], t12: 0 },
       },
       stats: {
         'infantry-attack': 100,
@@ -39,9 +39,9 @@ function state(overrides: Partial<SimulatorState> = {}): SimulatorState {
       heroes: {},
       joiners: [],
       troops: {
-        infantry: { tier: 12, fc: 10, count: 500, t12: 5 },
-        lancer: { tier: 12, fc: 10, count: 0, t12: 5 },
-        marksman: { tier: 12, fc: 10, count: 0, t12: 5 },
+        infantry: { groups: [{ tier: 12, fc: 10, count: 500 }], t12: 5 },
+        lancer: { groups: [{ tier: 12, fc: 10, count: 0 }], t12: 5 },
+        marksman: { groups: [{ tier: 12, fc: 10, count: 0 }], t12: 5 },
       },
       stats: {},
     },
@@ -60,9 +60,9 @@ describe('buildEngineCase', () => {
     ])
     expect(engine.attacker.joiner_heroes).toEqual([{ name: 'Jessie', s1: SKILL_LEVEL }])
     expect(engine.attacker.troops).toEqual({
-      infantry: { tier: 12, fc: 10, count: 1000 },
-      lancer: { tier: 11, fc: 8, count: 2000 },
-      marksman: { tier: 10, fc: 0, count: 3000 },
+      infantry: [{ tier: 12, fc: 10, count: 1000 }],
+      lancer: [{ tier: 11, fc: 8, count: 2000 }],
+      marksman: [{ tier: 10, fc: 0, count: 3000 }],
     })
     expect(engine.attacker.stats).toEqual({
       inf: [100, 12.5, -100, 0],
@@ -75,8 +75,34 @@ describe('buildEngineCase', () => {
       marksman: 0,
     })
     expect(engine.defender.troops).toEqual({
-      infantry: { tier: 12, fc: 10, count: 500 },
+      infantry: [{ tier: 12, fc: 10, count: 500 }],
     })
+  })
+
+  it('keeps every mixed troop group of a class', () => {
+    const base = state()
+    const engine = buildEngineCase({
+      left: {
+        ...base.left,
+        troops: {
+          ...base.left.troops,
+          infantry: {
+            groups: [
+              { tier: 12, fc: 10, count: 100 },
+              { tier: 11, fc: 9, count: 900 },
+            ],
+            t12: 24,
+          },
+        },
+      },
+      right: base.right,
+    })
+
+    expect(engine.attacker.troops.infantry).toEqual([
+      { tier: 12, fc: 10, count: 100 },
+      { tier: 11, fc: 9, count: 900 },
+    ])
+    expect(engine.attacker.t12.infantry).toBe(24)
   })
 
   it('omits empty troop classes and empty joiner slots', () => {
@@ -148,11 +174,11 @@ describe('buildOptimizeCase', () => {
   it('keeps zero-count classes so the optimizer can use their tier/FC', () => {
     const engine = buildOptimizeCase(state())
     expect(engine.defender.troops).toEqual({
-      infantry: { tier: 12, fc: 10, count: 500 },
-      lancer: { tier: 12, fc: 10, count: 0 },
-      marksman: { tier: 12, fc: 10, count: 0 },
+      infantry: [{ tier: 12, fc: 10, count: 500 }],
+      lancer: [{ tier: 12, fc: 10, count: 0 }],
+      marksman: [{ tier: 12, fc: 10, count: 0 }],
     })
-    expect(engine.attacker.troops.marksman?.count).toBe(3000)
+    expect(engine.attacker.troops.marksman?.[0]?.count).toBe(3000)
   })
 
   it('maps the UI side to the engine side', () => {
@@ -170,9 +196,9 @@ describe('validateSimulatorState', () => {
           right: {
             ...state().right,
             troops: {
-              infantry: { tier: 12, fc: 10, count: 0, t12: 5 },
-              lancer: { tier: 12, fc: 10, count: 0, t12: 5 },
-              marksman: { tier: 12, fc: 10, count: 0, t12: 5 },
+              infantry: { groups: [{ tier: 12, fc: 10, count: 0 }], t12: 5 },
+              lancer: { groups: [{ tier: 12, fc: 10, count: 0 }], t12: 5 },
+              marksman: { groups: [{ tier: 12, fc: 10, count: 0 }], t12: 5 },
             },
           },
         }),

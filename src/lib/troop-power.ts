@@ -68,15 +68,26 @@ export function formatTroopPercent(value: number): string {
   return `${Math.round(value * 10) / 10}%`
 }
 
-export function allocateTroopCounts(
+function allocateByWeights(
   total: number,
-  ratio: TroopRatio,
-): [number, number, number] {
+  weights: readonly number[],
+  equalWhenEmpty: boolean,
+): number[] {
   const safeTotal = Number.isFinite(total) ? Math.max(0, Math.trunc(total)) : 0
-  const ratioTotal = ratio[0] + ratio[1] + ratio[2]
-  if (safeTotal === 0 || ratioTotal <= 0) return [0, 0, 0]
+  if (weights.length === 0 || safeTotal === 0) return weights.map(() => 0)
 
-  const exact = ratio.map((share) => (safeTotal * share) / ratioTotal)
+  const positive = weights.map((weight) =>
+    Number.isFinite(weight) && weight > 0 ? weight : 0,
+  )
+  let weightTotal = positive.reduce((sum, weight) => sum + weight, 0)
+  let effective = positive
+  if (weightTotal <= 0) {
+    if (!equalWhenEmpty) return weights.map(() => 0)
+    effective = weights.map(() => 1)
+    weightTotal = effective.length
+  }
+
+  const exact = effective.map((weight) => (safeTotal * weight) / weightTotal)
   const counts = exact.map((share) => Math.floor(share))
   const remainder = safeTotal - counts.reduce((sum, count) => sum + count, 0)
   const order = exact
@@ -89,7 +100,42 @@ export function allocateTroopCounts(
     counts[target.index] = (counts[target.index] ?? 0) + 1
   }
 
+  return counts
+}
+
+export function allocateTroopCounts(
+  total: number,
+  ratio: TroopRatio,
+): [number, number, number] {
+  const counts = allocateByWeights(total, ratio, false)
   return [counts[0] ?? 0, counts[1] ?? 0, counts[2] ?? 0]
+}
+
+/**
+ * Split one class total across its rows.
+ *
+ * Zero or negative weights are ignored; when every row is empty the troops
+ * are spread evenly, matching the engine's mixed-group redistribution.
+ */
+export function distributeTroopCounts(
+  total: number,
+  weights: readonly number[],
+): number[] {
+  return allocateByWeights(total, weights, true)
+}
+
+/** Percentage share of each class from its aggregate troop count. */
+export function troopClassShares(counts: readonly number[]): TroopRatio {
+  const values = [counts[0] ?? 0, counts[1] ?? 0, counts[2] ?? 0].map((value) =>
+    Number.isFinite(value) && value > 0 ? value : 0,
+  )
+  const total = values[0] + values[1] + values[2]
+  if (total <= 0) return DEFAULT_TROOP_RATIO
+  return [
+    ((values[0] ?? 0) / total) * 100,
+    ((values[1] ?? 0) / total) * 100,
+    ((values[2] ?? 0) / total) * 100,
+  ]
 }
 
 export function troopRatioPositions(ratio: TroopRatio): [number, number] {

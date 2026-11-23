@@ -9,6 +9,7 @@ import {
   TROOP_T12_SKILL_NAMES,
   TROOP_TIERS,
   allocateTroopCounts,
+  distributeTroopCounts,
   formatTroopCount,
   formatTroopPercent,
   moveTroopRatioDivider,
@@ -16,6 +17,7 @@ import {
   parseTroopCount,
   sanitizeTroopCountInput,
   shiftTroopRatioMiddle,
+  troopClassShares,
   troopRatioPositions,
 } from './troop-power'
 
@@ -111,8 +113,41 @@ describe('allocateTroopCounts', () => {
     expect(allocateTroopCounts(100, [33.3, 33.3, 33.4])).toEqual([33, 33, 34])
   })
 
-  it('returns zero counts for an empty total', () => {
+  it('returns zero counts for an empty total or ratio', () => {
     expect(allocateTroopCounts(0, [50, 30, 20])).toEqual([0, 0, 0])
+    expect(allocateTroopCounts(100, [0, 0, 0])).toEqual([0, 0, 0])
+  })
+})
+
+describe('troopClassShares', () => {
+  it('derives the class percentages from aggregate counts', () => {
+    expect(troopClassShares([500, 300, 200])).toEqual([50, 30, 20])
+    const shares = troopClassShares([1, 0, 2])
+    expect(shares[0]).toBeCloseTo(100 / 3, 10)
+    expect(shares[1]).toBe(0)
+    expect(shares[2]).toBeCloseTo(200 / 3, 10)
+  })
+
+  it('falls back to the even default when every class is empty', () => {
+    expect(troopClassShares([0, 0, 0])).toEqual(DEFAULT_TROOP_RATIO)
+  })
+})
+
+describe('distributeTroopCounts', () => {
+  it('splits a class total in proportion to the current rows', () => {
+    expect(distributeTroopCounts(600, [100, 100])).toEqual([300, 300])
+    expect(distributeTroopCounts(1000, [900, 100])).toEqual([900, 100])
+    expect(distributeTroopCounts(101, [50, 30, 20])).toEqual([51, 30, 20])
+  })
+
+  it('spreads the total evenly when every row is empty', () => {
+    expect(distributeTroopCounts(900, [0, 0, 0])).toEqual([300, 300, 300])
+    expect(distributeTroopCounts(10, [0, 0, 0])).toEqual([4, 3, 3])
+  })
+
+  it('returns zeros for an empty class or no rows', () => {
+    expect(distributeTroopCounts(500, [])).toEqual([])
+    expect(distributeTroopCounts(0, [100, 200])).toEqual([0, 0])
   })
 })
 
