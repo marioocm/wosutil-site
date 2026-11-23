@@ -1,3 +1,4 @@
+import { createSegmentedToggle } from '../components/segmented-toggle'
 import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
 import {
@@ -83,7 +84,7 @@ function applyCounts(
 
 export function initOptimiseRatio(): void {
   const section = document.querySelector<HTMLElement>('[data-optimise-ratio]')
-  const toggle = section?.querySelector<HTMLElement>('[data-optimise-toggle]')
+  const sideRoot = section?.querySelector<HTMLElement>('[data-optimise-side]')
   const button = section?.querySelector<HTMLButtonElement>('[data-optimise-ratio-button]')
   const status = section?.querySelector<HTMLElement>('[data-optimise-status]')
   const resultsRoot = section?.querySelector<HTMLElement>('[data-optimise-results]')
@@ -93,7 +94,7 @@ export function initOptimiseRatio(): void {
   const warnings = resultsRoot?.querySelector<HTMLElement>('[data-optimise-warnings]')
   if (
     !section ||
-    !toggle ||
+    !sideRoot ||
     !button ||
     !status ||
     !resultsRoot ||
@@ -104,7 +105,6 @@ export function initOptimiseRatio(): void {
   ) {
     return
   }
-  const toggleElement: HTMLElement = toggle
   const buttonElement: HTMLButtonElement = button
   const statusElement: HTMLElement = status
   const resultsElement: HTMLElement = resultsRoot
@@ -114,28 +114,32 @@ export function initOptimiseRatio(): void {
   const warningsElement: HTMLElement = warnings
   const shell = section.closest<HTMLElement>('[data-simulation-shell]')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-  const radios = [
-    ...toggle.querySelectorAll<HTMLInputElement>('input[name="optimise-ratio-side"]'),
-  ]
-  if (radios.length === 0) return
-
   const apiBase = resolveApiBase()
+
   let activeController: AbortController | null = null
   let runId = 0
 
-  function checkedRadio(): HTMLInputElement | null {
-    return radios.find((radio) => radio.checked) ?? null
-  }
+  const sideToggle = createSegmentedToggle<'left' | 'right'>({
+    name: 'optimise-ratio-side',
+    label: 'Side to optimise (attacker or defender)',
+    options: [
+      { value: 'left', label: 'Attacker' },
+      { value: 'right', label: 'Defender' },
+    ],
+    value: 'left',
+    className: 'w-[10rem]',
+    onChange: () => {
+      activeController?.abort()
+      activeController = null
+      runId += 1
+      hideResults()
+      setStatus('')
+    },
+  })
+  sideRoot.replaceChildren(sideToggle.element)
 
   function selectedSide(): 'left' | 'right' {
-    return checkedRadio()?.value === 'right' ? 'right' : 'left'
-  }
-
-  function show(radio: HTMLInputElement | null): void {
-    const side = radio?.value ?? checkedRadio()?.value ?? radios[0]?.value
-    if (side === undefined) return
-    toggleElement.dataset['side'] = side
+    return sideToggle.value
   }
 
   function setStatus(message: string): void {
@@ -239,15 +243,6 @@ export function initOptimiseRatio(): void {
     revealResults()
   }
 
-  toggleElement.addEventListener('change', () => {
-    activeController?.abort()
-    activeController = null
-    runId += 1
-    show(null)
-    hideResults()
-    setStatus('')
-  })
-
   buttonElement.addEventListener('click', async () => {
     if (buttonElement.disabled) return
     const state = readSimulatorState()
@@ -308,6 +303,4 @@ export function initOptimiseRatio(): void {
       buttonElement.textContent = label
     }
   })
-
-  show(null)
 }

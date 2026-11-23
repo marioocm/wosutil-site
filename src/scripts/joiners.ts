@@ -1,4 +1,9 @@
-import { bindPickerKeyboard, createClearOption, createHeroOption } from '../components/hero-option'
+import {
+  bindPickerKeyboard,
+  createClearOption,
+  createHeroOption,
+  createHeroPackOption,
+} from '../components/hero-option'
 import { fillHeroVisual } from '../components/hero-visual'
 import { getGenerationLineup, getGenerationPreset, onGenerationChange } from '../lib/generations'
 import {
@@ -9,6 +14,14 @@ import {
   isHeroAvailable,
   type Hero,
 } from '../lib/heroes'
+import {
+  expandJoinerMatches,
+  getJoinerPack,
+  getJoinerPackMates,
+  groupJoinerItems,
+  joinerPackNames,
+  type JoinerPack,
+} from '../lib/joiner-packs'
 
 type Side = 'left' | 'right'
 
@@ -62,9 +75,33 @@ export function initJoiners(): void {
   const sideText: HTMLElement = pickerSide
   const search: HTMLInputElement = searchElement
   const options: HTMLElement = optionsElement
+  const equivalenceNote = section.querySelector<HTMLElement>('[data-joiner-equivalence]')
   const selections = new Map<string, Hero>()
   let activeSlot: HTMLButtonElement | null = null
   let maxGeneration: number | null = null
+
+  function renderPackNote(): void {
+    if (!equivalenceNote) return
+    const packs = new Map<string, JoinerPack>()
+    for (const hero of selections.values()) {
+      const pack = getJoinerPack(hero.id)
+      if (pack) packs.set(pack.id, pack)
+    }
+    if (packs.size === 0) {
+      equivalenceNote.hidden = true
+      equivalenceNote.replaceChildren()
+      return
+    }
+    equivalenceNote.hidden = false
+    equivalenceNote.replaceChildren(
+      ...[...packs.values()].map((pack) => {
+        const line = document.createElement('span')
+        line.className = 'block'
+        line.textContent = `Same S1 (${pack.effect}): ${joinerPackNames(pack).join(', ')}`
+        return line
+      }),
+    )
+  }
 
   function currentSelection(): Hero | null {
     if (!activeSlot) return null
@@ -80,12 +117,36 @@ export function initJoiners(): void {
     const visual = button.querySelector<HTMLElement>('[data-joiner-visual]')
     const caption = button.querySelector<HTMLElement>('[data-joiner-caption]')
     const typeLabel = button.querySelector<HTMLElement>('[data-joiner-type]')
+    const equivalent = button.querySelector<HTMLElement>('[data-joiner-equivalent]')
+    const equivalentText = button.querySelector<HTMLElement>('[data-joiner-equivalent-text]')
     if (visual) fillHeroVisual(visual, hero)
     if (caption) caption.textContent = hero?.name ?? 'Select'
     if (typeLabel) {
       typeLabel.textContent = hero ? getTroopTypeShortLabel(hero.type) : ''
       typeLabel.hidden = !hero
     }
+
+    const pack = hero ? getJoinerPack(hero.id) : null
+    const mates = hero ? getJoinerPackMates(hero.id) : []
+    if (equivalent) {
+      equivalent.hidden = mates.length === 0
+      if (pack && mates.length > 0) {
+        equivalent.title = `Same S1 (${pack.effect}): ${joinerPackNames(pack).join(', ')}`
+      } else {
+        equivalent.removeAttribute('title')
+      }
+    }
+    if (equivalentText) {
+      equivalentText.textContent =
+        pack && mates.length > 0
+          ? `Same S1 as ${mates.map((mate) => mate.name).join(', ')} (${pack.effect}).`
+          : ''
+    }
+    button.title =
+      pack && mates.length > 0
+        ? `Same S1: ${joinerPackNames(pack).join(', ')} (${pack.effect})`
+        : ''
+
     button.dataset['joinerSelected'] = hero ? 'true' : 'false'
   }
 
@@ -99,6 +160,7 @@ export function initJoiners(): void {
     const index = Number(activeSlot.dataset['joinerIndex'])
     selections.set(slotKey(side, index), hero)
     renderSlot(activeSlot)
+    renderPackNote()
     closePicker()
   }
 
@@ -108,12 +170,15 @@ export function initJoiners(): void {
     const index = Number(activeSlot.dataset['joinerIndex'])
     selections.delete(slotKey(side, index))
     renderSlot(activeSlot)
+    renderPackNote()
     closePicker()
   }
 
   function renderOptions(): void {
     const query = search.value
-    const heroes = filterHeroes(getAllHeroes(maxGeneration), query)
+    const allHeroes = getAllHeroes(maxGeneration)
+    const matching = filterHeroes(allHeroes, query)
+    const heroes = expandJoinerMatches(allHeroes, matching, (hero) => hero.id)
     const current = currentSelection()
     const nodes: HTMLElement[] = []
 
@@ -129,17 +194,36 @@ export function initJoiners(): void {
       return
     }
 
-    options.replaceChildren(
-      ...nodes,
-      ...heroes.map((hero) =>
+    const groups = groupJoinerItems(heroes, (hero) => hero.id)
+    for (const group of groups) {
+      if (group.pack && group.items.length > 1) {
+        nodes.push(
+          createHeroPackOption({
+            kind: 'joiner',
+            pack: group.pack,
+            members: group.items.map((hero) => ({
+              hero,
+              selected: current?.id === hero.id,
+              onSelect: () => selectHero(hero),
+            })),
+          }),
+        )
+        continue
+      }
+
+      const hero = group.items[0]
+      if (!hero) continue
+      nodes.push(
         createHeroOption(hero, {
           kind: 'joiner',
           selected: current?.id === hero.id,
           showType: true,
           onSelect: selectHero,
         }),
-      ),
-    )
+      )
+    }
+
+    options.replaceChildren(...nodes)
   }
 
   function openPicker(slot: HTMLButtonElement): void {
@@ -182,6 +266,7 @@ export function initJoiners(): void {
       renderSlot(slot)
     }
 
+    renderPackNote()
     if (hasSelection) setJoinersExpanded?.(true)
     if (dialog.open) renderOptions()
   }

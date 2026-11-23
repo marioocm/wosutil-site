@@ -183,6 +183,22 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Ghost: no border, muted text that darkens on hover.
 - Disabled primary: `--tint` background with muted text (no opacity wash).
 
+### Segmented toggle
+
+- Shared control (`src/components/segmented-toggle.ts`) built on native radios
+  inside a `fieldset` with a visually hidden legend.
+- Compact bordered track on `--background`, 4px radius and 2px inset, with
+  equal-width segments. A single inverted thumb sits behind the labels and
+  slides between them with the 180ms `cubic-bezier(0.22, 1, 0.36, 1)` motion.
+  Selected labels use `--invert-fg`, the rest stay `--ink-muted`.
+- Sizes: `default` uses 12px labels; `compact` uses 10px labels for the archive
+  side rows. Reduced-motion users get instant moves.
+- Used by the archive mode filter (Any / Rally / 1v1), the archive result
+  toggle (Any / Attacker / Defender / Draw), the archive survivors toggle
+  (Any / <50% / <25% / <10%), the archive hero and joiner side toggle (Any /
+  Attacker / Defender / Both) and the simulator's Optimise Ratio Attacker /
+  Defender switch.
+
 ### Caller panels
 
 - Outlined --paper cards with a single text title.
@@ -256,6 +272,12 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   no query the list stays ordered by generation, newest first and epics last; the
   search filters by name. A leading None option clears the slot. The picker uses
   the same paper panel, backdrop and close control as Hero Comparison.
+- Joiners only apply their S1 skill, so heroes whose S1 is identical are grouped
+  into one `Same S1` pack card with the shared effect in its header; every member
+  stays individually selectable. Epics come first, then legendaries from oldest
+  to newest generation. Searching for one member shows the full pack. A selected
+  slot shows a small `=` badge in the tile, and the expanded card lists each
+  active pack (`Same S1 (<effect>): <names>`) below the two grids.
 
 ### Troop Power
 
@@ -342,17 +364,14 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Outlined --paper card directly below the Simulation card in the right
   sidebar: a centered inverted `Optimise Ratio` button and a two-segment
-  Left / Right toggle beneath it. Left is selected by default.
-- The toggle is a compact bordered track on `--background` (smaller than the
-  button, 12px labels) with 4px radius and two equal segments. A single white
-  thumb sits behind the labels and slides between them with the same 180ms
-  `cubic-bezier(0.22, 1, 0.36, 1)` motion as the header underline, moving only
-  when the selection changes. Native radios provide keyboard and
-  screen-reader behavior. Reduced-motion users get instant moves.
-- Pressing the button posts the current engine case to `/v1/optimize-ratio` for
-  the selected side. Results stay hidden until a run succeeds, then expand from
-  the button with the same 220ms height motion as the Simulation card. Repeat
-  runs update the panel in place; switching sides collapses it.
+  Attacker / Defender toggle beneath it. Attacker is selected by default.
+- The toggle is the shared segmented control at its default size, 10rem wide.
+  It uses native radios and the sliding inverted thumb described above; the
+  selection moves only when it changes. Pressing the button posts the current
+  engine case to `/v1/optimize-ratio` for the selected side. Results stay hidden
+  until a run succeeds, then expand from the button with the same 220ms height
+  motion as the Simulation card. Repeat runs update the panel in place;
+  switching sides collapses it.
 - The panel starts with the optimised side, then a three-column table with the
   ranked ratios (mono `inf:lan:mar`), the percentage of seeds won (`Win %`) and
   the mean survivor-rate difference (`Margin`, signed). The ratios stay on the
@@ -371,7 +390,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Battle Reports filters
 
 - Outlined --paper sidebar card with a `Filters` heading and a muted `Clear`
-  action. The first control is a full-width generation trigger (`All gens` by
+  action. The first control is a full-width `Mode` toggle (`Any` / `Rally` /
+  `1v1`, Any by default) using the shared segmented control. `Rally` requires a
+  joiner on either side; `1v1` requires none.
+- The next control is a full-width generation trigger (`All gens` by
   default or `Gen N or older`) that opens the same paper `<dialog>` picker as the
   simulator: a full-width `All gens` option followed by a three-column grid of
   `Gen 1–N` buttons, with the current bound selected. Picking a generation is an
@@ -381,8 +403,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Hero and Joiner are stacks of full-width trigger rows. Hero allows up to 6
   selected heroes; Joiner allows up to 8 selected joiners. Each selected row
   shows the portrait and name plus a four-segment `Any` / `Attacker` /
-  `Defender` / `Both` toggle (Any by default) that constrains which side must
-  hold that hero. `Both` requires the hero on the attacker and defender sides.
+  `Defender` / `Both` toggle (Any by default) built from the shared segmented
+  control that constrains which side must hold that hero. `Both` requires the
+  hero on the attacker and defender sides.
   An empty `Any hero` / `Any joiner` row appears below while there is room,
   so every selection adds another slot. A selected row has an X control next to
   the picker chevron that removes that filter directly. All selected entries are
@@ -392,11 +415,27 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   ordered newest generation first, epics last, hide heroes newer than the
   selected generation, and hide heroes already used by another row. A leading
   `Any hero` / `Any joiner` row clears that selection. Both pickers are disabled
-  until `/v1/meta` returns the archive's hero lists.
-- Result, Tier and Furnace stay compact native selects; Furnace keeps `FC0` for
-  troops with no fire crystal. Result options with no reports in the archive are
-  hidden (the archive currently has no `No wipe` reports). The `Has T12 skill`
-  checkbox closes the card.
+  until `/v1/meta` returns the archive's hero lists. Joiner options group heroes
+  with the same S1 into `Same S1` pack cards. In the report detail, hovering a
+  joiner shows its S1 effect and the heroes that are interchangeable with it.
+- Tier and FC use two side-by-side range controls (`Min` and `Max`), each a
+  square tier tile with an overlapping FC hexagon in the simulator's Troop Power
+  style. All four values start at `Any`; clicking a tile or hexagon opens a paper
+  `<dialog>` picker with an `Any tier` / `Any FC level` option followed by the
+  T1-T12 or FC0-FC10 grid. Choosing a value fills the control, and choosing
+  `Any` clears that bound. Both controls come from
+  `src/components/troop-level-control.ts`. The API compares the report's highest
+  tier and that tier's FC - the values shown on the cards - so `FC0` keeps
+  meaning troops with no fire crystal.
+- Result is a four-segment `Any` / `Attacker` / `Defender` / `Draw` toggle
+  (Any by default) using the shared segmented control at compact size. A result
+  with no reports in `/v1/meta` resets the filter to `Any`; `No wipe` is not an
+  option.
+- Survivors sits directly below Result: a four-segment `Any` / `<50%` / `<25%` /
+  `<10%` toggle. It keeps fights where the surviving army ends under that share
+  of its own troops. One side always ends wiped, so this is also the battle's
+  survivor total. `Any` clears the cap.
+- The `Has T12 skill` checkbox closes the card.
 - Report cards show `FC0` when the report has troops but no fire crystal level,
   and Gen `—` only when no main hero or joiner is recognized.
 

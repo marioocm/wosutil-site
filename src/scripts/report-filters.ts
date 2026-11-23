@@ -2,24 +2,71 @@ import {
   bindPickerKeyboard,
   createClearOption,
   createHeroOption,
+  createHeroPackOption,
+  createNoHeroesOption,
 } from '../components/hero-option'
+import { createSegmentedToggle } from '../components/segmented-toggle'
+import { createTroopLevelControl } from '../components/troop-level-control'
 import { fillHeroVisual } from '../components/hero-visual'
 import { HEROES, getHeroByName, isHeroAvailable, type Hero } from '../lib/heroes'
+import { expandJoinerMatches, groupJoinerItems } from '../lib/joiner-packs'
 import {
+  NO_HEROES_FILTER,
+  REPORT_FC_RANGE,
   REPORT_FILTER_SIDES,
+  REPORT_MODES,
+  REPORT_TIER_RANGE,
   generationFilterLabel,
+  heroFilterLabel,
   heroName,
-  isReportFilterSide,
+  isNoHeroesFilter,
+  isReportMode,
+  normalizeHeroFilters,
   parseGeneration,
+  parseLevelBound,
   parseReportFilterEntry,
+  parseSurvivors,
   reportFilterSideLabel,
+  reportModeLabel,
   type ReportFilters,
   type ReportFilterSide,
   type ReportHeroFilter,
   type ReportMeta,
+  type ReportMode,
 } from '../lib/reports'
 
 type PickerKind = 'hero' | 'joiner'
+type ResultFilter = 'any' | 'attacker' | 'defender' | 'draw'
+type SurvivorFilter = 'any' | '50' | '25' | '10'
+
+const RESULT_FILTER_OPTIONS: ReadonlyArray<{ value: ResultFilter; label: string }> = [
+  { value: 'any', label: 'Any' },
+  { value: 'attacker', label: 'Attacker' },
+  { value: 'defender', label: 'Defender' },
+  { value: 'draw', label: 'Draw' },
+]
+
+const SURVIVOR_FILTER_OPTIONS: ReadonlyArray<{ value: SurvivorFilter; label: string }> = [
+  { value: 'any', label: 'Any' },
+  { value: '50', label: '<50%' },
+  { value: '25', label: '<25%' },
+  { value: '10', label: '<10%' },
+]
+
+function isResultFilter(value: string | null | undefined): value is Exclude<ResultFilter, 'any'> {
+  return value === 'attacker' || value === 'defender' || value === 'draw'
+}
+
+function resultFilterValue(result: string | undefined): ResultFilter {
+  return isResultFilter(result) ? result : 'any'
+}
+
+function survivorFilterValue(value: number | undefined): SurvivorFilter {
+  if (value === 50) return '50'
+  if (value === 25) return '25'
+  if (value === 10) return '10'
+  return 'any'
+}
 
 interface HeroChoice {
   /** Archive name sent to the API (lower case). */
@@ -48,10 +95,6 @@ const ROW_CLEAR_CLASS =
 const ROW_VISUAL_CLASS =
   'relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted'
 const ROW_VALUE_CLASS = 'min-w-0 flex-1 truncate'
-const SIDE_GROUP_CLASS =
-  'grid grid-cols-4 gap-0.5 rounded-sm border border-line bg-paper p-0.5'
-const SIDE_BUTTON_CLASS =
-  'cursor-pointer rounded-xs px-1 py-1 text-[10px] leading-none text-ink-muted transition-colors hover:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 function must<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector)
@@ -109,13 +152,33 @@ function readEntries(
 
 function initialFilters(): ReportFilters {
   const params = new URLSearchParams(window.location.search)
+  const mode = params.get('mode') ?? ''
+  const result = params.get('result')
+  const legacyTier = parseLevelBound(params.get('tier'), ...REPORT_TIER_RANGE)
+  const legacyFc = parseLevelBound(params.get('fc'), ...REPORT_FC_RANGE)
   return {
-    heroes: readEntries(params, 'hero', MAX_FILTERS.hero),
+    heroes: normalizeHeroFilters(readEntries(params, 'hero', MAX_FILTERS.hero)),
     joiners: readEntries(params, 'joiner', MAX_FILTERS.joiner),
-    result: params.get('result') || '',
-    tier: params.get('tier') || '',
-    fc: params.get('fc') || '',
+    mode: isReportMode(mode) ? mode : undefined,
+    result: isResultFilter(result) ? result : '',
+    tier_min:
+      parseLevelBound(params.get('tier_min'), ...REPORT_TIER_RANGE) ??
+      legacyTier ??
+      undefined,
+    tier_max:
+      parseLevelBound(params.get('tier_max'), ...REPORT_TIER_RANGE) ??
+      legacyTier ??
+      undefined,
+    fc_min:
+      parseLevelBound(params.get('fc_min'), ...REPORT_FC_RANGE) ??
+      legacyFc ??
+      undefined,
+    fc_max:
+      parseLevelBound(params.get('fc_max'), ...REPORT_FC_RANGE) ??
+      legacyFc ??
+      undefined,
     max_gen: parseGeneration(params.get('max_gen')) ?? undefined,
+    max_survivors: parseSurvivors(params.get('max_survivors')) ?? undefined,
     has_t12: params.get('has_t12') === 'true',
   }
 }
@@ -161,7 +224,10 @@ export function initReportFilters(
   if (!root) throw new Error('Missing reports root')
 
   const form = must<HTMLFormElement>(root, '[data-report-filters]')
-  const resultSelect = must<HTMLSelectElement>(form, 'select[name="result"]')
+  const modeRoot = must<HTMLElement>(form, '[data-report-mode]')
+  const resultRoot = must<HTMLElement>(form, '[data-report-result]')
+  const survivorRoot = must<HTMLElement>(form, '[data-report-survivors]')
+  const levelRoot = must<HTMLElement>(form, '[data-report-level-range]')
   const generationTrigger = must<HTMLButtonElement>(root, '[data-report-generation-trigger]')
   const generationValue = must<HTMLElement>(root, '[data-report-generation-value]')
   const generationDialog = must<HTMLDialogElement>(root, '#report-generation-picker')
@@ -184,6 +250,67 @@ export function initReportFilters(
   let activeIndex = 0
   let activeTrigger: HTMLButtonElement | null = null
 
+  const modeToggle = createSegmentedToggle<'any' | ReportMode>({
+    name: 'report-mode',
+    label: 'Battle mode',
+    options: [
+      { value: 'any', label: 'Any' },
+      ...REPORT_MODES.map((value) => ({ value, label: reportModeLabel(value) })),
+    ],
+    value: filters.mode ?? 'any',
+    onChange: (value) => {
+      filters.mode = value === 'any' ? undefined : value
+      notify()
+    },
+  })
+  modeRoot.replaceChildren(modeToggle.element)
+
+  const resultToggle = createSegmentedToggle<ResultFilter>({
+    name: 'report-result',
+    label: 'Battle result',
+    options: RESULT_FILTER_OPTIONS,
+    value: resultFilterValue(filters.result),
+    size: 'compact',
+    onChange: (value) => {
+      filters.result = value === 'any' ? '' : value
+      notify()
+    },
+  })
+  resultRoot.replaceChildren(resultToggle.element)
+
+  const survivorToggle = createSegmentedToggle<SurvivorFilter>({
+    name: 'report-survivors',
+    label: 'Survivors',
+    options: SURVIVOR_FILTER_OPTIONS,
+    value: survivorFilterValue(filters.max_survivors),
+    size: 'compact',
+    onChange: (value) => {
+      filters.max_survivors = value === 'any' ? undefined : Number(value)
+      notify()
+    },
+  })
+  survivorRoot.replaceChildren(survivorToggle.element)
+
+  const minLevel = createTroopLevelControl({
+    label: 'Min',
+    value: { tier: filters.tier_min ?? null, fc: filters.fc_min ?? null },
+    onChange: (value) => {
+      filters.tier_min = value.tier ?? undefined
+      filters.fc_min = value.fc ?? undefined
+      notify()
+    },
+  })
+  const maxLevel = createTroopLevelControl({
+    label: 'Max',
+    value: { tier: filters.tier_max ?? null, fc: filters.fc_max ?? null },
+    onChange: (value) => {
+      filters.tier_max = value.tier ?? undefined
+      filters.fc_max = value.fc ?? undefined
+      notify()
+    },
+  })
+  levelRoot.replaceChildren(minLevel.element, maxLevel.element)
+
   function currentChoices(): HeroChoice[] {
     return mode === 'hero' ? heroChoices : joinerChoices
   }
@@ -205,10 +332,6 @@ export function initReportFilters(
   }
 
   function syncForm(): void {
-    for (const key of ['result', 'tier', 'fc'] as const) {
-      const field = form.elements.namedItem(key)
-      if (field instanceof HTMLSelectElement) field.value = filters[key] ?? ''
-    }
     const t12 = form.elements.namedItem('has_t12')
     if (t12 instanceof HTMLInputElement) t12.checked = Boolean(filters.has_t12)
   }
@@ -254,19 +377,24 @@ export function initReportFilters(
     trigger.disabled = !metaReady
     trigger.setAttribute('aria-haspopup', 'dialog')
     trigger.setAttribute('aria-controls', 'report-picker')
+    const label = entry ? heroFilterLabel(entry) : `Any ${kind}`
     trigger.setAttribute(
       'aria-label',
-      entry ? `Filter by ${kind}: ${heroName(entry.name)}` : `Add ${kind}`,
+      entry ? `Filter by ${kind}: ${label}` : `Add ${kind}`,
     )
 
     const visual = document.createElement('span')
     visual.className = ROW_VISUAL_CLASS
     visual.setAttribute('aria-hidden', 'true')
-    fillHeroVisual(visual, entry ? choiceFor(entry.name).hero : null)
+    if (entry && isNoHeroesFilter(entry)) {
+      visual.textContent = '—'
+    } else {
+      fillHeroVisual(visual, entry ? choiceFor(entry.name).hero : null)
+    }
 
     const value = document.createElement('span')
     value.className = ROW_VALUE_CLASS
-    value.textContent = entry ? heroName(entry.name) : `Any ${kind}`
+    value.textContent = label
 
     trigger.append(visual, value, chevronIcon())
 
@@ -281,7 +409,10 @@ export function initReportFilters(
       clear.dataset['reportRowClear'] = 'true'
       clear.dataset['reportRowClearKind'] = kind
       clear.dataset['index'] = String(index)
-      clear.setAttribute('aria-label', `Remove ${kind} ${heroName(entry.name)}`)
+      clear.setAttribute(
+        'aria-label',
+        isNoHeroesFilter(entry) ? 'Remove No heroes filter' : `Remove ${kind} ${label}`,
+      )
       clear.title = `Remove ${kind}`
       clear.append(closeIcon())
       top.append(clear)
@@ -289,24 +420,19 @@ export function initReportFilters(
 
     row.append(top)
 
-    if (entry) {
-      const group = document.createElement('div')
-      group.className = SIDE_GROUP_CLASS
-      group.setAttribute('role', 'group')
-      group.setAttribute('aria-label', `${kind === 'hero' ? 'Hero' : 'Joiner'} side`)
-      for (const side of REPORT_FILTER_SIDES) {
-        const button = document.createElement('button')
-        button.type = 'button'
-        button.className = SIDE_BUTTON_CLASS
-        button.dataset['reportSide'] = side
-        button.dataset['reportSideKind'] = kind
-        button.dataset['index'] = String(index)
-        button.dataset['selected'] = entry.side === side ? 'true' : 'false'
-        button.setAttribute('aria-pressed', entry.side === side ? 'true' : 'false')
-        button.textContent = reportFilterSideLabel(side)
-        group.append(button)
-      }
-      row.append(group)
+    if (entry && !isNoHeroesFilter(entry)) {
+      const sideToggle = createSegmentedToggle<ReportFilterSide>({
+        name: `report-side-${kind}-${index}`,
+        label: `${kind === 'hero' ? 'Hero' : 'Joiner'} side`,
+        options: REPORT_FILTER_SIDES.map((side) => ({
+          value: side,
+          label: reportFilterSideLabel(side),
+        })),
+        value: entry.side,
+        size: 'compact',
+        onChange: (side) => selectSide(kind, index, side),
+      })
+      row.append(sideToggle.element)
     }
 
     return row
@@ -315,7 +441,8 @@ export function initReportFilters(
   function renderRows(kind: PickerKind): void {
     const entries = entriesFor(kind)
     const rows = entries.map((entry, index) => buildRow(kind, entry, index))
-    if (entries.length < MAX_FILTERS[kind]) {
+    const exclusive = kind === 'hero' && entries.some(isNoHeroesFilter)
+    if (!exclusive && entries.length < MAX_FILTERS[kind]) {
       rows.push(buildRow(kind, null, entries.length))
     }
     rowContainer(kind).replaceChildren(...rows)
@@ -328,13 +455,9 @@ export function initReportFilters(
   }
 
   function applyResultAvailability(meta: ReportMeta): void {
-    for (const option of resultSelect.options) {
-      if (!option.value) continue
-      option.hidden = !meta.results[option.value]
-    }
     if (filters.result && !meta.results[filters.result]) {
       filters.result = ''
-      resultSelect.value = ''
+      resultToggle.setValue('any', true)
       notify()
     }
   }
@@ -376,8 +499,10 @@ export function initReportFilters(
   function selectGeneration(value: number | null): void {
     const max = value ?? null
     filters.max_gen = value ?? undefined
-    filters.heroes = (filters.heroes ?? []).filter((entry) =>
-      isHeroAvailable(choiceFor(entry.name).hero, max),
+    filters.heroes = normalizeHeroFilters(
+      (filters.heroes ?? []).filter((entry) =>
+        isHeroAvailable(choiceFor(entry.name).hero, max),
+      ),
     )
     filters.joiners = (filters.joiners ?? []).filter((entry) =>
       isHeroAvailable(choiceFor(entry.name).hero, max),
@@ -418,12 +543,15 @@ export function initReportFilters(
         .filter((_, index) => index !== activeIndex)
         .map((entry) => entry.name),
     )
-    const available = currentChoices().filter(
-      (choice) =>
-        isHeroAvailable(choice.hero, filters.max_gen ?? null) &&
-        matchesQuery(choice, query),
+    const available = currentChoices().filter((choice) =>
+      isHeroAvailable(choice.hero, filters.max_gen ?? null),
     )
-    const choices = available.filter((choice) => !used.has(choice.value))
+    const matching = available.filter((choice) => matchesQuery(choice, query))
+    const expanded =
+      mode === 'joiner'
+        ? expandJoinerMatches(available, matching, (choice) => choice.hero.id)
+        : matching
+    const choices = expanded.filter((choice) => !used.has(choice.value))
     const nodes: HTMLElement[] = []
     if (query.trim() === '' && current) {
       nodes.push(
@@ -435,12 +563,21 @@ export function initReportFilters(
         }),
       )
     }
+    if (mode === 'hero' && query.trim() === '') {
+      nodes.push(
+        createNoHeroesOption({
+          kind: 'report',
+          selected: current ? isNoHeroesFilter(current) : false,
+          onSelect: () => selectPickerValue(NO_HEROES_FILTER),
+        }),
+      )
+    }
 
     if (choices.length === 0) {
       const empty = document.createElement('p')
       empty.className = 'p-3 text-center text-p3 text-ink-muted'
       empty.textContent =
-        available.length > 0
+        matching.length > 0
           ? `All matching ${mode === 'hero' ? 'heroes' : 'joiners'} are already selected.`
           : filters.max_gen
             ? `No ${mode === 'hero' ? 'heroes' : 'joiners'} in Gen ${filters.max_gen} or older.`
@@ -449,16 +586,50 @@ export function initReportFilters(
       return
     }
 
-    pickerOptions.replaceChildren(
-      ...nodes,
-      ...choices.map((choice) =>
+    if (mode === 'hero') {
+      pickerOptions.replaceChildren(
+        ...nodes,
+        ...choices.map((choice) =>
+          createHeroOption(choice.hero, {
+            kind: 'report',
+            selected: current?.name === choice.value,
+            onSelect: () => selectPickerValue(choice.value),
+          }),
+        ),
+      )
+      return
+    }
+
+    const groups = groupJoinerItems(choices, (choice) => choice.hero.id)
+    const items: HTMLElement[] = []
+    for (const group of groups) {
+      if (group.pack && group.items.length > 1) {
+        items.push(
+          createHeroPackOption({
+            kind: 'report',
+            pack: group.pack,
+            members: group.items.map((choice) => ({
+              hero: choice.hero,
+              selected: current?.name === choice.value,
+              onSelect: () => selectPickerValue(choice.value),
+            })),
+          }),
+        )
+        continue
+      }
+
+      const choice = group.items[0]
+      if (!choice) continue
+      items.push(
         createHeroOption(choice.hero, {
           kind: 'report',
           selected: current?.name === choice.value,
           onSelect: () => selectPickerValue(choice.value),
         }),
-      ),
-    )
+      )
+    }
+
+    pickerOptions.replaceChildren(...nodes, ...items)
   }
 
   function rowTrigger(kind: PickerKind, index: number): HTMLButtonElement | null {
@@ -468,6 +639,14 @@ export function initReportFilters(
   }
 
   function selectPickerValue(name: string): void {
+    if (mode === 'hero' && name === NO_HEROES_FILTER) {
+      filters.heroes = normalizeHeroFilters([{ name, side: 'any' }])
+      renderRows('hero')
+      activeTrigger = rowTrigger('hero', 0)
+      if (pickerDialog.open) pickerDialog.close()
+      notify()
+      return
+    }
     const entries = entriesFor(mode)
     if (activeIndex < entries.length) {
       entries[activeIndex] = { ...entries[activeIndex], name }
@@ -505,16 +684,8 @@ export function initReportFilters(
   function selectSide(kind: PickerKind, index: number, side: ReportFilterSide): void {
     const entries = entriesFor(kind)
     const entry = entries[index]
-    if (!entry || entry.side === side) return
+    if (!entry || isNoHeroesFilter(entry) || entry.side === side) return
     entry.side = side
-    for (const button of rowContainer(kind).querySelectorAll<HTMLButtonElement>(
-      '[data-report-side]',
-    )) {
-      if (Number(button.dataset['index']) !== index) continue
-      const selected = button.dataset['reportSide'] === side
-      button.dataset['selected'] = selected ? 'true' : 'false'
-      button.setAttribute('aria-pressed', selected ? 'true' : 'false')
-    }
     notify()
   }
 
@@ -530,7 +701,9 @@ export function initReportFilters(
     pickerTitle.textContent = existing ? `Replace ${kind}` : `Add ${kind}`
     pickerSubtitle.textContent =
       kind === 'hero'
-        ? 'Main hero · attacker or defender side'
+        ? existing && isNoHeroesFilter(existing)
+          ? 'No main hero on either side'
+          : 'Main hero · attacker or defender side'
         : 'Rally joiner · attacker or defender side'
     pickerSearch.placeholder = kind === 'hero' ? 'Search heroes' : 'Search joiners'
     pickerSearch.setAttribute(
@@ -551,15 +724,6 @@ export function initReportFilters(
       if (Number.isInteger(index)) clearEntry(kind, index)
       return
     }
-    const sideButton = event.target.closest<HTMLButtonElement>('[data-report-side]')
-    if (sideButton && sideButton.dataset['reportSideKind'] === kind) {
-      const index = Number(sideButton.dataset['index'])
-      const side = sideButton.dataset['reportSide']
-      if (Number.isInteger(index) && side && isReportFilterSide(side)) {
-        selectSide(kind, index, side)
-      }
-      return
-    }
     const trigger = event.target.closest<HTMLButtonElement>('[data-report-row-trigger]')
     if (trigger && trigger.dataset['reportRowTrigger'] === kind) {
       openPicker(kind, Number(trigger.dataset['index']), trigger)
@@ -568,6 +732,11 @@ export function initReportFilters(
 
   function resetFilters(): void {
     filters = {}
+    modeToggle.setValue('any', true)
+    resultToggle.setValue('any', true)
+    survivorToggle.setValue('any', true)
+    minLevel.setValue({ tier: null, fc: null }, true)
+    maxLevel.setValue({ tier: null, fc: null }, true)
     syncForm()
     renderTriggers()
     if (pickerDialog.open) pickerDialog.close()
@@ -578,8 +747,10 @@ export function initReportFilters(
   buildGenerationOptions()
   if (filters.max_gen) {
     filters.max_gen = Math.min(filters.max_gen, maxHeroGeneration())
-    filters.heroes = (filters.heroes ?? []).filter((entry) =>
-      isHeroAvailable(choiceFor(entry.name).hero, filters.max_gen ?? null),
+    filters.heroes = normalizeHeroFilters(
+      (filters.heroes ?? []).filter((entry) =>
+        isHeroAvailable(choiceFor(entry.name).hero, filters.max_gen ?? null),
+      ),
     )
     filters.joiners = (filters.joiners ?? []).filter((entry) =>
       isHeroAvailable(choiceFor(entry.name).hero, filters.max_gen ?? null),
@@ -655,10 +826,15 @@ export function initReportFilters(
   bindPickerKeyboard(pickerOptions, 'report')
 
   form.addEventListener('submit', (event) => event.preventDefault())
-  form.addEventListener('change', () => {
-    filters.result = (form.elements.namedItem('result') as HTMLSelectElement | null)?.value ?? ''
-    filters.tier = (form.elements.namedItem('tier') as HTMLSelectElement | null)?.value ?? ''
-    filters.fc = (form.elements.namedItem('fc') as HTMLSelectElement | null)?.value ?? ''
+  form.addEventListener('change', (event) => {
+    if (
+      event.target instanceof Element &&
+      event.target.closest(
+        '[data-report-mode], [data-report-row], [data-report-result], [data-report-survivors]',
+      )
+    ) {
+      return
+    }
     filters.has_t12 =
       (form.elements.namedItem('has_t12') as HTMLInputElement | null)?.checked ?? false
     notify()
