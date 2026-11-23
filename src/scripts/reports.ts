@@ -625,6 +625,12 @@ export function initReports(): void {
   const desktopLayout = window.matchMedia('(min-width: 1024px)')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
 
+  // A native modal does not lock the page scroll on its own, so a wheel over
+  // the backdrop would still scroll the archive behind the report.
+  const setPageScrollLocked = (locked: boolean): void => {
+    document.documentElement.classList.toggle('rp-report-open', locked)
+  }
+
   const showBattleDetails = (panel: HTMLElement): void => {
     panel.hidden = false
     panel.removeAttribute('aria-hidden')
@@ -852,7 +858,10 @@ export function initReports(): void {
       detailRoot.innerHTML = renderDetail(detail)
       dialogMeta.textContent = detailKicker(detail)
       syncBattleDetails()
-      if (!dialog.open) dialog.showModal()
+      if (!dialog.open) {
+        dialog.showModal()
+        setPageScrollLocked(true)
+      }
       if (push) window.history.pushState({ id }, '', `${BASE}reports/${id}/`)
       setStatus('')
     } catch (error) {
@@ -888,6 +897,7 @@ export function initReports(): void {
     if (event.target === dialog) closeDetail()
   })
   dialog.addEventListener('close', () => {
+    setPageScrollLocked(false)
     if (state.currentId) closeDetail(false)
   })
   const joinerChip = (target: EventTarget | null): HTMLElement | null =>
