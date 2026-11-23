@@ -10,6 +10,7 @@ import {
   formatSkill,
   generationFilterLabel,
   generationLabel,
+  hasReportFilterQuery,
   heroFilterLabel,
   heroName,
   isNoHeroesFilter,
@@ -22,12 +23,14 @@ import {
   parseReportFilterEntry,
   parseSurvivors,
   ratioText,
+  readStoredReportFilterQuery,
   reportFilterEntryValue,
   reportFilterSideLabel,
   reportGeneration,
   reportModeLabel,
   resultLabel,
   simulatorBattlePath,
+  storeReportFilterQuery,
   survivorRate,
 } from './reports'
 
@@ -220,6 +223,49 @@ describe('reports helpers', () => {
   it('keeps filterQuery free of pagination parameters', () => {
     const params = filterQuery({ heroes: [{ name: 'hank', side: 'any' }] })
     expect(params.toString()).toBe('hero=hank')
+  })
+
+  it('detects archive filters in a query string', () => {
+    expect(hasReportFilterQuery(new URLSearchParams('hero=hank'))).toBe(true)
+    expect(hasReportFilterQuery(new URLSearchParams('mode=rally&has_t12=true'))).toBe(
+      true,
+    )
+    expect(hasReportFilterQuery(new URLSearchParams('tier=11&fc=9'))).toBe(true)
+    expect(hasReportFilterQuery(new URLSearchParams('id=68b10c6c6f8d30a0'))).toBe(
+      false,
+    )
+    expect(hasReportFilterQuery(new URLSearchParams())).toBe(false)
+  })
+
+  it('keeps the applied filters in storage between page loads', () => {
+    const data = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => void data.set(key, value),
+      removeItem: (key: string) => void data.delete(key),
+    }
+
+    expect(readStoredReportFilterQuery(storage)).toBe('')
+    storeReportFilterQuery('hero=hank&mode=rally', storage)
+    expect(readStoredReportFilterQuery(storage)).toBe('hero=hank&mode=rally')
+    storeReportFilterQuery('', storage)
+    expect(readStoredReportFilterQuery(storage)).toBe('')
+  })
+
+  it('ignores unavailable storage', () => {
+    const broken = {
+      getItem: (): string => {
+        throw new Error('blocked')
+      },
+      setItem: (): void => {
+        throw new Error('blocked')
+      },
+      removeItem: (): void => {
+        throw new Error('blocked')
+      },
+    }
+    expect(readStoredReportFilterQuery(broken)).toBe('')
+    expect(() => storeReportFilterQuery('hero=hank', broken)).not.toThrow()
   })
 
   it('models the exclusive no-heroes hero filter', () => {

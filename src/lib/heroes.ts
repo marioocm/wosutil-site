@@ -130,6 +130,16 @@ const HERO_ALIASES: Record<string, string> = {
   bokan: 'lumak-bokan',
 }
 
+/** Display name used by the archive for heroes whose in-game name differs. */
+const ARCHIVE_HERO_NAMES: Record<string, string> = {
+  'lumak-bokan': 'bokan',
+}
+
+/** The lower-case name the reports archive stores for one hero. */
+export function getArchiveHeroName(hero: Hero): string {
+  return ARCHIVE_HERO_NAMES[hero.id] ?? hero.name.trim().toLowerCase()
+}
+
 export function getHeroByName(name: string): Hero | null {
   const normalized = normalizeSearch(name)
   const alias = HERO_ALIASES[normalized]

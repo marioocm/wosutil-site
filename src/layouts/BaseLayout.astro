@@ -21,6 +21,14 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefin
     <meta name="description" content={description} />
     <meta name="theme-color" content="#151311" />
     <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
+    {
+      !countdown && (
+        <>
+          <link rel="preconnect" href="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com" />
+          <link rel="dns-prefetch" href="//gom-s3-user-avatar.s3.us-west-2.amazonaws.com" />
+        </>
+      )
+    }
     <link rel="preload" href={primaryFontUrl} as="font" type="font/woff2" crossorigin />
     <style is:inline set:html={fontCss}></style>
     <title>{title}</title>

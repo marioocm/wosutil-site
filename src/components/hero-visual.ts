@@ -15,8 +15,11 @@ export function fillHeroVisual(container: HTMLElement, hero: Hero | null): void 
 
   const image = document.createElement('img')
   image.alt = ''
+  image.width = 32
+  image.height = 32
   image.loading = 'lazy'
   image.decoding = 'async'
+  image.fetchPriority = 'low'
   image.referrerPolicy = 'no-referrer'
   image.draggable = false
   image.className = 'absolute inset-0 h-full w-full object-cover'
