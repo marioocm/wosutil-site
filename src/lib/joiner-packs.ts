@@ -115,6 +115,24 @@ export function joinerPackNames(pack: JoinerPack): string[] {
   })
 }
 
+export type JoinerSortable = Pick<Hero, 'generation' | 'name'>
+
+/** Epics first, then legendaries from oldest to newest generation. */
+export function compareJoinerHeroes(left: JoinerSortable, right: JoinerSortable): number {
+  const leftEpic = left.generation === null
+  const rightEpic = right.generation === null
+  if (leftEpic !== rightEpic) return leftEpic ? -1 : 1
+  if (!leftEpic && !rightEpic) {
+    const generation = (left.generation ?? 0) - (right.generation ?? 0)
+    if (generation !== 0) return generation
+  }
+  return left.name.localeCompare(right.name)
+}
+
+export function sortJoinerHeroes<T extends JoinerSortable>(heroes: readonly T[]): T[] {
+  return [...heroes].sort(compareJoinerHeroes)
+}
+
 export interface JoinerGroup<T> {
   /** Null when the group has a single member after filtering. */
   pack: JoinerPack | null

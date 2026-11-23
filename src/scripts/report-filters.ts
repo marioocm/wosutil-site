@@ -8,8 +8,18 @@ import {
 import { createSegmentedToggle } from '../components/segmented-toggle'
 import { createTroopLevelControl } from '../components/troop-level-control'
 import { fillHeroVisual } from '../components/hero-visual'
-import { HEROES, getHeroByName, isHeroAvailable, type Hero } from '../lib/heroes'
-import { expandJoinerMatches, groupJoinerItems } from '../lib/joiner-packs'
+import {
+  HEROES,
+  getHeroById,
+  getHeroByName,
+  isHeroAvailable,
+  type Hero,
+} from '../lib/heroes'
+import {
+  compareJoinerHeroes,
+  expandJoinerMatches,
+  groupJoinerItems,
+} from '../lib/joiner-packs'
 import {
   NO_HEROES_FILTER,
   REPORT_FC_RANGE,
@@ -100,6 +110,10 @@ function must<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector)
   if (!element) throw new Error(`Missing report filters element: ${selector}`)
   return element
+}
+
+function canonicalHero(hero: Hero): Hero {
+  return getHeroById(hero.id) ?? hero
 }
 
 function choiceFor(name: string): HeroChoice {
@@ -551,7 +565,13 @@ export function initReportFilters(
       mode === 'joiner'
         ? expandJoinerMatches(available, matching, (choice) => choice.hero.id)
         : matching
-    const choices = expanded.filter((choice) => !used.has(choice.value))
+    const ordered =
+      mode === 'joiner'
+        ? [...expanded].sort((left, right) =>
+            compareJoinerHeroes(canonicalHero(left.hero), canonicalHero(right.hero)),
+          )
+        : expanded
+    const choices = ordered.filter((choice) => !used.has(choice.value))
     const nodes: HTMLElement[] = []
     if (query.trim() === '' && current) {
       nodes.push(
