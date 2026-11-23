@@ -3,20 +3,24 @@ import {
   createClearOption,
   createHeroOption,
 } from '../components/hero-option'
+import { createSegmentedToggle } from '../components/segmented-toggle'
 import { fillHeroVisual } from '../components/hero-visual'
 import { HEROES, getHeroByName, isHeroAvailable, type Hero } from '../lib/heroes'
 import {
   REPORT_FILTER_SIDES,
+  REPORT_MODES,
   generationFilterLabel,
   heroName,
-  isReportFilterSide,
+  isReportMode,
   parseGeneration,
   parseReportFilterEntry,
   reportFilterSideLabel,
+  reportModeLabel,
   type ReportFilters,
   type ReportFilterSide,
   type ReportHeroFilter,
   type ReportMeta,
+  type ReportMode,
 } from '../lib/reports'
 
 type PickerKind = 'hero' | 'joiner'
@@ -48,10 +52,6 @@ const ROW_CLEAR_CLASS =
 const ROW_VISUAL_CLASS =
   'relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-tint text-[9px] font-semibold leading-none text-ink-muted'
 const ROW_VALUE_CLASS = 'min-w-0 flex-1 truncate'
-const SIDE_GROUP_CLASS =
-  'grid grid-cols-4 gap-0.5 rounded-sm border border-line bg-paper p-0.5'
-const SIDE_BUTTON_CLASS =
-  'cursor-pointer rounded-xs px-1 py-1 text-[10px] leading-none text-ink-muted transition-colors hover:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 function must<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector)
@@ -109,9 +109,11 @@ function readEntries(
 
 function initialFilters(): ReportFilters {
   const params = new URLSearchParams(window.location.search)
+  const mode = params.get('mode') ?? ''
   return {
     heroes: readEntries(params, 'hero', MAX_FILTERS.hero),
     joiners: readEntries(params, 'joiner', MAX_FILTERS.joiner),
+    mode: isReportMode(mode) ? mode : undefined,
     result: params.get('result') || '',
     tier: params.get('tier') || '',
     fc: params.get('fc') || '',
@@ -162,6 +164,7 @@ export function initReportFilters(
 
   const form = must<HTMLFormElement>(root, '[data-report-filters]')
   const resultSelect = must<HTMLSelectElement>(form, 'select[name="result"]')
+  const modeRoot = must<HTMLElement>(form, '[data-report-mode]')
   const generationTrigger = must<HTMLButtonElement>(root, '[data-report-generation-trigger]')
   const generationValue = must<HTMLElement>(root, '[data-report-generation-value]')
   const generationDialog = must<HTMLDialogElement>(root, '#report-generation-picker')
@@ -183,6 +186,21 @@ export function initReportFilters(
   let mode: PickerKind = 'hero'
   let activeIndex = 0
   let activeTrigger: HTMLButtonElement | null = null
+
+  const modeToggle = createSegmentedToggle<'any' | ReportMode>({
+    name: 'report-mode',
+    label: 'Battle mode',
+    options: [
+      { value: 'any', label: 'Any' },
+      ...REPORT_MODES.map((value) => ({ value, label: reportModeLabel(value) })),
+    ],
+    value: filters.mode ?? 'any',
+    onChange: (value) => {
+      filters.mode = value === 'any' ? undefined : value
+      notify()
+    },
+  })
+  modeRoot.replaceChildren(modeToggle.element)
 
   function currentChoices(): HeroChoice[] {
     return mode === 'hero' ? heroChoices : joinerChoices
@@ -290,23 +308,18 @@ export function initReportFilters(
     row.append(top)
 
     if (entry) {
-      const group = document.createElement('div')
-      group.className = SIDE_GROUP_CLASS
-      group.setAttribute('role', 'group')
-      group.setAttribute('aria-label', `${kind === 'hero' ? 'Hero' : 'Joiner'} side`)
-      for (const side of REPORT_FILTER_SIDES) {
-        const button = document.createElement('button')
-        button.type = 'button'
-        button.className = SIDE_BUTTON_CLASS
-        button.dataset['reportSide'] = side
-        button.dataset['reportSideKind'] = kind
-        button.dataset['index'] = String(index)
-        button.dataset['selected'] = entry.side === side ? 'true' : 'false'
-        button.setAttribute('aria-pressed', entry.side === side ? 'true' : 'false')
-        button.textContent = reportFilterSideLabel(side)
-        group.append(button)
-      }
-      row.append(group)
+      const sideToggle = createSegmentedToggle<ReportFilterSide>({
+        name: `report-side-${kind}-${index}`,
+        label: `${kind === 'hero' ? 'Hero' : 'Joiner'} side`,
+        options: REPORT_FILTER_SIDES.map((side) => ({
+          value: side,
+          label: reportFilterSideLabel(side),
+        })),
+        value: entry.side,
+        size: 'compact',
+        onChange: (side) => selectSide(kind, index, side),
+      })
+      row.append(sideToggle.element)
     }
 
     return row
@@ -507,14 +520,6 @@ export function initReportFilters(
     const entry = entries[index]
     if (!entry || entry.side === side) return
     entry.side = side
-    for (const button of rowContainer(kind).querySelectorAll<HTMLButtonElement>(
-      '[data-report-side]',
-    )) {
-      if (Number(button.dataset['index']) !== index) continue
-      const selected = button.dataset['reportSide'] === side
-      button.dataset['selected'] = selected ? 'true' : 'false'
-      button.setAttribute('aria-pressed', selected ? 'true' : 'false')
-    }
     notify()
   }
 
@@ -551,15 +556,6 @@ export function initReportFilters(
       if (Number.isInteger(index)) clearEntry(kind, index)
       return
     }
-    const sideButton = event.target.closest<HTMLButtonElement>('[data-report-side]')
-    if (sideButton && sideButton.dataset['reportSideKind'] === kind) {
-      const index = Number(sideButton.dataset['index'])
-      const side = sideButton.dataset['reportSide']
-      if (Number.isInteger(index) && side && isReportFilterSide(side)) {
-        selectSide(kind, index, side)
-      }
-      return
-    }
     const trigger = event.target.closest<HTMLButtonElement>('[data-report-row-trigger]')
     if (trigger && trigger.dataset['reportRowTrigger'] === kind) {
       openPicker(kind, Number(trigger.dataset['index']), trigger)
@@ -568,6 +564,7 @@ export function initReportFilters(
 
   function resetFilters(): void {
     filters = {}
+    modeToggle.setValue('any', true)
     syncForm()
     renderTriggers()
     if (pickerDialog.open) pickerDialog.close()
@@ -655,7 +652,13 @@ export function initReportFilters(
   bindPickerKeyboard(pickerOptions, 'report')
 
   form.addEventListener('submit', (event) => event.preventDefault())
-  form.addEventListener('change', () => {
+  form.addEventListener('change', (event) => {
+    if (
+      event.target instanceof Element &&
+      event.target.closest('[data-report-mode], [data-report-row]')
+    ) {
+      return
+    }
     filters.result = (form.elements.namedItem('result') as HTMLSelectElement | null)?.value ?? ''
     filters.tier = (form.elements.namedItem('tier') as HTMLSelectElement | null)?.value ?? ''
     filters.fc = (form.elements.namedItem('fc') as HTMLSelectElement | null)?.value ?? ''
