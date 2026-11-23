@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  averageTroopLevel,
   buildQuery,
   classLabel,
   filterQuery,
@@ -17,7 +18,9 @@ import {
   maxTroopLevel,
   normalizeHeroFilters,
   parseGeneration,
+  parseLevelBound,
   parseReportFilterEntry,
+  parseSurvivors,
   ratioText,
   reportFilterEntryValue,
   reportFilterSideLabel,
@@ -78,6 +81,41 @@ describe('reports helpers', () => {
     expect(ratioText({ infantry: 40, lancer: 30, marksman: 30 })).toBe('40% / 30% / 30%')
   })
 
+  it('averages troop tier and FC with the game truncation', () => {
+    expect(
+      averageTroopLevel([
+        { tier: 12, furnace: 'FC10', count: 896 },
+        { tier: 11, furnace: 'FC10', count: 34_237 },
+        { tier: 10, furnace: 'FC10', count: 1_216 },
+      ]),
+    ).toEqual({ tier: 10.9, fc: 10, maxTier: 12, count: 36_349 })
+
+    expect(
+      averageTroopLevel([
+        { tier: 12, furnace: 'FC10', count: 48_920 },
+        { tier: 11, furnace: 'FC10', count: 39_558 },
+        { tier: 11, furnace: 'FC8', count: 35_521 },
+      ]),
+    ).toEqual({ tier: 11.3, fc: 9, maxTier: 12, count: 123_999 })
+
+    expect(
+      averageTroopLevel([
+        { tier: 12, furnace: 'FC10', count: 100_697 },
+        { tier: 11, furnace: 'FC10', count: 80_974 },
+        { tier: 11, furnace: 'FC8', count: 163_710 },
+        { tier: 10, furnace: 'FC6', count: 39_237 },
+      ]),
+    ).toEqual({ tier: 11.1, fc: 8, maxTier: 12, count: 384_618 })
+
+    expect(averageTroopLevel([{ tier: 10, furnace: '', count: 170_000 }])).toEqual({
+      tier: 10,
+      fc: 0,
+      maxTier: 10,
+      count: 170_000,
+    })
+    expect(averageTroopLevel([])).toEqual({ tier: null, fc: null, maxTier: null, count: 0 })
+  })
+
   it('builds a query with repeated hero and joiner filters', () => {
     const query = buildQuery(
       {
@@ -88,7 +126,12 @@ describe('reports helpers', () => {
         joiners: [{ name: 'mia', side: 'defender' }],
         mode: 'rally',
         result: 'attacker',
+        tier_min: 11,
+        tier_max: 12,
+        fc_min: 0,
+        fc_max: 10,
         max_gen: 10,
+        max_survivors: 25,
         has_t12: true,
       },
       120,
@@ -99,10 +142,37 @@ describe('reports helpers', () => {
     expect(params.getAll('joiner')).toEqual(['mia:defender'])
     expect(params.get('mode')).toBe('rally')
     expect(params.get('result')).toBe('attacker')
+    expect(params.get('tier_min')).toBe('11')
+    expect(params.get('tier_max')).toBe('12')
+    expect(params.get('fc_min')).toBe('0')
+    expect(params.get('fc_max')).toBe('10')
     expect(params.get('max_gen')).toBe('10')
+    expect(params.get('max_survivors')).toBe('25')
     expect(params.get('has_t12')).toBe('true')
     expect(params.get('cursor')).toBe('120')
     expect(params.get('limit')).toBe('24')
+  })
+
+  it('parses optional tier and FC bounds', () => {
+    expect(parseLevelBound('12', 1, 12)).toBe(12)
+    expect(parseLevelBound('0', 0, 10)).toBe(0)
+    expect(parseLevelBound('', 1, 12)).toBeNull()
+    expect(parseLevelBound('13', 1, 12)).toBeNull()
+    expect(parseLevelBound('-1', 0, 10)).toBeNull()
+    expect(parseLevelBound('3.5', 1, 12)).toBeNull()
+    expect(parseLevelBound('abc', 1, 12)).toBeNull()
+  })
+
+  it('parses the survivors cap percentage', () => {
+    expect(parseSurvivors('50')).toBe(50)
+    expect(parseSurvivors('25')).toBe(25)
+    expect(parseSurvivors('10')).toBe(10)
+    expect(parseSurvivors('')).toBeNull()
+    expect(parseSurvivors('0')).toBeNull()
+    expect(parseSurvivors('30')).toBeNull()
+    expect(parseSurvivors('100')).toBeNull()
+    expect(parseSurvivors('12.5')).toBeNull()
+    expect(parseSurvivors('abc')).toBeNull()
   })
 
   it('parses and serializes hero side filters', () => {

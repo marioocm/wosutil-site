@@ -110,9 +110,12 @@ export interface ReportFilters {
   joiners?: ReportHeroFilter[]
   mode?: ReportMode
   result?: string
-  tier?: string
-  fc?: string
+  tier_min?: number
+  tier_max?: number
+  fc_min?: number
+  fc_max?: number
   max_gen?: number
+  max_survivors?: number
   has_t12?: boolean
 }
 
@@ -240,6 +243,33 @@ export function parseGeneration(value: string | null | undefined): number | null
   return Number.isInteger(number) && number > 0 ? number : null
 }
 
+export const REPORT_TIER_RANGE = [1, 12] as const
+
+export const REPORT_FC_RANGE = [0, 10] as const
+
+/** Reads one optional tier/FC bound from a query-string value. */
+export function parseLevelBound(
+  value: string | null | undefined,
+  min: number,
+  max: number,
+): number | null {
+  const text = String(value ?? '').trim()
+  if (!text) return null
+  const number = Number(text)
+  return Number.isInteger(number) && number >= min && number <= max ? number : null
+}
+
+/** Survivors caps offered by the archive toggle (strictly under each value). */
+export const REPORT_SURVIVOR_CAPS = [50, 25, 10] as const
+
+/** Reads the survivors cap percentage ("<50%" is stored as 50). */
+export function parseSurvivors(value: string | null | undefined): number | null {
+  const number = parseLevelBound(value, 1, 100)
+  return number !== null && (REPORT_SURVIVOR_CAPS as readonly number[]).includes(number)
+    ? number
+    : null
+}
+
 export function isReportFilterSide(value: string): value is ReportFilterSide {
   return (REPORT_FILTER_SIDES as readonly string[]).includes(value)
 }
@@ -309,6 +339,52 @@ export function maxTroopLevel(item: {
   }
 }
 
+export function furnaceLevel(value: string | null | undefined): number | null {
+  const text = String(value ?? '')
+    .trim()
+    .toUpperCase()
+  if (!text) return null
+  const digits = text.startsWith('FC') ? text.slice(2) : text
+  return /^\d+$/.test(digits) ? Number(digits) : null
+}
+
+export interface TroopLevelAverages {
+  tier: number | null
+  fc: number | null
+  maxTier: number | null
+  count: number
+}
+
+/**
+ * Count-weighted tier and FC of one troop class, truncated like the game's
+ * troop panel (10.99 -> 10.9, FC 9.99 -> 9). Mixed tiers include every
+ * group; a group with no furnace counts as FC0.
+ */
+export function averageTroopLevel(
+  troops: Array<Pick<Troop, 'tier' | 'furnace' | 'count'>>,
+): TroopLevelAverages {
+  let count = 0
+  let tierSum = 0
+  let fcSum = 0
+  let maxTier: number | null = null
+  for (const troop of troops) {
+    const troopCount = Number(troop.count)
+    const tier = Number(troop.tier)
+    if (!Number.isFinite(troopCount) || troopCount <= 0 || !Number.isFinite(tier)) continue
+    count += troopCount
+    tierSum += tier * troopCount
+    fcSum += (furnaceLevel(troop.furnace) ?? 0) * troopCount
+    if (maxTier === null || tier > maxTier) maxTier = tier
+  }
+  if (count <= 0) return { tier: null, fc: null, maxTier, count: 0 }
+  return {
+    tier: Math.floor((tierSum * 10) / count) / 10,
+    fc: Math.floor(fcSum / count),
+    maxTier,
+    count,
+  }
+}
+
 export function ratioText(ratio: Ratio): string {
   return `${formatShare(ratio.infantry)} / ${formatShare(ratio.lancer)} / ${formatShare(ratio.marksman)}`
 }
@@ -323,9 +399,14 @@ export function filterQuery(filters: ReportFilters): URLSearchParams {
   }
   if (filters.mode) params.set('mode', filters.mode)
   if (filters.result) params.set('result', filters.result)
-  if (filters.tier) params.set('tier', filters.tier)
-  if (filters.fc) params.set('fc', filters.fc)
+  if (filters.tier_min !== undefined) params.set('tier_min', String(filters.tier_min))
+  if (filters.tier_max !== undefined) params.set('tier_max', String(filters.tier_max))
+  if (filters.fc_min !== undefined) params.set('fc_min', String(filters.fc_min))
+  if (filters.fc_max !== undefined) params.set('fc_max', String(filters.fc_max))
   if (filters.max_gen) params.set('max_gen', String(filters.max_gen))
+  if (filters.max_survivors !== undefined) {
+    params.set('max_survivors', String(filters.max_survivors))
+  }
   if (filters.has_t12) params.set('has_t12', 'true')
   return params
 }

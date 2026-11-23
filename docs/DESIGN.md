@@ -193,9 +193,11 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   Selected labels use `--invert-fg`, the rest stay `--ink-muted`.
 - Sizes: `default` uses 12px labels; `compact` uses 10px labels for the archive
   side rows. Reduced-motion users get instant moves.
-- Used by the archive mode filter (Any / Rally / 1v1), the archive hero and
-  joiner side toggle (Any / Attacker / Defender / Both) and the simulator's
-  Optimise Ratio Attacker / Defender switch.
+- Used by the archive mode filter (Any / Rally / 1v1), the archive result
+  toggle (Any / Attacker / Defender / Draw), the archive survivors toggle
+  (Any / <50% / <25% / <10%), the archive hero and joiner side toggle (Any /
+  Attacker / Defender / Both) and the simulator's Optimise Ratio Attacker /
+  Defender switch.
 
 ### Caller panels
 
@@ -416,10 +418,24 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   until `/v1/meta` returns the archive's hero lists. Joiner options group heroes
   with the same S1 into `Same S1` pack cards. In the report detail, hovering a
   joiner shows its S1 effect and the heroes that are interchangeable with it.
-- Result, Tier and Furnace stay compact native selects; Furnace keeps `FC0` for
-  troops with no fire crystal. Result options with no reports in the archive are
-  hidden (the archive currently has no `No wipe` reports). The `Has T12 skill`
-  checkbox closes the card.
+- Tier and FC use two side-by-side range controls (`Min` and `Max`), each a
+  square tier tile with an overlapping FC hexagon in the simulator's Troop Power
+  style. All four values start at `Any`; clicking a tile or hexagon opens a paper
+  `<dialog>` picker with an `Any tier` / `Any FC level` option followed by the
+  T1-T12 or FC0-FC10 grid. Choosing a value fills the control, and choosing
+  `Any` clears that bound. Both controls come from
+  `src/components/troop-level-control.ts`. The API compares the report's highest
+  tier and that tier's FC - the values shown on the cards - so `FC0` keeps
+  meaning troops with no fire crystal.
+- Result is a four-segment `Any` / `Attacker` / `Defender` / `Draw` toggle
+  (Any by default) using the shared segmented control at compact size. A result
+  with no reports in `/v1/meta` resets the filter to `Any`; `No wipe` is not an
+  option.
+- Survivors sits directly below Result: a four-segment `Any` / `<50%` / `<25%` /
+  `<10%` toggle. It keeps fights where the surviving army ends under that share
+  of its own troops. One side always ends wiped, so this is also the battle's
+  survivor total. `Any` clears the cap.
+- The `Has T12 skill` checkbox closes the card.
 - Report cards show `FC0` when the report has troops but no fire crystal level,
   and Gen `—` only when no main hero or joiner is recognized.
 

@@ -106,44 +106,21 @@ import SiteLayout from '../layouts/SiteLayout.astro'
               <div data-report-joiner-rows class="grid gap-1.5"></div>
             </div>
 
-            <label class="grid gap-1.5">
-              <span class="text-micro font-medium text-ink-muted">Result</span>
-              <select
-                name="result"
-                class="h-9 w-full cursor-pointer rounded-sm border border-line bg-background px-2 text-p3 text-ink focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
-              >
-                <option value="">All results</option>
-                <option value="attacker">Attacker victory</option>
-                <option value="defender">Defender victory</option>
-                <option value="draw">Draw</option>
-              </select>
-            </label>
+            <div class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted" aria-hidden="true">Result</span>
+              <div data-report-result></div>
+            </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <label class="grid gap-1.5">
-                <span class="text-micro font-medium text-ink-muted">Tier</span>
-                <select
-                  name="tier"
-                  class="h-9 w-full cursor-pointer rounded-sm border border-line bg-background px-2 text-p3 text-ink focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
-                >
-                  <option value="">All</option>
-                  {Array.from({ length: 12 }, (_, index) => 12 - index).map((tier) => (
-                    <option value={tier}>T{tier}</option>
-                  ))}
-                </select>
-              </label>
-              <label class="grid gap-1.5">
-                <span class="text-micro font-medium text-ink-muted">Furnace</span>
-                <select
-                  name="fc"
-                  class="h-9 w-full cursor-pointer rounded-sm border border-line bg-background px-2 text-p3 text-ink focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-ink/10"
-                >
-                  <option value="">All</option>
-                  {Array.from({ length: 11 }, (_, fc) => (
-                    <option value={fc}>FC{fc}</option>
-                  ))}
-                </select>
-              </label>
+            <div class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted" aria-hidden="true">
+                Survivors
+              </span>
+              <div data-report-survivors></div>
+            </div>
+
+            <div class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted">Tier & FC</span>
+              <div data-report-level-range class="grid grid-cols-2 gap-3"></div>
             </div>
 
             <label class="flex cursor-pointer items-center gap-2 text-p3 text-ink-muted">
@@ -263,7 +240,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
         <div data-report-empty hidden class="rounded-card border border-dashed border-line bg-paper px-6 py-16 text-center">
           <p class="text-p1 font-medium">No reports match those filters.</p>
-          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, generation, mode, result or tier.</p>
+          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, generation, mode, result, tier or FC range.</p>
         </div>
 
         <div class="mt-5 flex justify-center">

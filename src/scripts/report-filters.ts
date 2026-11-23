@@ -6,13 +6,16 @@ import {
   createNoHeroesOption,
 } from '../components/hero-option'
 import { createSegmentedToggle } from '../components/segmented-toggle'
+import { createTroopLevelControl } from '../components/troop-level-control'
 import { fillHeroVisual } from '../components/hero-visual'
 import { HEROES, getHeroByName, isHeroAvailable, type Hero } from '../lib/heroes'
 import { expandJoinerMatches, groupJoinerItems } from '../lib/joiner-packs'
 import {
   NO_HEROES_FILTER,
+  REPORT_FC_RANGE,
   REPORT_FILTER_SIDES,
   REPORT_MODES,
+  REPORT_TIER_RANGE,
   generationFilterLabel,
   heroFilterLabel,
   heroName,
@@ -20,7 +23,9 @@ import {
   isReportMode,
   normalizeHeroFilters,
   parseGeneration,
+  parseLevelBound,
   parseReportFilterEntry,
+  parseSurvivors,
   reportFilterSideLabel,
   reportModeLabel,
   type ReportFilters,
@@ -31,6 +36,37 @@ import {
 } from '../lib/reports'
 
 type PickerKind = 'hero' | 'joiner'
+type ResultFilter = 'any' | 'attacker' | 'defender' | 'draw'
+type SurvivorFilter = 'any' | '50' | '25' | '10'
+
+const RESULT_FILTER_OPTIONS: ReadonlyArray<{ value: ResultFilter; label: string }> = [
+  { value: 'any', label: 'Any' },
+  { value: 'attacker', label: 'Attacker' },
+  { value: 'defender', label: 'Defender' },
+  { value: 'draw', label: 'Draw' },
+]
+
+const SURVIVOR_FILTER_OPTIONS: ReadonlyArray<{ value: SurvivorFilter; label: string }> = [
+  { value: 'any', label: 'Any' },
+  { value: '50', label: '<50%' },
+  { value: '25', label: '<25%' },
+  { value: '10', label: '<10%' },
+]
+
+function isResultFilter(value: string | null | undefined): value is Exclude<ResultFilter, 'any'> {
+  return value === 'attacker' || value === 'defender' || value === 'draw'
+}
+
+function resultFilterValue(result: string | undefined): ResultFilter {
+  return isResultFilter(result) ? result : 'any'
+}
+
+function survivorFilterValue(value: number | undefined): SurvivorFilter {
+  if (value === 50) return '50'
+  if (value === 25) return '25'
+  if (value === 10) return '10'
+  return 'any'
+}
 
 interface HeroChoice {
   /** Archive name sent to the API (lower case). */
@@ -117,14 +153,32 @@ function readEntries(
 function initialFilters(): ReportFilters {
   const params = new URLSearchParams(window.location.search)
   const mode = params.get('mode') ?? ''
+  const result = params.get('result')
+  const legacyTier = parseLevelBound(params.get('tier'), ...REPORT_TIER_RANGE)
+  const legacyFc = parseLevelBound(params.get('fc'), ...REPORT_FC_RANGE)
   return {
     heroes: normalizeHeroFilters(readEntries(params, 'hero', MAX_FILTERS.hero)),
     joiners: readEntries(params, 'joiner', MAX_FILTERS.joiner),
     mode: isReportMode(mode) ? mode : undefined,
-    result: params.get('result') || '',
-    tier: params.get('tier') || '',
-    fc: params.get('fc') || '',
+    result: isResultFilter(result) ? result : '',
+    tier_min:
+      parseLevelBound(params.get('tier_min'), ...REPORT_TIER_RANGE) ??
+      legacyTier ??
+      undefined,
+    tier_max:
+      parseLevelBound(params.get('tier_max'), ...REPORT_TIER_RANGE) ??
+      legacyTier ??
+      undefined,
+    fc_min:
+      parseLevelBound(params.get('fc_min'), ...REPORT_FC_RANGE) ??
+      legacyFc ??
+      undefined,
+    fc_max:
+      parseLevelBound(params.get('fc_max'), ...REPORT_FC_RANGE) ??
+      legacyFc ??
+      undefined,
     max_gen: parseGeneration(params.get('max_gen')) ?? undefined,
+    max_survivors: parseSurvivors(params.get('max_survivors')) ?? undefined,
     has_t12: params.get('has_t12') === 'true',
   }
 }
@@ -170,8 +224,10 @@ export function initReportFilters(
   if (!root) throw new Error('Missing reports root')
 
   const form = must<HTMLFormElement>(root, '[data-report-filters]')
-  const resultSelect = must<HTMLSelectElement>(form, 'select[name="result"]')
   const modeRoot = must<HTMLElement>(form, '[data-report-mode]')
+  const resultRoot = must<HTMLElement>(form, '[data-report-result]')
+  const survivorRoot = must<HTMLElement>(form, '[data-report-survivors]')
+  const levelRoot = must<HTMLElement>(form, '[data-report-level-range]')
   const generationTrigger = must<HTMLButtonElement>(root, '[data-report-generation-trigger]')
   const generationValue = must<HTMLElement>(root, '[data-report-generation-value]')
   const generationDialog = must<HTMLDialogElement>(root, '#report-generation-picker')
@@ -209,6 +265,52 @@ export function initReportFilters(
   })
   modeRoot.replaceChildren(modeToggle.element)
 
+  const resultToggle = createSegmentedToggle<ResultFilter>({
+    name: 'report-result',
+    label: 'Battle result',
+    options: RESULT_FILTER_OPTIONS,
+    value: resultFilterValue(filters.result),
+    size: 'compact',
+    onChange: (value) => {
+      filters.result = value === 'any' ? '' : value
+      notify()
+    },
+  })
+  resultRoot.replaceChildren(resultToggle.element)
+
+  const survivorToggle = createSegmentedToggle<SurvivorFilter>({
+    name: 'report-survivors',
+    label: 'Survivors',
+    options: SURVIVOR_FILTER_OPTIONS,
+    value: survivorFilterValue(filters.max_survivors),
+    size: 'compact',
+    onChange: (value) => {
+      filters.max_survivors = value === 'any' ? undefined : Number(value)
+      notify()
+    },
+  })
+  survivorRoot.replaceChildren(survivorToggle.element)
+
+  const minLevel = createTroopLevelControl({
+    label: 'Min',
+    value: { tier: filters.tier_min ?? null, fc: filters.fc_min ?? null },
+    onChange: (value) => {
+      filters.tier_min = value.tier ?? undefined
+      filters.fc_min = value.fc ?? undefined
+      notify()
+    },
+  })
+  const maxLevel = createTroopLevelControl({
+    label: 'Max',
+    value: { tier: filters.tier_max ?? null, fc: filters.fc_max ?? null },
+    onChange: (value) => {
+      filters.tier_max = value.tier ?? undefined
+      filters.fc_max = value.fc ?? undefined
+      notify()
+    },
+  })
+  levelRoot.replaceChildren(minLevel.element, maxLevel.element)
+
   function currentChoices(): HeroChoice[] {
     return mode === 'hero' ? heroChoices : joinerChoices
   }
@@ -230,10 +332,6 @@ export function initReportFilters(
   }
 
   function syncForm(): void {
-    for (const key of ['result', 'tier', 'fc'] as const) {
-      const field = form.elements.namedItem(key)
-      if (field instanceof HTMLSelectElement) field.value = filters[key] ?? ''
-    }
     const t12 = form.elements.namedItem('has_t12')
     if (t12 instanceof HTMLInputElement) t12.checked = Boolean(filters.has_t12)
   }
@@ -357,13 +455,9 @@ export function initReportFilters(
   }
 
   function applyResultAvailability(meta: ReportMeta): void {
-    for (const option of resultSelect.options) {
-      if (!option.value) continue
-      option.hidden = !meta.results[option.value]
-    }
     if (filters.result && !meta.results[filters.result]) {
       filters.result = ''
-      resultSelect.value = ''
+      resultToggle.setValue('any', true)
       notify()
     }
   }
@@ -639,6 +733,10 @@ export function initReportFilters(
   function resetFilters(): void {
     filters = {}
     modeToggle.setValue('any', true)
+    resultToggle.setValue('any', true)
+    survivorToggle.setValue('any', true)
+    minLevel.setValue({ tier: null, fc: null }, true)
+    maxLevel.setValue({ tier: null, fc: null }, true)
     syncForm()
     renderTriggers()
     if (pickerDialog.open) pickerDialog.close()
@@ -731,13 +829,12 @@ export function initReportFilters(
   form.addEventListener('change', (event) => {
     if (
       event.target instanceof Element &&
-      event.target.closest('[data-report-mode], [data-report-row]')
+      event.target.closest(
+        '[data-report-mode], [data-report-row], [data-report-result], [data-report-survivors]',
+      )
     ) {
       return
     }
-    filters.result = (form.elements.namedItem('result') as HTMLSelectElement | null)?.value ?? ''
-    filters.tier = (form.elements.namedItem('tier') as HTMLSelectElement | null)?.value ?? ''
-    filters.fc = (form.elements.namedItem('fc') as HTMLSelectElement | null)?.value ?? ''
     filters.has_t12 =
       (form.elements.namedItem('has_t12') as HTMLInputElement | null)?.checked ?? false
     notify()

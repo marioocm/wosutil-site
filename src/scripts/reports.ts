@@ -4,12 +4,14 @@ import { getHeroImage } from '../lib/hero-images'
 import { getJoinerPack, joinerPackNames } from '../lib/joiner-packs'
 import {
   TROOP_CLASSES,
+  averageTroopLevel,
   buildQuery,
   classLabel,
   fetchJson,
   filterQuery,
   formatNumber,
   formatSkill,
+  furnaceLevel,
   generationLabel,
   heroName,
   isRally,
@@ -71,13 +73,6 @@ function compact(value: number): string {
 
 function statValue(value: number): string {
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value)}%`
-}
-
-function parseFc(value: string | null | undefined): number | null {
-  const text = String(value || '').trim().toUpperCase().replace('FC', '')
-  if (!text) return null
-  const number = Number(text)
-  return Number.isFinite(number) ? number : null
 }
 
 function heroAvatar(
@@ -197,7 +192,7 @@ function detailKicker(detail: ReportDetail): string {
   const tier = tiers.length ? Math.max(...tiers) : null
   const fcs = troops
     .filter((troop) => troop.tier === tier)
-    .map((troop) => parseFc(troop.furnace))
+    .map((troop) => furnaceLevel(troop.furnace))
     .filter((fc): fc is number => fc !== null)
   const fc = fcs.length ? Math.max(...fcs) : null
   const generation = reportGeneration({
@@ -290,15 +285,19 @@ function renderJoiners(detail: ReportDetail): string {
     </section>`
 }
 
-function classSummary(side: SideDetail, troopClass: TroopClass): { tier: number | null; fc: number | null; count: number; groups: Troop[] } {
+function classSummary(
+  side: SideDetail,
+  troopClass: TroopClass,
+): { tier: number | null; fc: number | null; maxTier: number | null; count: number; groups: Troop[] } {
   const groups = (side.troops || [])
     .filter((troop) => troop.class === troopClass)
-    .sort((left, right) => right.tier - left.tier || (parseFc(right.furnace) ?? -1) - (parseFc(left.furnace) ?? -1))
-  const top = groups[0]
+    .sort((left, right) => right.tier - left.tier || (furnaceLevel(right.furnace) ?? -1) - (furnaceLevel(left.furnace) ?? -1))
+  const averages = averageTroopLevel(groups)
   return {
-    tier: top ? top.tier : null,
-    fc: top ? parseFc(top.furnace) : null,
-    count: groups.reduce((sum, troop) => sum + troop.count, 0),
+    tier: averages.tier,
+    fc: averages.fc,
+    maxTier: averages.maxTier,
+    count: averages.count,
     groups,
   }
 }
@@ -324,14 +323,14 @@ function troopTile(side: SideDetail, troopClass: TroopClass): string {
     <div class="rp-troop-slot" title="${escapeHtml(title)}">
       <span class="rp-troop-tile">
         <span class="rp-tile-class">${SHORT_LABEL[troopClass]}</span>
-        <span class="rp-tile-tier">T${summary.tier ?? '—'}</span>
+        <span class="rp-tile-tier">T${summary.tier === null ? '—' : summary.tier.toFixed(1)}</span>
         ${
           summary.groups.length
             ? `<span class="rp-tile-fc"><span class="troop-fc-hex"><span class="troop-fc-value">${fc}</span></span></span>`
             : ''
         }
       </span>
-      ${summary.tier === 12 ? `<span class="rp-tile-t12">Lv ${t12Level}</span>` : ''}
+      ${summary.maxTier === 12 ? `<span class="rp-tile-t12">Lv ${t12Level}</span>` : ''}
       <span class="rp-tile-count">${formatNumber(summary.count)}</span>
     </div>`
 }
