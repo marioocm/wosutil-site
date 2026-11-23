@@ -183,6 +183,20 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Ghost: no border, muted text that darkens on hover.
 - Disabled primary: `--tint` background with muted text (no opacity wash).
 
+### Segmented toggle
+
+- Shared control (`src/components/segmented-toggle.ts`) built on native radios
+  inside a `fieldset` with a visually hidden legend.
+- Compact bordered track on `--background`, 4px radius and 2px inset, with
+  equal-width segments. A single inverted thumb sits behind the labels and
+  slides between them with the 180ms `cubic-bezier(0.22, 1, 0.36, 1)` motion.
+  Selected labels use `--invert-fg`, the rest stay `--ink-muted`.
+- Sizes: `default` uses 12px labels; `compact` uses 10px labels for the archive
+  side rows. Reduced-motion users get instant moves.
+- Used by the archive mode filter (Any / Rally / 1v1), the archive hero and
+  joiner side toggle (Any / Attacker / Defender / Both) and the simulator's
+  Optimise Ratio Attacker / Defender switch.
+
 ### Caller panels
 
 - Outlined --paper cards with a single text title.
@@ -348,17 +362,14 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Outlined --paper card directly below the Simulation card in the right
   sidebar: a centered inverted `Optimise Ratio` button and a two-segment
-  Left / Right toggle beneath it. Left is selected by default.
-- The toggle is a compact bordered track on `--background` (smaller than the
-  button, 12px labels) with 4px radius and two equal segments. A single white
-  thumb sits behind the labels and slides between them with the same 180ms
-  `cubic-bezier(0.22, 1, 0.36, 1)` motion as the header underline, moving only
-  when the selection changes. Native radios provide keyboard and
-  screen-reader behavior. Reduced-motion users get instant moves.
-- Pressing the button posts the current engine case to `/v1/optimize-ratio` for
-  the selected side. Results stay hidden until a run succeeds, then expand from
-  the button with the same 220ms height motion as the Simulation card. Repeat
-  runs update the panel in place; switching sides collapses it.
+  Attacker / Defender toggle beneath it. Attacker is selected by default.
+- The toggle is the shared segmented control at its default size, 10rem wide.
+  It uses native radios and the sliding inverted thumb described above; the
+  selection moves only when it changes. Pressing the button posts the current
+  engine case to `/v1/optimize-ratio` for the selected side. Results stay hidden
+  until a run succeeds, then expand from the button with the same 220ms height
+  motion as the Simulation card. Repeat runs update the panel in place;
+  switching sides collapses it.
 - The panel starts with the optimised side, then a three-column table with the
   ranked ratios (mono `inf:lan:mar`), the percentage of seeds won (`Win %`) and
   the mean survivor-rate difference (`Margin`, signed). The ratios stay on the
@@ -377,7 +388,10 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Battle Reports filters
 
 - Outlined --paper sidebar card with a `Filters` heading and a muted `Clear`
-  action. The first control is a full-width generation trigger (`All gens` by
+  action. The first control is a full-width `Mode` toggle (`Any` / `Rally` /
+  `1v1`, Any by default) using the shared segmented control. `Rally` requires a
+  joiner on either side; `1v1` requires none.
+- The next control is a full-width generation trigger (`All gens` by
   default or `Gen N or older`) that opens the same paper `<dialog>` picker as the
   simulator: a full-width `All gens` option followed by a three-column grid of
   `Gen 1–N` buttons, with the current bound selected. Picking a generation is an
@@ -387,8 +401,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 - Hero and Joiner are stacks of full-width trigger rows. Hero allows up to 6
   selected heroes; Joiner allows up to 8 selected joiners. Each selected row
   shows the portrait and name plus a four-segment `Any` / `Attacker` /
-  `Defender` / `Both` toggle (Any by default) that constrains which side must
-  hold that hero. `Both` requires the hero on the attacker and defender sides.
+  `Defender` / `Both` toggle (Any by default) built from the shared segmented
+  control that constrains which side must hold that hero. `Both` requires the
+  hero on the attacker and defender sides.
   An empty `Any hero` / `Any joiner` row appears below while there is room,
   so every selection adds another slot. A selected row has an X control next to
   the picker chevron that removes that filter directly. All selected entries are

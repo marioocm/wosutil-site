@@ -11,6 +11,7 @@ import {
   generationLabel,
   heroName,
   isRally,
+  isReportMode,
   maxTroopLevel,
   parseGeneration,
   parseReportFilterEntry,
@@ -18,6 +19,7 @@ import {
   reportFilterEntryValue,
   reportFilterSideLabel,
   reportGeneration,
+  reportModeLabel,
   resultLabel,
   survivorRate,
 } from './reports'
@@ -81,6 +83,7 @@ describe('reports helpers', () => {
           { name: 'edith', side: 'any' },
         ],
         joiners: [{ name: 'mia', side: 'defender' }],
+        mode: 'rally',
         result: 'attacker',
         max_gen: 10,
         has_t12: true,
@@ -91,6 +94,7 @@ describe('reports helpers', () => {
     const params = new URLSearchParams(query)
     expect(params.getAll('hero')).toEqual(['hank:attacker', 'edith'])
     expect(params.getAll('joiner')).toEqual(['mia:defender'])
+    expect(params.get('mode')).toBe('rally')
     expect(params.get('result')).toBe('attacker')
     expect(params.get('max_gen')).toBe('10')
     expect(params.get('has_t12')).toBe('true')
@@ -126,6 +130,11 @@ describe('reports helpers', () => {
     expect(reportFilterSideLabel('attacker')).toBe('Attacker')
     expect(reportFilterSideLabel('defender')).toBe('Defender')
     expect(reportFilterSideLabel('both')).toBe('Both')
+    expect(isReportMode('rally')).toBe(true)
+    expect(isReportMode('1v1')).toBe(true)
+    expect(isReportMode('any')).toBe(false)
+    expect(reportModeLabel('rally')).toBe('Rally')
+    expect(reportModeLabel('1v1')).toBe('1v1')
   })
 
   it('keeps filterQuery free of pagination parameters', () => {

@@ -57,6 +57,11 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
           <div class="mt-5 grid gap-4">
             <div class="grid gap-1.5">
+              <span class="text-micro font-medium text-ink-muted" aria-hidden="true">Mode</span>
+              <div data-report-mode></div>
+            </div>
+
+            <div class="grid gap-1.5">
               <span class="text-micro font-medium text-ink-muted">Generation</span>
               <button
                 type="button"
@@ -258,7 +263,7 @@ import SiteLayout from '../layouts/SiteLayout.astro'
 
         <div data-report-empty hidden class="rounded-card border border-dashed border-line bg-paper px-6 py-16 text-center">
           <p class="text-p1 font-medium">No reports match those filters.</p>
-          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, generation, result or tier.</p>
+          <p class="mt-2 text-p3 text-ink-muted">Try a different hero, generation, mode, result or tier.</p>
         </div>
 
         <div class="mt-5 flex justify-center">
@@ -295,11 +300,6 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   [data-report-row-trigger][data-selected="true"] {
     border-color: var(--line-strong);
     background: color-mix(in srgb, var(--tint) 55%, var(--paper));
-  }
-
-  [data-report-side][data-selected="true"] {
-    color: var(--invert-fg);
-    background: var(--invert);
   }
 
   .rp-picker::backdrop {

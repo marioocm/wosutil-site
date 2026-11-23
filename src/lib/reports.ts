@@ -108,6 +108,7 @@ export interface ReportStats {
 export interface ReportFilters {
   heroes?: ReportHeroFilter[]
   joiners?: ReportHeroFilter[]
+  mode?: ReportMode
   result?: string
   tier?: string
   fc?: string
@@ -117,6 +118,9 @@ export interface ReportFilters {
 
 export const REPORT_FILTER_SIDES = ['any', 'attacker', 'defender', 'both'] as const
 export type ReportFilterSide = (typeof REPORT_FILTER_SIDES)[number]
+
+export const REPORT_MODES = ['rally', '1v1'] as const
+export type ReportMode = (typeof REPORT_MODES)[number]
 
 export interface ReportHeroFilter {
   name: string
@@ -265,6 +269,14 @@ export function reportFilterSideLabel(side: ReportFilterSide): string {
   return 'Any'
 }
 
+export function isReportMode(value: string): value is ReportMode {
+  return (REPORT_MODES as readonly string[]).includes(value)
+}
+
+export function reportModeLabel(mode: ReportMode): string {
+  return mode === 'rally' ? 'Rally' : '1v1'
+}
+
 export function isRally(item: { joiners: Record<SideKey, string[]> }): boolean {
   return (item.joiners.attacker?.length ?? 0) + (item.joiners.defender?.length ?? 0) > 0
 }
@@ -291,6 +303,7 @@ export function filterQuery(filters: ReportFilters): URLSearchParams {
   for (const entry of filters.joiners ?? []) {
     if (entry.name.trim()) params.append('joiner', reportFilterEntryValue(entry))
   }
+  if (filters.mode) params.set('mode', filters.mode)
   if (filters.result) params.set('result', filters.result)
   if (filters.tier) params.set('tier', filters.tier)
   if (filters.fc) params.set('fc', filters.fc)
