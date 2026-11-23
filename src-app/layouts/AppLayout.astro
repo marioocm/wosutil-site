@@ -1,5 +1,5 @@
 ---
-import { fontCss, primaryFontUrl } from '../../src/layouts/fonts'
+import { fontCss, monoFontUrl, primaryFontUrl } from '../../src/layouts/fonts'
 import '../../src/styles/global.css'
 
 interface Props {
@@ -20,6 +20,7 @@ const { title, description } = Astro.props
     <meta name="theme-color" content="#151311" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href={primaryFontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={monoFontUrl} as="font" type="font/woff2" crossorigin />
     <style is:inline set:html={fontCss}></style>
     <title>{title}</title>
     <meta name="robots" content="noindex" />
