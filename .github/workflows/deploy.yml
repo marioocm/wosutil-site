@@ -57,7 +57,7 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
           build-args: |
-            SITE_URL=https://wosutil.mariocm.dev
+            SITE_URL=https://wosutil.tech
             BASE_PATH=/
             PUBLIC_SIM_API=/sim
           cache-from: type=gha

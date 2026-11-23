@@ -2,7 +2,7 @@
 
 Static website for [WoS Util](https://github.com/marioocm/wosutil) — a rally countdown timer with rally/enemy callers, call queue, shareable setup and a live UTC clock, a battle simulator with generation presets, Hero Comparison, Joiners, Troop Power, Stats Bonuses and simulated battle reports, and a browser for the public battle-report archive.
 
-Live site: [wosutil.mariocm.dev](https://wosutil.mariocm.dev/)
+Live site: [wosutil.tech](https://wosutil.tech/)
 
 ## Features
 
@@ -84,7 +84,7 @@ site and publishes `ghcr.io/marioocm/wosutil-site:latest`; the PC stack in
 Caddy serves the container through the Cloudflare Tunnel. No runner, Node
 installation or host web directory is needed on the PC.
 
-The image is built with `SITE_URL=https://wosutil.mariocm.dev`, `BASE_PATH=/`
+The image is built with `SITE_URL=https://wosutil.tech`, `BASE_PATH=/`
 and `PUBLIC_SIM_API=/sim`. GitHub Pages is disabled; the domain points at the
 PC.
 
