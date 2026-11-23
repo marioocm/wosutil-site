@@ -80,12 +80,16 @@ function parseFc(value: string | null | undefined): number | null {
   return Number.isFinite(number) ? number : null
 }
 
-function heroAvatar(name: string | null | undefined, extra = ''): string {
+function heroAvatar(
+  name: string | null | undefined,
+  extra = '',
+  title?: string,
+): string {
   const hero = name ? getHeroByName(name) : null
   const src = hero ? getHeroImage(hero.id) : undefined
   const initials = name ? heroInitials(heroName(name)) : '—'
   return `
-    <span class="rp-avatar ${extra}" title="${escapeHtml(heroName(name))}">
+    <span class="rp-avatar ${extra}" title="${escapeHtml(title ?? heroName(name))}">
       <span class="rp-avatar-fallback">${escapeHtml(initials)}</span>
       ${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}
     </span>`
@@ -267,7 +271,7 @@ function renderJoiners(detail: ReportDetail): string {
                   const info = joinerInfo(name)
                   return `
               <span class="rp-joiner"${info ? ` title="${escapeHtml(info)}"` : ''}>
-                ${heroAvatar(name, 'rp-avatar-sm')}
+                ${heroAvatar(name, 'rp-avatar-sm', info || undefined)}
                 <span>${escapeHtml(heroName(name))}</span>
               </span>`
                 })
