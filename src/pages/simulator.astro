@@ -375,6 +375,12 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                         hidden
                       ></span>
                       <span
+                        class="absolute right-0.5 top-0.5 z-[1] rounded-xs bg-paper px-0.5 text-[9px] font-medium leading-tight text-ink-muted"
+                        data-joiner-equivalent
+                        title=""
+                        hidden
+                      >=</span>
+                      <span
                         class="flex items-center justify-center text-p2 font-medium leading-none text-ink-muted"
                         data-joiner-visual
                       >
@@ -385,12 +391,19 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                     <span class="sr-only">
                       {`Select joiner ${index} for the ${side.label.toLowerCase()} side`}
                     </span>
+                    <span class="sr-only" data-joiner-equivalent-text></span>
                   </button>
                 ))}
               </div>
             ))
           }
         </div>
+
+        <p
+          data-joiner-equivalence
+          class="grid gap-1 pt-4 text-center text-[10px] leading-snug text-ink-subtle"
+          hidden
+        ></p>
 
         <dialog
           id="joiner-picker"

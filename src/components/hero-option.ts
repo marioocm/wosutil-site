@@ -1,4 +1,5 @@
 import { formatHeroGeneration, getTroopTypeLabel, type Hero } from '../lib/heroes'
+import type { JoinerPack } from '../lib/joiner-packs'
 import { fillHeroVisual } from './hero-visual'
 
 export type HeroOptionKind = 'hero' | 'joiner' | 'report'
@@ -15,6 +16,18 @@ export interface ClearOptionOptions {
   label?: string
   meta?: string
   onSelect: () => void
+}
+
+export interface HeroPackMember {
+  hero: Hero
+  selected?: boolean
+  onSelect: () => void
+}
+
+export interface HeroPackOptions {
+  kind: HeroOptionKind
+  pack: JoinerPack
+  members: readonly HeroPackMember[]
 }
 
 const OPTION_CLASS =
@@ -72,6 +85,74 @@ export function createHeroOption(hero: Hero, options: HeroOptionOptions): HTMLBu
 
   button.addEventListener('click', () => options.onSelect(hero))
   return button
+}
+
+const PACK_MEMBER_CLASS =
+  'flex min-w-0 cursor-pointer items-center gap-1.5 rounded-xs px-1.5 py-1.5 text-left transition-colors hover:bg-tint/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink'
+const PACK_AVATAR_CLASS =
+  'relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-xs border border-line bg-background text-[9px] font-medium text-ink-muted'
+
+/**
+ * Builds one "Same S1" pack for a picker. Members stay individually
+ * selectable, but the shared header explains that their S1 is identical.
+ */
+export function createHeroPackOption(options: HeroPackOptions): HTMLElement {
+  const container = document.createElement('div')
+  container.className = 'mb-1 rounded-sm border border-line bg-tint/25 p-1'
+  container.dataset['pickerPack'] = options.pack.id
+  container.dataset['pickerPackKind'] = options.kind
+  container.setAttribute('role', 'group')
+  container.setAttribute('aria-label', `Same S1: ${options.pack.effect}`)
+
+  const header = document.createElement('div')
+  header.className = 'flex min-w-0 items-center gap-2 px-1 pb-1.5 pt-0.5'
+
+  const tag = document.createElement('span')
+  tag.className =
+    'shrink-0 rounded-full border border-line bg-paper px-1.5 py-0.5 text-[9px] font-medium uppercase leading-none tracking-[0.08em] text-ink-muted'
+  tag.textContent = 'Same S1'
+
+  const effect = document.createElement('span')
+  effect.className = 'min-w-0 truncate text-[10px] leading-tight text-ink-muted'
+  effect.textContent = options.pack.effect
+  effect.title = options.pack.effect
+
+  header.append(tag, effect)
+
+  const grid = document.createElement('div')
+  grid.className = 'grid grid-cols-2 gap-0.5'
+
+  for (const member of options.members) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = PACK_MEMBER_CLASS
+    button.dataset[`${options.kind}Option`] = member.hero.id
+    setOptionState(button, options.kind, Boolean(member.selected))
+    if (member.selected) button.classList.add('bg-tint/60')
+    button.setAttribute('aria-pressed', member.selected ? 'true' : 'false')
+    button.title = `Select ${member.hero.name}`
+    button.setAttribute('aria-label', `Select ${member.hero.name}`)
+
+    const avatar = document.createElement('span')
+    avatar.className = PACK_AVATAR_CLASS
+    avatar.setAttribute('aria-hidden', 'true')
+    fillHeroVisual(avatar, member.hero)
+
+    const name = document.createElement('span')
+    name.className = 'min-w-0 flex-1 truncate text-p3 text-ink'
+    name.textContent = member.hero.name
+
+    const meta = document.createElement('span')
+    meta.className = 'shrink-0 text-[9px] leading-none text-ink-subtle'
+    meta.textContent = member.selected ? '✓' : formatHeroGeneration(member.hero.generation)
+
+    button.append(avatar, name, meta)
+    button.addEventListener('click', member.onSelect)
+    grid.append(button)
+  }
+
+  container.append(header, grid)
+  return container
 }
 
 /** Builds the leading "None" / "Any hero" row that clears a picker. */

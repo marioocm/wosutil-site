@@ -2,9 +2,22 @@ import {
   bindPickerKeyboard,
   createClearOption,
   createHeroOption,
+  createHeroPackOption,
 } from '../components/hero-option'
 import { fillHeroVisual } from '../components/hero-visual'
-import { HEROES, getHeroByName, isHeroAvailable, type Hero } from '../lib/heroes'
+import {
+  HEROES,
+  getHeroById,
+  getHeroByName,
+  isHeroAvailable,
+  type Hero,
+} from '../lib/heroes'
+import {
+  expandJoinerMatches,
+  getJoinerPack,
+  groupJoinerItems,
+  type JoinerPack,
+} from '../lib/joiner-packs'
 import {
   REPORT_FILTER_SIDES,
   generationFilterLabel,
@@ -68,6 +81,14 @@ function choiceFor(name: string): HeroChoice {
       ? { ...known, name: heroName(value) }
       : { id: value, name: heroName(value), type: 'infantry', generation: null },
   }
+}
+
+function packForEntry(
+  kind: PickerKind,
+  entry: ReportHeroFilter | null,
+): JoinerPack | null {
+  if (kind !== 'joiner' || !entry) return null
+  return getJoinerPack(choiceFor(entry.name).hero.id)
 }
 
 function buildChoices(names: string[]): HeroChoice[] {
@@ -184,6 +205,24 @@ export function initReportFilters(
   let activeIndex = 0
   let activeTrigger: HTMLButtonElement | null = null
 
+  function packNames(pack: JoinerPack): string[] {
+    const available = new Map(
+      joinerChoices.map((choice) => [choice.hero.id, choice.hero.name]),
+    )
+    const ids =
+      available.size > 0
+        ? pack.members.filter((heroId) => available.has(heroId))
+        : pack.members
+    return ids.flatMap((heroId) => {
+      const name = available.get(heroId) ?? getHeroById(heroId)?.name
+      return name ? [name] : []
+    })
+  }
+
+  function packSummary(pack: JoinerPack): string {
+    return `Same S1 (${pack.effect}): ${packNames(pack).join(', ')}`
+  }
+
   function currentChoices(): HeroChoice[] {
     return mode === 'hero' ? heroChoices : joinerChoices
   }
@@ -254,9 +293,11 @@ export function initReportFilters(
     trigger.disabled = !metaReady
     trigger.setAttribute('aria-haspopup', 'dialog')
     trigger.setAttribute('aria-controls', 'report-picker')
+    const pack = packForEntry(kind, entry)
+    const baseLabel = entry ? `Filter by ${kind}: ${heroName(entry.name)}` : `Add ${kind}`
     trigger.setAttribute(
       'aria-label',
-      entry ? `Filter by ${kind}: ${heroName(entry.name)}` : `Add ${kind}`,
+      pack ? `${baseLabel}. Same S1 (${pack.effect}): ${packNames(pack).join(', ')}` : baseLabel,
     )
 
     const visual = document.createElement('span')
@@ -268,7 +309,17 @@ export function initReportFilters(
     value.className = ROW_VALUE_CLASS
     value.textContent = entry ? heroName(entry.name) : `Any ${kind}`
 
-    trigger.append(visual, value, chevronIcon())
+    if (pack) {
+      const tag = document.createElement('span')
+      tag.className =
+        'shrink-0 rounded-xs border border-line px-1 py-0.5 text-[9px] leading-none text-ink-subtle'
+      tag.textContent = 'Same S1'
+      tag.title = packSummary(pack)
+      trigger.title = packSummary(pack)
+      trigger.append(visual, value, tag, chevronIcon())
+    } else {
+      trigger.append(visual, value, chevronIcon())
+    }
 
     const top = document.createElement('div')
     top.className = 'flex items-center gap-1.5'
@@ -318,6 +369,27 @@ export function initReportFilters(
     if (entries.length < MAX_FILTERS[kind]) {
       rows.push(buildRow(kind, null, entries.length))
     }
+
+    if (kind === 'joiner') {
+      const packs = new Map<string, JoinerPack>()
+      for (const entry of entries) {
+        const pack = packForEntry(kind, entry)
+        if (pack) packs.set(pack.id, pack)
+      }
+      if (packs.size > 0) {
+        const note = document.createElement('p')
+        note.className =
+          'grid gap-1 rounded-sm border border-line bg-background px-2 py-1.5 text-[10px] leading-snug text-ink-muted'
+        note.dataset['reportJoinerPacks'] = 'true'
+        for (const pack of packs.values()) {
+          const line = document.createElement('span')
+          line.textContent = packSummary(pack)
+          note.append(line)
+        }
+        rows.push(note)
+      }
+    }
+
     rowContainer(kind).replaceChildren(...rows)
   }
 
@@ -418,12 +490,15 @@ export function initReportFilters(
         .filter((_, index) => index !== activeIndex)
         .map((entry) => entry.name),
     )
-    const available = currentChoices().filter(
-      (choice) =>
-        isHeroAvailable(choice.hero, filters.max_gen ?? null) &&
-        matchesQuery(choice, query),
+    const available = currentChoices().filter((choice) =>
+      isHeroAvailable(choice.hero, filters.max_gen ?? null),
     )
-    const choices = available.filter((choice) => !used.has(choice.value))
+    const matching = available.filter((choice) => matchesQuery(choice, query))
+    const expanded =
+      mode === 'joiner'
+        ? expandJoinerMatches(available, matching, (choice) => choice.hero.id)
+        : matching
+    const choices = expanded.filter((choice) => !used.has(choice.value))
     const nodes: HTMLElement[] = []
     if (query.trim() === '' && current) {
       nodes.push(
@@ -440,7 +515,7 @@ export function initReportFilters(
       const empty = document.createElement('p')
       empty.className = 'p-3 text-center text-p3 text-ink-muted'
       empty.textContent =
-        available.length > 0
+        matching.length > 0
           ? `All matching ${mode === 'hero' ? 'heroes' : 'joiners'} are already selected.`
           : filters.max_gen
             ? `No ${mode === 'hero' ? 'heroes' : 'joiners'} in Gen ${filters.max_gen} or older.`
@@ -449,16 +524,50 @@ export function initReportFilters(
       return
     }
 
-    pickerOptions.replaceChildren(
-      ...nodes,
-      ...choices.map((choice) =>
+    if (mode === 'hero') {
+      pickerOptions.replaceChildren(
+        ...nodes,
+        ...choices.map((choice) =>
+          createHeroOption(choice.hero, {
+            kind: 'report',
+            selected: current?.name === choice.value,
+            onSelect: () => selectPickerValue(choice.value),
+          }),
+        ),
+      )
+      return
+    }
+
+    const groups = groupJoinerItems(choices, (choice) => choice.hero.id)
+    const items: HTMLElement[] = []
+    for (const group of groups) {
+      if (group.pack && group.items.length > 1) {
+        items.push(
+          createHeroPackOption({
+            kind: 'report',
+            pack: group.pack,
+            members: group.items.map((choice) => ({
+              hero: choice.hero,
+              selected: current?.name === choice.value,
+              onSelect: () => selectPickerValue(choice.value),
+            })),
+          }),
+        )
+        continue
+      }
+
+      const choice = group.items[0]
+      if (!choice) continue
+      items.push(
         createHeroOption(choice.hero, {
           kind: 'report',
           selected: current?.name === choice.value,
           onSelect: () => selectPickerValue(choice.value),
         }),
-      ),
-    )
+      )
+    }
+
+    pickerOptions.replaceChildren(...nodes, ...items)
   }
 
   function rowTrigger(kind: PickerKind, index: number): HTMLButtonElement | null {
