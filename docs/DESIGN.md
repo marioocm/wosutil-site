@@ -367,12 +367,15 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   class keeps its three fixed hero-skill slots (missing hero/skill slots stay in
   place with a dash), then lists that class's troop skills from the API, aligned
   across both sides by skill name; a skill missing on one side leaves the
-  opposite cell empty with a dash. A dash marks an empty slot or a skill the
-  engine did not report, which is distinct from a reported zero. Reported
-  activations show one decimal and kills are rounded to whole numbers (compact
-  notation from one million), all as means over seeds. Three mirrored rows
-  below show average survivors for INF, LAN and MAR. The bottom of the card shows
-  the mean rounds with the min/max, then the seeds/elapsed metadata.
+  opposite cell empty with a dash. A dash marks an empty slot, a skill the
+  engine did not report, or a kill value the game does not expose. The API's
+  `source_kind` separates a kill-counter skill with zero kills (shows `0`) from
+  a normal/untyped extra or buff without one (shows `–`). Reported activations
+  show one decimal only when needed (a whole mean such as 1.0 renders as `1`)
+  and kills are rounded to whole numbers (compact notation from one million),
+  all as means over seeds. Three mirrored rows below show average survivors for
+  INF, LAN and MAR. The bottom of the card shows the mean rounds with the
+  min/max, then the seeds/elapsed metadata.
 - The winrate bar uses neutral ink tints only and mono numerals for the
   percentages. Run metadata (seeds and elapsed time) and warnings sit below the
   sections in small muted text.

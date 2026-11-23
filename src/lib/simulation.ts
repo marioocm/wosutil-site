@@ -75,6 +75,7 @@ export interface SkillActivation {
   skill: string
   slot?: string
   source: string
+  source_kind?: 'skill' | 'base' | null
   activations_mean: number
   activations_per_round: number
   kills_mean: number
@@ -398,7 +399,13 @@ export interface BattleSkillRow {
 
 interface SkillValues {
   activations: number
-  kills: number
+  kills: number | null
+}
+
+function skillKills(skill: SkillActivation): number | null {
+  if (skill.source_kind === 'base') return null
+  if (skill.source_kind === 'skill') return skill.kills_mean
+  return skill.kills_mean > 0 ? skill.kills_mean : null
 }
 
 interface HeroActivations {
@@ -412,7 +419,7 @@ function indexSkillActivations(skills: readonly SkillActivation[]): Map<string, 
     if (skill.kind !== 'hero') continue
     const owner = skill.owner.toLowerCase()
     const entry = index.get(owner) ?? { bySkill: new Map(), bySlot: new Map() }
-    const values = { activations: skill.activations_mean, kills: skill.kills_mean }
+    const values = { activations: skill.activations_mean, kills: skillKills(skill) }
     entry.bySkill.set(skill.skill.toLowerCase(), values)
     if (skill.slot) entry.bySlot.set(skill.slot.toUpperCase(), values)
     index.set(owner, entry)
@@ -488,7 +495,7 @@ const TROOP_SKILL_ORDER: Record<TroopType, readonly string[]> = {
 interface TroopSkillActivation {
   name: string
   activations: number
-  kills: number
+  kills: number | null
 }
 
 function troopTypeFromOwner(owner: string): TroopType | null {
@@ -511,7 +518,7 @@ function indexTroopActivations(
     byName.set(skill.skill.toLowerCase(), {
       name: skill.skill,
       activations: skill.activations_mean,
-      kills: skill.kills_mean,
+      kills: skillKills(skill),
     })
     index.set(type, byName)
   }
@@ -621,7 +628,9 @@ export function formatWinRate(value: number): string {
 
 export function formatActivations(value: number | null): string {
   if (value === null) return '–'
-  return Number.isFinite(value) ? value.toFixed(1) : '–'
+  if (!Number.isFinite(value)) return '–'
+  const rounded = Math.round(value * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
 }
 
 export interface SimulationFailure {

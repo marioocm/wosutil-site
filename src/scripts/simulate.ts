@@ -253,7 +253,10 @@ export function initSimulation(): void {
     }
 
     if (row.activations !== null) {
-      element.title = `${formatActivations(row.activations)} triggered · ${formatSkillKills(row.kills)} kills`
+      element.title =
+        row.kills === null
+          ? `${formatActivations(row.activations)} triggered`
+          : `${formatActivations(row.activations)} triggered · ${formatSkillKills(row.kills)} kills`
     }
     return element
   }
