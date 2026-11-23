@@ -9,6 +9,7 @@ import {
   formatActivations,
   formatBattleCount,
   formatSimulationFailure,
+  formatSkillKills,
   formatWinRate,
   OPTIMIZE_RATIO_SEEDS,
   SIMULATION_SEEDS,
@@ -214,6 +215,7 @@ function activation(overrides: Partial<SkillActivation>): SkillActivation {
     owner: 'Jeronimo',
     skill: 's1',
     source: 'att|Jeronimo|Jeronimo.s1',
+    source_kind: 'skill',
     activations_mean: 0,
     activations_per_round: 0,
     kills_mean: 0,
@@ -225,6 +227,7 @@ function troopActivation(
   owner: string,
   skill: string,
   activations_mean: number,
+  overrides: Partial<SkillActivation> = {},
 ): SkillActivation {
   return activation({
     kind: 'troop',
@@ -232,13 +235,14 @@ function troopActivation(
     skill,
     source: `att|${owner}|${owner}.${skill}`,
     activations_mean,
+    ...overrides,
   })
 }
 
 const EMPTY_CLASS_ROWS = [
-  { label: '', activations: null },
-  { label: '', activations: null },
-  { label: '', activations: null },
+  { label: '', activations: null, kills: null },
+  { label: '', activations: null, kills: null },
+  { label: '', activations: null, kills: null },
 ]
 
 describe('buildSkillRows', () => {
@@ -263,12 +267,12 @@ describe('buildSkillRows', () => {
       }),
     ])
     expect(rows).toEqual([
-      { label: 'Jeronimo S1', activations: 12.4 },
-      { label: 'Jeronimo S2', activations: 5 },
-      { label: 'Jeronimo S3', activations: null },
-      { label: 'Molly S1', activations: 0 },
-      { label: 'Molly S2', activations: null },
-      { label: 'Molly S3', activations: null },
+      { label: 'Jeronimo S1', activations: 12.4, kills: 0 },
+      { label: 'Jeronimo S2', activations: 5, kills: 0 },
+      { label: 'Jeronimo S3', activations: null, kills: null },
+      { label: 'Molly S1', activations: 0, kills: 0 },
+      { label: 'Molly S2', activations: null, kills: null },
+      { label: 'Molly S3', activations: null, kills: null },
       ...EMPTY_CLASS_ROWS,
     ])
   })
@@ -277,9 +281,9 @@ describe('buildSkillRows', () => {
     const rows = buildSkillRows({ lancer: 'Molly' }, [])
     expect(rows).toEqual([
       ...EMPTY_CLASS_ROWS,
-      { label: 'Molly S1', activations: null },
-      { label: 'Molly S2', activations: null },
-      { label: 'Molly S3', activations: null },
+      { label: 'Molly S1', activations: null, kills: null },
+      { label: 'Molly S2', activations: null, kills: null },
+      { label: 'Molly S3', activations: null, kills: null },
       ...EMPTY_CLASS_ROWS,
     ])
   })
@@ -288,7 +292,7 @@ describe('buildSkillRows', () => {
     const rows = buildSkillRows({ infantry: 'Jeronimo' }, [
       activation({ owner: 'Jeronimo', skill: 'Unknown', slot: 'S3', activations_mean: 7 }),
     ])
-    expect(rows[2]).toEqual({ label: 'Jeronimo S3', activations: 7 })
+    expect(rows[2]).toEqual({ label: 'Jeronimo S3', activations: 7, kills: 0 })
   })
 
   it('maps the numeric skill keys modern heroes report', () => {
@@ -298,10 +302,41 @@ describe('buildSkillRows', () => {
       activation({ owner: 'Aiden', skill: '500626', activations_mean: 1 }),
     ])
     expect(rows.slice(0, 3)).toEqual([
-      { label: 'Aiden S1', activations: 1.2 },
-      { label: 'Aiden S2', activations: 2 },
-      { label: 'Aiden S3', activations: 1 },
+      { label: 'Aiden S1', activations: 1.2, kills: 0 },
+      { label: 'Aiden S2', activations: 2, kills: 0 },
+      { label: 'Aiden S3', activations: 1, kills: 0 },
     ])
+  })
+
+  it('keeps the reported kills with each hero slot', () => {
+    const rows = buildSkillRows({ infantry: 'Aiden' }, [
+      activation({ owner: 'Aiden', skill: '500625', activations_mean: 2, kills_mean: 1200.4 }),
+      activation({ owner: 'Aiden', skill: '500624', activations_mean: 1.2, kills_mean: 0 }),
+    ])
+    expect(rows.slice(0, 3)).toEqual([
+      { label: 'Aiden S1', activations: 1.2, kills: 0 },
+      { label: 'Aiden S2', activations: 2, kills: 1200.4 },
+      { label: 'Aiden S3', activations: null, kills: null },
+    ])
+  })
+
+  it('shows no kill counter for base and buff skills', () => {
+    const rows = buildSkillRows({ infantry: 'Aiden' }, [
+      activation({ owner: 'Aiden', skill: '500624', activations_mean: 2, source_kind: 'base' }),
+      activation({ owner: 'Aiden', skill: '500625', activations_mean: 1.2, source_kind: null }),
+    ])
+    expect(rows.slice(0, 3)).toEqual([
+      { label: 'Aiden S1', activations: 2, kills: null },
+      { label: 'Aiden S2', activations: 1.2, kills: null },
+      { label: 'Aiden S3', activations: null, kills: null },
+    ])
+  })
+
+  it('keeps nonzero kills when an older API omits the source kind', () => {
+    const rows = buildSkillRows({ infantry: 'Aiden' }, [
+      activation({ owner: 'Aiden', skill: '500625', activations_mean: 2, kills_mean: 800, source_kind: undefined }),
+    ])
+    expect(rows[1]).toEqual({ label: 'Aiden S2', activations: 2, kills: 800 })
   })
 
   it('leaves slots without a known skill empty', () => {
@@ -309,18 +344,18 @@ describe('buildSkillRows', () => {
       activation({ owner: 'Jessie', skill: 'StandOfArms', activations_mean: 4 }),
     ])
     expect(rows.slice(3, 6)).toEqual([
-      { label: 'Jessie S1', activations: 4 },
-      { label: 'Jessie S2', activations: null },
-      { label: '', activations: null },
+      { label: 'Jessie S1', activations: 4, kills: 0 },
+      { label: 'Jessie S2', activations: null, kills: null },
+      { label: '', activations: null, kills: null },
     ])
   })
 
   it('leaves S3 empty for heroes without a third skill', () => {
     const rows = buildSkillRows({ infantry: 'Sergey' }, [])
     expect(rows.slice(0, 3)).toEqual([
-      { label: 'Sergey S1', activations: null },
-      { label: 'Sergey S2', activations: null },
-      { label: '', activations: null },
+      { label: 'Sergey S1', activations: null, kills: null },
+      { label: 'Sergey S2', activations: null, kills: null },
+      { label: '', activations: null, kills: null },
     ])
   })
 
@@ -331,18 +366,18 @@ describe('buildSkillRows', () => {
       activation({ owner: 'Zinman', skill: 'PositionalBattler', activations_mean: 2 }),
     ])
     expect(rows.slice(6, 9)).toEqual([
-      { label: 'Zinman S1', activations: 4 },
-      { label: '', activations: null },
-      { label: 'Zinman S3', activations: 2 },
+      { label: 'Zinman S1', activations: 4, kills: 0 },
+      { label: '', activations: null, kills: null },
+      { label: 'Zinman S3', activations: 2, kills: 0 },
     ])
   })
 
   it('falls back to three slots for unknown hero names', () => {
     const rows = buildSkillRows({ marksman: 'Unknown' }, [])
     expect(rows.slice(6, 9)).toEqual([
-      { label: 'Unknown S1', activations: null },
-      { label: 'Unknown S2', activations: null },
-      { label: 'Unknown S3', activations: null },
+      { label: 'Unknown S1', activations: null, kills: null },
+      { label: 'Unknown S2', activations: null, kills: null },
+      { label: 'Unknown S3', activations: null, kills: null },
     ])
   })
 })
@@ -394,14 +429,30 @@ describe('buildBattleSkillRows', () => {
       { heroes: {}, skills: [] },
       {
         heroes: {},
-        skills: [troopActivation('TroopSkills:marksman', 'Volley', 7.5)],
+        skills: [troopActivation('TroopSkills:marksman', 'Volley', 7.5, { source_kind: 'base' })],
       },
     )
 
     expect(rows[9]).toEqual({
       kind: 'troop',
-      left: { label: '', activations: null },
-      right: { label: 'Volley', activations: 7.5 },
+      left: { label: '', activations: null, kills: null },
+      right: { label: 'Volley', activations: 7.5, kills: null },
+    })
+  })
+
+  it('keeps game kills aligned for troop skills', () => {
+    const rows = buildBattleSkillRows(
+      {
+        heroes: {},
+        skills: [troopActivation('TroopSkills:lancer', 'CrystalLance', 2.5, { kills_mean: 6275.4 })],
+      },
+      { heroes: {}, skills: [] },
+    )
+
+    expect(rows[6]).toEqual({
+      kind: 'troop',
+      left: { label: 'Crystal Lance', activations: 2.5, kills: 6275.4 },
+      right: { label: '', activations: null, kills: null },
     })
   })
 })
@@ -413,9 +464,15 @@ describe('battle result formatting', () => {
     expect(formatWinRate(0.556)).toBe('55.6%')
     expect(formatWinRate(2)).toBe('100.0%')
     expect(formatActivations(null)).toBe('–')
-    expect(formatActivations(0)).toBe('0.0')
+    expect(formatActivations(0)).toBe('0')
+    expect(formatActivations(1)).toBe('1')
+    expect(formatActivations(1.04)).toBe('1')
     expect(formatActivations(12.44)).toBe('12.4')
     expect(formatActivations(12.46)).toBe('12.5')
+    expect(formatSkillKills(null)).toBe('–')
+    expect(formatSkillKills(0)).toBe('0')
+    expect(formatSkillKills(11891.75)).toBe('11,892')
+    expect(formatSkillKills(1_234_567)).toBe('1.2M')
   })
 })
 

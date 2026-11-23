@@ -11,6 +11,7 @@ import {
   formatActivations,
   formatBattleCount,
   formatSimulationFailure,
+  formatSkillKills,
   formatWinRate,
   readSimulatorState,
   SIMULATION_SEEDS,
@@ -236,11 +237,28 @@ export function initSimulation(): void {
   }
 
   function activationCell(row: BattleSkillRow): HTMLTableCellElement {
-    const state = row.activations === null ? 'text-ink-subtle' : 'text-ink'
-    return cell(
-      formatActivations(row.activations),
-      `battle-activation-value py-1 text-center font-mono tabular-nums ${state}`,
-    )
+    const element = cell('', 'battle-metric-cell py-1 text-center font-mono tabular-nums')
+    const activationState = row.activations === null ? 'text-ink-subtle' : 'text-ink'
+    const activation = document.createElement('span')
+    activation.className = `battle-activation-value block ${activationState}`
+    activation.textContent = formatActivations(row.activations)
+    element.append(activation)
+
+    if (row.kills !== null || row.activations !== null) {
+      const killState = row.kills === null ? 'text-ink-subtle' : 'text-ink-muted'
+      const kills = document.createElement('span')
+      kills.className = `battle-kill-value block ${killState}`
+      kills.textContent = formatSkillKills(row.kills)
+      element.append(kills)
+    }
+
+    if (row.activations !== null) {
+      element.title =
+        row.kills === null
+          ? `${formatActivations(row.activations)} triggered`
+          : `${formatActivations(row.activations)} triggered · ${formatSkillKills(row.kills)} kills`
+    }
+    return element
   }
 
   function renderSkillRows(rows: readonly BattleSkillRowPair[]): void {
