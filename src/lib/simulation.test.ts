@@ -242,7 +242,7 @@ const EMPTY_CLASS_ROWS = [
 ]
 
 describe('buildSkillRows', () => {
-  it('keeps three slots per class and maps reported skill names', () => {
+  it('keeps three slots per class and maps reported skill keys', () => {
     const rows = buildSkillRows({ infantry: 'Jeronimo', lancer: 'Molly' }, [
       activation({
         owner: 'Jeronimo',
@@ -258,7 +258,7 @@ describe('buildSkillRows', () => {
       }),
       activation({
         owner: 'Molly',
-        skill: 'CallingOfTheStorm',
+        skill: '500124',
         activations_mean: 0,
       }),
     ])
@@ -289,6 +289,19 @@ describe('buildSkillRows', () => {
       activation({ owner: 'Jeronimo', skill: 'Unknown', slot: 'S3', activations_mean: 7 }),
     ])
     expect(rows[2]).toEqual({ label: 'Jeronimo S3', activations: 7 })
+  })
+
+  it('maps the numeric skill keys modern heroes report', () => {
+    const rows = buildSkillRows({ infantry: 'Aiden' }, [
+      activation({ owner: 'Aiden', skill: '500625', activations_mean: 2 }),
+      activation({ owner: 'Aiden', skill: '500624', activations_mean: 1.2 }),
+      activation({ owner: 'Aiden', skill: '500626', activations_mean: 1 }),
+    ])
+    expect(rows.slice(0, 3)).toEqual([
+      { label: 'Aiden S1', activations: 1.2 },
+      { label: 'Aiden S2', activations: 2 },
+      { label: 'Aiden S3', activations: 1 },
+    ])
   })
 
   it('leaves slots without a known skill empty', () => {

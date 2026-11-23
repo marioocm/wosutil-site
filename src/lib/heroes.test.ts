@@ -53,7 +53,7 @@ describe('HERO_IMAGES', () => {
 })
 
 describe('HERO_SKILLS', () => {
-  it('lists S1-S3 names for every hero the engine supports', () => {
+  it('lists S1-S3 skill keys for every hero the engine supports', () => {
     for (const hero of HEROES) {
       const slots = HERO_SKILLS[hero.id]
       expect(slots?.length).toBeGreaterThan(0)
