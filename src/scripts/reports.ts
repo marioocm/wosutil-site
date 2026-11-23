@@ -1,17 +1,12 @@
 import { fcHexMarkup } from '../components/fc-hex'
+import { createJoinerTip } from '../components/joiner-tip'
 import { STAT_BONUSES } from '../lib/stat-bonuses'
-import {
-  formatHeroGeneration,
-  getHeroById,
-  getHeroByName,
-  heroInitials,
-} from '../lib/heroes'
+import { getHeroByName, heroInitials } from '../lib/heroes'
 import { getHeroImage } from '../lib/hero-images'
 import {
   JOINER_PACKS,
   getJoinerPack,
   joinerPackNames,
-  type JoinerPack,
 } from '../lib/joiner-packs'
 import {
   TROOP_CLASSES,
@@ -130,27 +125,6 @@ function joinerInfo(name: string): string {
   if (!pack) return ''
   const equivalents = joinerPackNames(pack).filter((label) => label !== hero?.name)
   return `S1 effect: ${pack.effect} · Same S1 as ${equivalents.join(', ')}`
-}
-
-function joinerTooltipHtml(pack: JoinerPack, activeId: string): string {
-  const members = pack.members
-    .flatMap((heroId) => {
-      const hero = getHeroById(heroId)
-      if (!hero) return []
-      return `
-        <span class="rp-joiner-tip-member${hero.id === activeId ? ' is-active' : ''}">
-          ${heroAvatar(hero.name, 'rp-avatar-sm', '')}
-          <span class="rp-joiner-tip-name">${escapeHtml(hero.name)}</span>
-          <span class="rp-joiner-tip-gen">${escapeHtml(formatHeroGeneration(hero.generation))}</span>
-        </span>`
-    })
-    .join('')
-  return `
-    <span class="rp-joiner-tip-head">
-      <span class="rp-joiner-tip-tag">Same S1</span>
-      <span class="rp-joiner-tip-effect">${escapeHtml(pack.effect)}</span>
-    </span>
-    <span class="rp-joiner-tip-grid">${members}</span>`
 }
 
 function heroCell(name: string | null | undefined, troopClass: TroopClass, side: SideKey): string {
@@ -911,17 +885,7 @@ export function initReports(): void {
     filterTimer = window.setTimeout(() => void loadPage(true), FILTER_DEBOUNCE)
   }
 
-  const joinerTip = document.createElement('div')
-  joinerTip.className = 'rp-joiner-tip'
-  joinerTip.setAttribute('popover', 'manual')
-  joinerTip.setAttribute('role', 'tooltip')
-  document.body.append(joinerTip)
-  let joinerTipAnchor: HTMLElement | null = null
-
-  const hideJoinerTip = (): void => {
-    joinerTipAnchor = null
-    if (joinerTip.matches(':popover-open')) joinerTip.hidePopover()
-  }
+  const joinerTip = createJoinerTip()
 
   const showJoinerTip = (chip: HTMLElement): void => {
     const packId = chip.dataset['joinerPack']
@@ -929,26 +893,10 @@ export function initReports(): void {
       ? JOINER_PACKS.find((entry) => entry.id === packId)
       : undefined
     if (!pack) {
-      hideJoinerTip()
+      joinerTip.hide()
       return
     }
-    joinerTip.innerHTML = joinerTooltipHtml(pack, chip.dataset['joinerId'] ?? '')
-    joinerTipAnchor = chip
-    if (!joinerTip.matches(':popover-open')) joinerTip.showPopover()
-
-    const rect = chip.getBoundingClientRect()
-    joinerTip.style.left = '0px'
-    joinerTip.style.top = '0px'
-    const tipRect = joinerTip.getBoundingClientRect()
-    const margin = 8
-    let left = rect.left + rect.width / 2 - tipRect.width / 2
-    left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin))
-    let top = rect.top - tipRect.height - 8
-    if (top < margin) {
-      top = Math.min(window.innerHeight - tipRect.height - margin, rect.bottom + 8)
-    }
-    joinerTip.style.left = `${Math.round(left)}px`
-    joinerTip.style.top = `${Math.round(top)}px`
+    joinerTip.show(chip, pack, chip.dataset['joinerId'] ?? '')
   }
 
   const openDetail = async (id: string, push = true): Promise<void> => {
@@ -958,7 +906,7 @@ export function initReports(): void {
     setStatus('Loading report…')
     try {
       const detail = await fetchJson<ReportDetail>(`/v1/reports/${id}`)
-      hideJoinerTip()
+      joinerTip.hide()
       detailRoot.innerHTML = renderDetail(detail)
       dialogMeta.textContent = detailKicker(detail)
       syncBattleDetails()
@@ -977,7 +925,7 @@ export function initReports(): void {
   const closeDetail = (push = true): void => {
     scrollAnimation += 1
     state.currentId = null
-    hideJoinerTip()
+    joinerTip.hide()
     if (dialog.open) dialog.close()
     if (push) window.history.pushState({}, '', `${BASE}reports/${filterSearch()}`)
   }
@@ -1018,7 +966,7 @@ export function initReports(): void {
     const chip = joinerChip(event.target)
     if (!chip) return
     if (event.relatedTarget instanceof Node && chip.contains(event.relatedTarget)) return
-    if (joinerTipAnchor === chip) hideJoinerTip()
+    if (joinerTip.anchoredTo(chip)) joinerTip.hide()
   })
   detailRoot.addEventListener('focusin', (event) => {
     const chip = joinerChip(event.target)
@@ -1026,10 +974,8 @@ export function initReports(): void {
   })
   detailRoot.addEventListener('focusout', (event) => {
     const chip = joinerChip(event.target)
-    if (chip && joinerTipAnchor === chip) hideJoinerTip()
+    if (chip && joinerTip.anchoredTo(chip)) joinerTip.hide()
   })
-  dialog.addEventListener('scroll', hideJoinerTip, true)
-  window.addEventListener('resize', hideJoinerTip)
 
   detailRoot.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
