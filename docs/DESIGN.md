@@ -291,7 +291,7 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   troop count sits below the tile in an editable field (a dash until data is
   entered). With one row, editing a count makes the total the sum of the three
   and derives the ratio; editing the total or ratio reallocates the counts.
-- A full-width dashed `+ Add more troops` button below the tiles adds another
+- A full-width dashed `+ Add different troops` button below the tiles adds another
   row to that side, up to as many mixed groups as needed. Each extra row repeats
   the three tier/FC/count cells and gets a `Row N` / `Remove` header separated
   by a hairline; the first row cannot be removed. T12 boxes are never duplicated:
