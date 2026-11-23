@@ -101,6 +101,39 @@ export function createClearOption(options: ClearOptionOptions): HTMLButtonElemen
   return button
 }
 
+export interface NoHeroesOptionOptions {
+  kind: HeroOptionKind
+  selected?: boolean
+  onSelect: () => void
+}
+
+/** Builds the archive "No heroes" row (no main hero on either side). */
+export function createNoHeroesOption(options: NoHeroesOptionOptions): HTMLButtonElement {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = OPTION_CLASS
+  button.dataset[`${options.kind}Option`] = 'no-heroes'
+  setOptionState(button, options.kind, Boolean(options.selected))
+
+  const avatar = document.createElement('span')
+  avatar.className = `${AVATAR_CLASS} text-p2`
+  avatar.setAttribute('aria-hidden', 'true')
+  avatar.textContent = '—'
+
+  const name = document.createElement('span')
+  name.className = 'min-w-0 flex-1 text-p2 text-ink'
+  name.textContent = 'No heroes'
+
+  const meta = document.createElement('span')
+  meta.className = 'shrink-0 text-micro text-ink-muted'
+  meta.textContent = 'Neither side'
+
+  button.append(avatar, name, meta)
+  if (options.selected) appendSelectedCheck(button)
+  button.addEventListener('click', options.onSelect)
+  return button
+}
+
 export function pickerItemSelector(kind: HeroOptionKind): string {
   return `[data-${kind}-option]`
 }

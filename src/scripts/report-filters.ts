@@ -2,16 +2,21 @@ import {
   bindPickerKeyboard,
   createClearOption,
   createHeroOption,
+  createNoHeroesOption,
 } from '../components/hero-option'
 import { createSegmentedToggle } from '../components/segmented-toggle'
 import { fillHeroVisual } from '../components/hero-visual'
 import { HEROES, getHeroByName, isHeroAvailable, type Hero } from '../lib/heroes'
 import {
+  NO_HEROES_FILTER,
   REPORT_FILTER_SIDES,
   REPORT_MODES,
   generationFilterLabel,
+  heroFilterLabel,
   heroName,
+  isNoHeroesFilter,
   isReportMode,
+  normalizeHeroFilters,
   parseGeneration,
   parseReportFilterEntry,
   reportFilterSideLabel,
@@ -111,7 +116,7 @@ function initialFilters(): ReportFilters {
   const params = new URLSearchParams(window.location.search)
   const mode = params.get('mode') ?? ''
   return {
-    heroes: readEntries(params, 'hero', MAX_FILTERS.hero),
+    heroes: normalizeHeroFilters(readEntries(params, 'hero', MAX_FILTERS.hero)),
     joiners: readEntries(params, 'joiner', MAX_FILTERS.joiner),
     mode: isReportMode(mode) ? mode : undefined,
     result: params.get('result') || '',
@@ -272,19 +277,24 @@ export function initReportFilters(
     trigger.disabled = !metaReady
     trigger.setAttribute('aria-haspopup', 'dialog')
     trigger.setAttribute('aria-controls', 'report-picker')
+    const label = entry ? heroFilterLabel(entry) : `Any ${kind}`
     trigger.setAttribute(
       'aria-label',
-      entry ? `Filter by ${kind}: ${heroName(entry.name)}` : `Add ${kind}`,
+      entry ? `Filter by ${kind}: ${label}` : `Add ${kind}`,
     )
 
     const visual = document.createElement('span')
     visual.className = ROW_VISUAL_CLASS
     visual.setAttribute('aria-hidden', 'true')
-    fillHeroVisual(visual, entry ? choiceFor(entry.name).hero : null)
+    if (entry && isNoHeroesFilter(entry)) {
+      visual.textContent = '—'
+    } else {
+      fillHeroVisual(visual, entry ? choiceFor(entry.name).hero : null)
+    }
 
     const value = document.createElement('span')
     value.className = ROW_VALUE_CLASS
-    value.textContent = entry ? heroName(entry.name) : `Any ${kind}`
+    value.textContent = label
 
     trigger.append(visual, value, chevronIcon())
 
@@ -299,7 +309,10 @@ export function initReportFilters(
       clear.dataset['reportRowClear'] = 'true'
       clear.dataset['reportRowClearKind'] = kind
       clear.dataset['index'] = String(index)
-      clear.setAttribute('aria-label', `Remove ${kind} ${heroName(entry.name)}`)
+      clear.setAttribute(
+        'aria-label',
+        isNoHeroesFilter(entry) ? 'Remove No heroes filter' : `Remove ${kind} ${label}`,
+      )
       clear.title = `Remove ${kind}`
       clear.append(closeIcon())
       top.append(clear)
@@ -307,7 +320,7 @@ export function initReportFilters(
 
     row.append(top)
 
-    if (entry) {
+    if (entry && !isNoHeroesFilter(entry)) {
       const sideToggle = createSegmentedToggle<ReportFilterSide>({
         name: `report-side-${kind}-${index}`,
         label: `${kind === 'hero' ? 'Hero' : 'Joiner'} side`,
@@ -328,7 +341,8 @@ export function initReportFilters(
   function renderRows(kind: PickerKind): void {
     const entries = entriesFor(kind)
     const rows = entries.map((entry, index) => buildRow(kind, entry, index))
-    if (entries.length < MAX_FILTERS[kind]) {
+    const exclusive = kind === 'hero' && entries.some(isNoHeroesFilter)
+    if (!exclusive && entries.length < MAX_FILTERS[kind]) {
       rows.push(buildRow(kind, null, entries.length))
     }
     rowContainer(kind).replaceChildren(...rows)
@@ -389,8 +403,10 @@ export function initReportFilters(
   function selectGeneration(value: number | null): void {
     const max = value ?? null
     filters.max_gen = value ?? undefined
-    filters.heroes = (filters.heroes ?? []).filter((entry) =>
-      isHeroAvailable(choiceFor(entry.name).hero, max),
+    filters.heroes = normalizeHeroFilters(
+      (filters.heroes ?? []).filter((entry) =>
+        isHeroAvailable(choiceFor(entry.name).hero, max),
+      ),
     )
     filters.joiners = (filters.joiners ?? []).filter((entry) =>
       isHeroAvailable(choiceFor(entry.name).hero, max),
@@ -448,6 +464,15 @@ export function initReportFilters(
         }),
       )
     }
+    if (mode === 'hero' && query.trim() === '') {
+      nodes.push(
+        createNoHeroesOption({
+          kind: 'report',
+          selected: current ? isNoHeroesFilter(current) : false,
+          onSelect: () => selectPickerValue(NO_HEROES_FILTER),
+        }),
+      )
+    }
 
     if (choices.length === 0) {
       const empty = document.createElement('p')
@@ -481,6 +506,14 @@ export function initReportFilters(
   }
 
   function selectPickerValue(name: string): void {
+    if (mode === 'hero' && name === NO_HEROES_FILTER) {
+      filters.heroes = normalizeHeroFilters([{ name, side: 'any' }])
+      renderRows('hero')
+      activeTrigger = rowTrigger('hero', 0)
+      if (pickerDialog.open) pickerDialog.close()
+      notify()
+      return
+    }
     const entries = entriesFor(mode)
     if (activeIndex < entries.length) {
       entries[activeIndex] = { ...entries[activeIndex], name }
@@ -518,7 +551,7 @@ export function initReportFilters(
   function selectSide(kind: PickerKind, index: number, side: ReportFilterSide): void {
     const entries = entriesFor(kind)
     const entry = entries[index]
-    if (!entry || entry.side === side) return
+    if (!entry || isNoHeroesFilter(entry) || entry.side === side) return
     entry.side = side
     notify()
   }
@@ -535,7 +568,9 @@ export function initReportFilters(
     pickerTitle.textContent = existing ? `Replace ${kind}` : `Add ${kind}`
     pickerSubtitle.textContent =
       kind === 'hero'
-        ? 'Main hero · attacker or defender side'
+        ? existing && isNoHeroesFilter(existing)
+          ? 'No main hero on either side'
+          : 'Main hero · attacker or defender side'
         : 'Rally joiner · attacker or defender side'
     pickerSearch.placeholder = kind === 'hero' ? 'Search heroes' : 'Search joiners'
     pickerSearch.setAttribute(
@@ -575,8 +610,10 @@ export function initReportFilters(
   buildGenerationOptions()
   if (filters.max_gen) {
     filters.max_gen = Math.min(filters.max_gen, maxHeroGeneration())
-    filters.heroes = (filters.heroes ?? []).filter((entry) =>
-      isHeroAvailable(choiceFor(entry.name).hero, filters.max_gen ?? null),
+    filters.heroes = normalizeHeroFilters(
+      (filters.heroes ?? []).filter((entry) =>
+        isHeroAvailable(choiceFor(entry.name).hero, filters.max_gen ?? null),
+      ),
     )
     filters.joiners = (filters.joiners ?? []).filter((entry) =>
       isHeroAvailable(choiceFor(entry.name).hero, filters.max_gen ?? null),
