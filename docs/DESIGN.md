@@ -283,8 +283,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 ### Troop Power
 
 - Outlined --paper card with a centered “Troop Power” title.
-- Two symmetric sides. Each side has a centered “Total Troops” input, then three
-  square INF/LAN/MAR tiles in the hero-slot style. The whole tile selects the
+- Two symmetric sides, each headed by a centered “Attacker Total Troops” /
+  “Defender Total Troops” label over its input, then three square INF/LAN/MAR
+  tiles in the hero-slot style. The whole tile selects the
   troop tier (T1–T12); a grayscale hexagon badge overlapping its top-right corner
   selects the fire crystal level (FC0–FC10) and shows the number inside. The
   troop count sits below the tile in an editable field (a dash until data is

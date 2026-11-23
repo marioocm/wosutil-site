@@ -480,11 +480,12 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
                 aria-label={`${side.label} side troop power`}
                 data-troop-power-side={side.id}
               >
-                <span class="text-center text-[10px] font-medium uppercase tracking-[0.08em] text-ink-subtle">
-                  {side.label}
-                </span>
                 <label class="flex flex-col items-center gap-1">
-                  <span class="text-micro text-ink-muted">Total Troops</span>
+                  <span
+                    class="text-center text-[10px] font-medium uppercase leading-tight tracking-[0.08em] text-ink-subtle"
+                  >
+                    {side.label} Total Troops
+                  </span>
                   <input
                     type="text"
                     inputmode="numeric"
