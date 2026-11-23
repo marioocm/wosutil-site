@@ -269,6 +269,24 @@ export function reportFilterSideLabel(side: ReportFilterSide): string {
   return 'Any'
 }
 
+/** Reserved archive hero name: reports with no main hero on either side. */
+export const NO_HEROES_FILTER = 'none'
+
+export function isNoHeroesFilter(entry: ReportHeroFilter): boolean {
+  return entry.name === NO_HEROES_FILTER
+}
+
+export function heroFilterLabel(entry: ReportHeroFilter): string {
+  return isNoHeroesFilter(entry) ? 'No heroes' : heroName(entry.name)
+}
+
+/** "No heroes" is exclusive: it replaces every concrete hero filter. */
+export function normalizeHeroFilters(entries: ReportHeroFilter[]): ReportHeroFilter[] {
+  return entries.some(isNoHeroesFilter)
+    ? [{ name: NO_HEROES_FILTER, side: 'any' }]
+    : entries
+}
+
 export function isReportMode(value: string): value is ReportMode {
   return (REPORT_MODES as readonly string[]).includes(value)
 }

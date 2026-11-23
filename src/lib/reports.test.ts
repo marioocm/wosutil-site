@@ -9,10 +9,13 @@ import {
   formatSkill,
   generationFilterLabel,
   generationLabel,
+  heroFilterLabel,
   heroName,
+  isNoHeroesFilter,
   isRally,
   isReportMode,
   maxTroopLevel,
+  normalizeHeroFilters,
   parseGeneration,
   parseReportFilterEntry,
   ratioText,
@@ -140,5 +143,24 @@ describe('reports helpers', () => {
   it('keeps filterQuery free of pagination parameters', () => {
     const params = filterQuery({ heroes: [{ name: 'hank', side: 'any' }] })
     expect(params.toString()).toBe('hero=hank')
+  })
+
+  it('models the exclusive no-heroes hero filter', () => {
+    const none = { name: 'none', side: 'any' as const }
+    expect(isNoHeroesFilter(none)).toBe(true)
+    expect(isNoHeroesFilter({ name: 'hank', side: 'any' })).toBe(false)
+    expect(heroFilterLabel(none)).toBe('No heroes')
+    expect(heroFilterLabel({ name: 'hank', side: 'any' })).toBe('Hank')
+    expect(
+      normalizeHeroFilters([
+        { name: 'hank', side: 'any' },
+        { name: 'none', side: 'attacker' },
+        { name: 'edith', side: 'defender' },
+      ]),
+    ).toEqual([none])
+    expect(normalizeHeroFilters([{ name: 'hank', side: 'attacker' }])).toEqual([
+      { name: 'hank', side: 'attacker' },
+    ])
+    expect(filterQuery({ heroes: [none] }).getAll('hero')).toEqual(['none'])
   })
 })
