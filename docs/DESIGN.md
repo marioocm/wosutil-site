@@ -30,7 +30,7 @@ typography and deliberately minimal chrome.
 | UI      | Instrument Sans Variable | Fontsource (self-hosted)        |
 | Numeric | Geist Mono Variable      | Fontsource (self-hosted)        |
 
-Declared with `@font-face` in `src/layouts/BaseLayout.astro` using Fontsource variable files and `font-display: optional` (no FOUT).
+Declared with `@font-face` in `src/layouts/BaseLayout.astro` using Fontsource variable files. Both latin faces are preloaded and use `font-display: swap`, so the brand fonts are always applied instead of a size-different system fallback.
 
 Fallbacks: `--font-primary` ends in system-ui; `--font-mono` ends in
 `ui-monospace`, Menlo, Monaco, Consolas.

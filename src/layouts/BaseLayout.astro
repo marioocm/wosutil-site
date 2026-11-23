@@ -1,5 +1,5 @@
 ---
-import { fontCss, primaryFontUrl } from './fonts'
+import { fontCss, monoFontUrl, primaryFontUrl } from './fonts'
 import '../styles/global.css'
 
 interface Props {
@@ -30,6 +30,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefin
       )
     }
     <link rel="preload" href={primaryFontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={monoFontUrl} as="font" type="font/woff2" crossorigin />
     <style is:inline set:html={fontCss}></style>
     <title>{title}</title>
     {noindex && <meta name="robots" content="noindex" />}
