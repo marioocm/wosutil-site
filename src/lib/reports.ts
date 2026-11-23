@@ -131,6 +131,7 @@ export interface ReportHeroFilter {
 }
 
 const SPECIAL_HEROES: Record<string, string> = {
+  bokan: 'Lumak Bokan',
   'wu ming': 'Wu Ming',
   'seo-yoon': 'Seo-Yoon',
   'ling xue': 'Ling Xue',
@@ -175,9 +176,11 @@ export function resultShort(value: ReportResult): string {
   return 'NO WIPE'
 }
 
+const NUMBER_FORMAT = new Intl.NumberFormat('en-US')
+
 export function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—'
-  return new Intl.NumberFormat('en-US').format(Math.round(value))
+  return NUMBER_FORMAT.format(Math.round(value))
 }
 
 export function formatPercent(value: number): string {
@@ -418,9 +421,66 @@ export function buildQuery(filters: ReportFilters, cursor?: number | null, limit
   return params.toString()
 }
 
-export async function fetchJson<T>(path: string): Promise<T> {
+/** Query-string keys the archive reads as filters (including legacy bounds). */
+const REPORT_FILTER_KEYS = [
+  'hero',
+  'joiner',
+  'mode',
+  'result',
+  'tier',
+  'fc',
+  'tier_min',
+  'tier_max',
+  'fc_min',
+  'fc_max',
+  'max_gen',
+  'max_survivors',
+  'has_t12',
+] as const
+
+/** True when a query string explicitly carries archive filter state. */
+export function hasReportFilterQuery(params: URLSearchParams): boolean {
+  return REPORT_FILTER_KEYS.some((key) => params.has(key))
+}
+
+/** Session key that keeps the archive filters across page navigation. */
+export const REPORT_FILTERS_STORAGE_KEY = 'wosutil:report-filters'
+
+/** Reads the last applied archive filter query, or an empty string. */
+export function readStoredReportFilterQuery(storage: Pick<Storage, 'getItem'>): string {
+  try {
+    return storage.getItem(REPORT_FILTERS_STORAGE_KEY)?.trim() ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/** Stores the applied archive filter query; an empty query clears it. */
+export function storeReportFilterQuery(
+  query: string,
+  storage: Pick<Storage, 'setItem' | 'removeItem'>,
+): void {
+  try {
+    if (query) storage.setItem(REPORT_FILTERS_STORAGE_KEY, query)
+    else storage.removeItem(REPORT_FILTERS_STORAGE_KEY)
+  } catch {
+    // Storage can be unavailable; the URL still carries the filters.
+  }
+}
+
+export interface FetchJsonOptions {
+  signal?: AbortSignal
+  cache?: RequestCache
+}
+
+export async function fetchJson<T>(
+  path: string,
+  options: FetchJsonOptions = {},
+): Promise<T> {
   const response = await fetch(`${apiBase()}${path}`, {
     headers: { Accept: 'application/json' },
+    signal: options.signal,
+    cache: options.cache,
   })
   if (!response.ok) {
     let detail = `API error ${response.status}`

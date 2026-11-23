@@ -38,7 +38,6 @@ import {
   type ReportListItem,
   type ReportList,
   type ReportMeta,
-  type ReportStats,
   type SideDetail,
   type SideKey,
   type Troop,
@@ -62,6 +61,16 @@ interface State {
   request: number
 }
 
+interface CachedPage {
+  payload: ReportList
+  at: number
+}
+
+/** Keep recently viewed filter results for instant back-and-forth switching. */
+const PAGE_CACHE_TTL = 60_000
+const PAGE_CACHE_LIMIT = 40
+const FILTER_DEBOUNCE = 80
+
 function must<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector)
   if (!element) throw new Error(`Missing reports element: ${selector}`)
@@ -77,14 +86,20 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
+const COMPACT_FORMAT = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+const STAT_FORMAT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
+
 function compact(value: number): string {
   if (!Number.isFinite(value)) return '—'
   if (Math.abs(value) < 10_000) return formatNumber(value)
-  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  return COMPACT_FORMAT.format(value)
 }
 
 function statValue(value: number): string {
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value)}%`
+  return `${STAT_FORMAT.format(value)}%`
 }
 
 function heroAvatar(
@@ -95,10 +110,17 @@ function heroAvatar(
   const hero = name ? getHeroByName(name) : null
   const src = hero ? getHeroImage(hero.id) : undefined
   const initials = name ? heroInitials(heroName(name)) : '—'
+  const size = extra.includes('rp-avatar-lg')
+    ? 52
+    : extra.includes('rp-avatar-md')
+      ? 40
+      : extra.includes('rp-avatar-sm')
+        ? 24
+        : 28
   return `
     <span class="rp-avatar ${extra}" title="${escapeHtml(title ?? heroName(name))}">
       <span class="rp-avatar-fallback">${escapeHtml(initials)}</span>
-      ${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}
+      ${src ? `<img src="${escapeHtml(src)}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" fetchpriority="low" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}
     </span>`
 }
 
@@ -618,7 +640,7 @@ export function initReports(): void {
   const filterController = initReportFilters((next) => {
     state.filters = next
     syncUrl()
-    void loadPage(true)
+    scheduleLoad()
   })
   state.filters = filterController.filters
 
@@ -731,32 +753,60 @@ export function initReports(): void {
     status.dataset.error = error ? 'true' : 'false'
   }
 
+  const filterSearch = (): string => {
+    const query = filterQuery(state.filters).toString()
+    return query ? `?${query}` : ''
+  }
+
   const syncUrl = (): void => {
     if (state.currentId) return
-    const query = filterQuery(state.filters).toString()
-    window.history.replaceState({}, '', `${BASE}reports/${query ? `?${query}` : ''}`)
+    window.history.replaceState({}, '', `${BASE}reports/${filterSearch()}`)
   }
 
   const setMeta = (meta: ReportMeta): void => {
     state.meta = meta
     filterController.setMeta(meta)
+    const reportsTarget = root.querySelector<HTMLElement>('[data-stat-reports]')
+    if (reportsTarget) reportsTarget.textContent = formatNumber(meta.total)
   }
 
-  const loadMeta = async (): Promise<void> => {
+  const loadMeta = async (fresh = false): Promise<void> => {
     try {
-      setMeta(await fetchJson<ReportMeta>('/v1/meta'))
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not load filters.', true)
+      setMeta(
+        await fetchJson<ReportMeta>(
+          '/v1/meta',
+          fresh ? { cache: 'reload' } : undefined,
+        ),
+      )
+    } catch {
+      // The pickers are seeded from the local roster, so meta is optional.
     }
   }
 
-  const loadStats = async (): Promise<void> => {
-    try {
-      const stats = await fetchJson<ReportStats>('/v1/stats')
-      const reportsTarget = root.querySelector<HTMLElement>('[data-stat-reports]')
-      if (reportsTarget) reportsTarget.textContent = formatNumber(stats.reports)
-    } catch {
-      // The header counters are decorative.
+  const pageCache = new Map<string, CachedPage>()
+  let requestController: AbortController | null = null
+  let prefetchController: AbortController | null = null
+  let filterTimer = 0
+
+  const cacheGet = (key: string): CachedPage | null => {
+    const entry = pageCache.get(key)
+    if (!entry) return null
+    if (Date.now() - entry.at > PAGE_CACHE_TTL) {
+      pageCache.delete(key)
+      return null
+    }
+    pageCache.delete(key)
+    pageCache.set(key, entry)
+    return entry
+  }
+
+  const cacheSet = (key: string, payload: ReportList): void => {
+    pageCache.delete(key)
+    pageCache.set(key, { payload, at: Date.now() })
+    while (pageCache.size > PAGE_CACHE_LIMIT) {
+      const oldest = pageCache.keys().next().value
+      if (!oldest) break
+      pageCache.delete(oldest)
     }
   }
 
@@ -776,35 +826,89 @@ export function initReports(): void {
     updateCount()
   }
 
-  const loadPage = async (reset: boolean): Promise<void> => {
+  const setBusy = (busy: boolean): void => {
+    list.dataset['loading'] = busy ? 'true' : 'false'
+    list.setAttribute('aria-busy', String(busy))
+  }
+
+  const applyPayload = (payload: ReportList, append: boolean): void => {
+    state.items = append ? [...state.items, ...payload.items] : payload.items
+    state.cursor = payload.next_cursor
+    state.total = payload.total
+    renderItems(payload.items, append)
+    loadMore.hidden = state.cursor === null
+    setStatus('')
+  }
+
+  const prefetchNext = (): void => {
+    if (state.cursor === null || state.loading) return
+    const query = buildQuery(state.filters, state.cursor)
+    if (pageCache.has(query)) return
+    prefetchController?.abort()
+    const controller = new AbortController()
+    prefetchController = controller
+    window.setTimeout(() => {
+      void fetchJson<ReportList>(`/v1/reports?${query}`, { signal: controller.signal })
+        .then((payload) => cacheSet(query, payload))
+        .catch(() => {
+          // Prefetch is best-effort; the real request will retry it.
+        })
+    }, 600)
+  }
+
+  const loadPage = async (reset: boolean, fresh = false): Promise<void> => {
+    const query = buildQuery(state.filters, reset ? null : state.cursor)
+    const cached = fresh ? null : cacheGet(query)
+    prefetchController?.abort()
+    if (cached) {
+      requestController?.abort()
+      requestController = null
+      state.request += 1
+      state.loading = false
+      loadMore.disabled = false
+      setBusy(false)
+      applyPayload(cached.payload, !reset)
+      prefetchNext()
+      return
+    }
+
+    requestController?.abort()
+    const controller = new AbortController()
+    requestController = controller
     state.loading = true
     const request = ++state.request
     if (reset) {
-      state.items = []
       state.cursor = null
-      list.innerHTML = ''
+      loadMore.hidden = true
       empty.hidden = true
     }
     loadMore.disabled = true
-    setStatus('Loading reports…')
+    setBusy(true)
+    setStatus(state.items.length ? 'Updating…' : 'Loading reports…')
     try {
-      const query = buildQuery(state.filters, state.cursor)
-      const payload = await fetchJson<ReportList>(`/v1/reports?${query}`)
+      const payload = await fetchJson<ReportList>(`/v1/reports?${query}`, {
+        signal: controller.signal,
+        cache: fresh ? 'reload' : 'default',
+      })
       if (request !== state.request) return
-      state.items = reset ? payload.items : [...state.items, ...payload.items]
-      state.cursor = payload.next_cursor
-      state.total = payload.total
-      renderItems(payload.items, !reset)
-      loadMore.hidden = state.cursor === null
-      setStatus('')
+      cacheSet(query, payload)
+      applyPayload(payload, !reset)
     } catch (error) {
+      if (controller.signal.aborted) return
       setStatus(error instanceof Error ? error.message : 'Could not load reports.', true)
     } finally {
       if (request === state.request) {
         state.loading = false
         loadMore.disabled = false
+        setBusy(false)
+        prefetchNext()
       }
     }
+  }
+
+  const scheduleLoad = (): void => {
+    window.clearTimeout(filterTimer)
+    filterTimer = window.setTimeout(() => void loadPage(true), FILTER_DEBOUNCE)
   }
 
   const joinerTip = document.createElement('div')
@@ -862,7 +966,7 @@ export function initReports(): void {
         dialog.showModal()
         setPageScrollLocked(true)
       }
-      if (push) window.history.pushState({ id }, '', `${BASE}reports/${id}/`)
+      if (push) window.history.pushState({ id }, '', `${BASE}reports/${id}/${filterSearch()}`)
       setStatus('')
     } catch (error) {
       state.currentId = null
@@ -875,16 +979,15 @@ export function initReports(): void {
     state.currentId = null
     hideJoinerTip()
     if (dialog.open) dialog.close()
-    if (push) window.history.pushState({}, '', `${BASE}reports/`)
+    if (push) window.history.pushState({}, '', `${BASE}reports/${filterSearch()}`)
   }
 
   desktopLayout.addEventListener('change', syncBattleDetails)
   loadMore.addEventListener('click', () => void loadPage(false))
   const refresh = must<HTMLButtonElement>(root, '[data-report-refresh]')
   refresh.addEventListener('click', () => {
-    void loadMeta()
-    void loadStats()
-    void loadPage(true)
+    void loadMeta(true)
+    void loadPage(true, true)
   })
 
   list.addEventListener('click', (event) => {
@@ -969,7 +1072,6 @@ export function initReports(): void {
   const initialId = parsePathId() || new URLSearchParams(window.location.search).get('id')
   if (!initialId) syncUrl()
   void loadMeta()
-  void loadStats()
   void loadPage(true)
   if (initialId) void openDetail(initialId, false)
 }

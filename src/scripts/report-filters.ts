@@ -10,13 +10,13 @@ import { createTroopLevelControl } from '../components/troop-level-control'
 import { fillHeroVisual } from '../components/hero-visual'
 import {
   HEROES,
+  getArchiveHeroName,
   getHeroById,
   getHeroByName,
   isHeroAvailable,
   type Hero,
 } from '../lib/heroes'
 import {
-  allJoinerPackHeroes,
   compareJoinerHeroes,
   expandJoinerMatches,
   groupJoinerItems,
@@ -27,7 +27,9 @@ import {
   REPORT_FILTER_SIDES,
   REPORT_MODES,
   REPORT_TIER_RANGE,
+  filterQuery,
   generationFilterLabel,
+  hasReportFilterQuery,
   heroFilterLabel,
   heroName,
   isNoHeroesFilter,
@@ -37,8 +39,10 @@ import {
   parseLevelBound,
   parseReportFilterEntry,
   parseSurvivors,
+  readStoredReportFilterQuery,
   reportFilterSideLabel,
   reportModeLabel,
+  storeReportFilterQuery,
   type ReportFilters,
   type ReportFilterSide,
   type ReportHeroFilter,
@@ -128,7 +132,15 @@ function choiceFor(name: string): HeroChoice {
   }
 }
 
-function buildChoices(names: string[], extraHeroes: readonly Hero[] = []): HeroChoice[] {
+function sortChoices(choices: HeroChoice[]): HeroChoice[] {
+  return choices.sort(
+    (left, right) =>
+      (right.hero.generation ?? 0) - (left.hero.generation ?? 0) ||
+      left.hero.name.localeCompare(right.hero.name),
+  )
+}
+
+function buildChoices(names: string[]): HeroChoice[] {
   const seen = new Set<string>()
   const choices: HeroChoice[] = []
   const add = (name: string): void => {
@@ -138,12 +150,26 @@ function buildChoices(names: string[], extraHeroes: readonly Hero[] = []): HeroC
     choices.push(choice)
   }
   for (const name of names) add(name)
-  for (const hero of extraHeroes) add(hero.name)
-  return choices.sort(
-    (left, right) =>
-      (right.hero.generation ?? 0) - (left.hero.generation ?? 0) ||
-      left.hero.name.localeCompare(right.hero.name),
-  )
+  return sortChoices(choices)
+}
+
+/** Build the instant picker list from the local roster. */
+function buildRosterChoices(heroes: readonly Hero[]): HeroChoice[] {
+  const seen = new Set<string>()
+  const choices: HeroChoice[] = []
+  for (const hero of heroes) {
+    if (seen.has(hero.id)) continue
+    seen.add(hero.id)
+    choices.push({ value: getArchiveHeroName(hero), hero })
+  }
+  return sortChoices(choices)
+}
+
+/** Add archive-only names to the local roster without dropping anything. */
+function mergeChoices(current: HeroChoice[], names: string[]): HeroChoice[] {
+  const known = new Set(current.map((choice) => choice.value))
+  const extra = names.filter((name) => !known.has(name.trim().toLowerCase()))
+  return extra.length ? buildChoices([...current.map((choice) => choice.value), ...extra]) : current
 }
 
 function maxHeroGeneration(): number {
@@ -167,8 +193,15 @@ function readEntries(
   return entries
 }
 
-function initialFilters(): ReportFilters {
-  const params = new URLSearchParams(window.location.search)
+function sessionStorageOrNull(): Storage | null {
+  try {
+    return window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
+function parseFilters(params: URLSearchParams): ReportFilters {
   const mode = params.get('mode') ?? ''
   const result = params.get('result')
   const legacyTier = parseLevelBound(params.get('tier'), ...REPORT_TIER_RANGE)
@@ -198,6 +231,17 @@ function initialFilters(): ReportFilters {
     max_survivors: parseSurvivors(params.get('max_survivors')) ?? undefined,
     has_t12: params.get('has_t12') === 'true',
   }
+}
+
+function initialFilters(storage: Storage | null): ReportFilters {
+  const params = new URLSearchParams(window.location.search)
+  if (!hasReportFilterQuery(params) && storage) {
+    // Leaving the archive for another page drops the query from the URL, so
+    // the last applied filters live in sessionStorage until the user clears them.
+    const stored = readStoredReportFilterQuery(storage)
+    if (stored) return parseFilters(new URLSearchParams(stored))
+  }
+  return parseFilters(params)
 }
 
 function chevronIcon(): SVGSVGElement {
@@ -259,10 +303,13 @@ export function initReportFilters(
   const pickerOptions = must<HTMLElement>(root, '[data-report-picker-options]')
   const pickerClose = must<HTMLButtonElement>(root, '[data-report-picker-close]')
 
-  let filters = initialFilters()
-  let heroChoices: HeroChoice[] = []
-  let joinerChoices: HeroChoice[] = []
-  let metaReady = false
+  const storage = sessionStorageOrNull()
+  let filters = initialFilters(storage)
+  // The roster is the source of truth for what exists, so the pickers work
+  // immediately. `/v1/meta` only adds archive-only names later; it must never
+  // gate the controls.
+  let heroChoices: HeroChoice[] = buildRosterChoices(HEROES)
+  let joinerChoices: HeroChoice[] = buildRosterChoices(HEROES)
   let mode: PickerKind = 'hero'
   let activeIndex = 0
   let activeTrigger: HTMLButtonElement | null = null
@@ -353,7 +400,12 @@ export function initReportFilters(
     if (t12 instanceof HTMLInputElement) t12.checked = Boolean(filters.has_t12)
   }
 
+  function persistFilters(): void {
+    if (storage) storeReportFilterQuery(filterQuery(filters).toString(), storage)
+  }
+
   function notify(): void {
+    persistFilters()
     onChange({ ...filters })
   }
 
@@ -391,7 +443,6 @@ export function initReportFilters(
     trigger.dataset['reportRowTrigger'] = kind
     trigger.dataset['index'] = String(index)
     trigger.dataset['selected'] = entry ? 'true' : 'false'
-    trigger.disabled = !metaReady
     trigger.setAttribute('aria-haspopup', 'dialog')
     trigger.setAttribute('aria-controls', 'report-picker')
     const label = entry ? heroFilterLabel(entry) : `Any ${kind}`
@@ -781,6 +832,7 @@ export function initReportFilters(
   }
   syncForm()
   renderTriggers()
+  persistFilters()
 
   generationTrigger.addEventListener('click', openGeneration)
   generationClose.addEventListener('click', () => generationDialog.close())
@@ -871,14 +923,15 @@ export function initReportFilters(
       return filters
     },
     setMeta(meta: ReportMeta): void {
-      heroChoices = buildChoices(meta.heroes)
-      // The archive only lists joiners it has already seen, so complete every
-      // Same S1 pack from the roster (e.g. Bahiti is in Sergey's pack).
-      joinerChoices = buildChoices(meta.joiners, allJoinerPackHeroes())
-      metaReady = true
-      renderTriggers()
+      const nextHeroes = mergeChoices(heroChoices, meta.heroes)
+      const nextJoiners = mergeChoices(joinerChoices, meta.joiners)
+      const changed = nextHeroes !== heroChoices || nextJoiners !== joinerChoices
+      heroChoices = nextHeroes
+      joinerChoices = nextJoiners
       applyResultAvailability(meta)
-      if (pickerDialog.open) renderOptions()
+      // Triggers only show the selection, so they do not need a rebuild when
+      // the archive adds names. Only refresh an open options list.
+      if (changed && pickerDialog.open) renderOptions()
     },
   }
 }

@@ -113,5 +113,15 @@ export const HERO_IMAGES: Readonly<Record<string, string>> = {
 }
 
 export function getHeroImage(heroId: string): string | undefined {
-  return HERO_IMAGES[heroId]
+  const url = HERO_IMAGES[heroId]
+  return url ? heroImageThumbnail(url) : undefined
+}
+
+/**
+ * Avatars render at 24-52 px, while the originals are 30-210 KB. The source
+ * bucket also stores WordPress' 150x150 rendition, which is plenty for a 2x
+ * display and keeps the picker and the report cards light.
+ */
+export function heroImageThumbnail(url: string): string {
+  return url.replace(/(\.[a-z0-9]+)$/i, '-150x150$1')
 }

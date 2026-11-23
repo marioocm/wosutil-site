@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { HERO_IMAGES } from './hero-images'
+import {
+  HERO_IMAGES,
+  getHeroImage,
+  heroImageThumbnail,
+} from './hero-images'
 import { HERO_SKILLS } from './hero-skills'
 import {
   filterHeroes,
   formatHeroGeneration,
   getAllHeroes,
+  getArchiveHeroName,
   getHeroById,
   getHeroByName,
   getHeroesByType,
@@ -36,6 +41,15 @@ describe('HERO_IMAGES', () => {
       expect(image).toMatch(/^https:\/\//)
     }
   })
+
+  it('uses the source thumbnail rendition for small avatars', () => {
+    expect(
+      heroImageThumbnail(
+        'https://example.com/uploads/pic.png',
+      ),
+    ).toBe('https://example.com/uploads/pic-150x150.png')
+    expect(getHeroImage('natalia')).toMatch(/-150x150\.png$/)
+  })
 })
 
 describe('HERO_SKILLS', () => {
@@ -53,6 +67,11 @@ describe('getHeroByName', () => {
     expect(getHeroByName('  molly ')?.id).toBe('molly')
     expect(getHeroByName('Lumak Bokan')?.id).toBe('lumak-bokan')
     expect(getHeroByName('Nobody')).toBeNull()
+  })
+
+  it('uses the archive name for heroes with an alias', () => {
+    expect(getArchiveHeroName(getHeroById('lumak-bokan')!)).toBe('bokan')
+    expect(getArchiveHeroName(getHeroById('molly')!)).toBe('molly')
   })
 })
 
