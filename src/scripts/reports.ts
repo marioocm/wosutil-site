@@ -1,6 +1,6 @@
 import { fcHexMarkup } from '../components/fc-hex'
 import { createJoinerTip } from '../components/joiner-tip'
-import { STAT_BONUSES } from '../lib/stat-bonuses'
+import { STAT_BONUSES, formatStatBonus } from '../lib/stat-bonuses'
 import { getHeroByName, heroInitials } from '../lib/heroes'
 import { getHeroImage } from '../lib/hero-images'
 import {
@@ -85,7 +85,6 @@ const COMPACT_FORMAT = new Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumFractionDigits: 1,
 })
-const STAT_FORMAT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
 
 function compact(value: number): string {
   if (!Number.isFinite(value)) return '—'
@@ -94,7 +93,7 @@ function compact(value: number): string {
 }
 
 function statValue(value: number): string {
-  return `${STAT_FORMAT.format(value)}%`
+  return `${formatStatBonus(value)}%`
 }
 
 function heroAvatar(
