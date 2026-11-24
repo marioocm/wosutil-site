@@ -215,8 +215,8 @@ describe('reports helpers', () => {
   })
 
   it('builds the simulator battle link', () => {
-    expect(simulatorBattlePath('68b10c6c6f8d30a0')).toMatch(
-      /\/simulator\/\?battle=68b10c6c6f8d30a0$/,
+    expect(simulatorBattlePath('68b10c6c6f8d30a0')).toBe(
+      '/simulator/?battle=68b10c6c6f8d30a0',
     )
   })
 

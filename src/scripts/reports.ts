@@ -43,8 +43,6 @@ import { initReportFilters } from './report-filters'
 const SIDE_LABEL: Record<SideKey, string> = { attacker: 'Attacker', defender: 'Defender' }
 const SHORT_LABEL: Record<TroopClass, string> = { infantry: 'INF', lancer: 'LAN', marksman: 'MAR' }
 const CLASS_ORDER: Record<TroopClass, number> = { infantry: 0, lancer: 1, marksman: 2 }
-const BASE = import.meta.env.BASE_URL
-
 interface State {
   filters: ReportFilters
   cursor: number | null
@@ -733,7 +731,7 @@ export function initReports(): void {
 
   const syncUrl = (): void => {
     if (state.currentId) return
-    window.history.replaceState({}, '', `${BASE}reports/${filterSearch()}`)
+    window.history.replaceState({}, '', `/reports/${filterSearch()}`)
   }
 
   const setMeta = (meta: ReportMeta): void => {
@@ -933,7 +931,7 @@ export function initReports(): void {
         dialog.showModal()
         setPageScrollLocked(true)
       }
-      if (push) window.history.pushState({ id }, '', `${BASE}reports/${id}/${filterSearch()}`)
+      if (push) window.history.pushState({ id }, '', `/reports/${id}/${filterSearch()}`)
       setStatus('')
     } catch (error) {
       state.currentId = null
@@ -946,7 +944,7 @@ export function initReports(): void {
     state.currentId = null
     hideJoinerTip()
     if (dialog.open) dialog.close()
-    if (push) window.history.pushState({}, '', `${BASE}reports/${filterSearch()}`)
+    if (push) window.history.pushState({}, '', `/reports/${filterSearch()}`)
   }
 
   desktopLayout.addEventListener('change', syncBattleDetails)
@@ -1030,7 +1028,7 @@ export function initReports(): void {
     }
     const copy = target.closest<HTMLElement>('[data-copy-link]')
     if (copy && state.currentId) {
-      const link = `${window.location.origin}${BASE}reports/${state.currentId}/`
+      const link = `${window.location.origin}/reports/${state.currentId}/`
       void navigator.clipboard?.writeText(link).then(() => {
         copy.textContent = 'Copied'
         window.setTimeout(() => {
