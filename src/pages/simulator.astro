@@ -1355,8 +1355,7 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
   </main>
 
   <script>
-    import { resolveApiBase } from '../lib/api'
-    import { loadGenerationPresets, type GenerationPreset } from '../lib/generations'
+    import { loadBundledGenerationPresets } from '../lib/generations'
     import { initGenerationPreset } from '../scripts/generation-preset'
     import { initHeroComparison } from '../scripts/hero-comparison'
     import { initJoiners } from '../scripts/joiners'
@@ -1376,20 +1375,6 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
     initOptimiseRatio()
     initSimulatorBattle()
 
-    async function loadPresets(): Promise<void> {
-      const controller = new AbortController()
-      const timeout = window.setTimeout(() => controller.abort(), 3000)
-      let presets: readonly GenerationPreset[] = []
-      try {
-        presets = await loadGenerationPresets(resolveApiBase(), controller.signal)
-      } catch (error) {
-        console.error('Failed to load generation presets', error)
-      } finally {
-        window.clearTimeout(timeout)
-      }
-      initGenerationPreset(presets)
-    }
-
-    void loadPresets()
+    initGenerationPreset(loadBundledGenerationPresets())
   </script>
 </SiteLayout>

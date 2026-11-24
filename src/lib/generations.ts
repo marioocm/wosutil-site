@@ -1,3 +1,4 @@
+import bundledPresets from '../data/generation-presets.json'
 import type { TroopType } from './heroes'
 import { normalizeBuffs, type SideBuffs } from './stat-buffs'
 
@@ -157,17 +158,15 @@ export function parseGenerationPresets(payload: unknown): readonly GenerationPre
   return presets
 }
 
-export async function loadGenerationPresets(
-  apiBase: string,
-  signal?: AbortSignal,
-): Promise<readonly GenerationPreset[]> {
-  const response = await fetch(`${apiBase}/v1/presets`, {
-    signal,
-    headers: { Accept: 'application/json' },
-  })
-  if (!response.ok) throw new Error(`Preset API error ${response.status}`)
-
-  presets = parseGenerationPresets(await response.json())
+/**
+ * Load the presets bundled with the site.
+ *
+ * The simulator is fully client-side: this snapshot replaces the old
+ * `GET /v1/presets` round trip.  Refresh it with
+ * `node scripts/refresh-presets.mjs` when a new generation is published.
+ */
+export function loadBundledGenerationPresets(): readonly GenerationPreset[] {
+  presets = parseGenerationPresets(bundledPresets)
   return presets
 }
 
