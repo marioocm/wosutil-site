@@ -6,7 +6,7 @@ import {
   parseStatBonus,
   sanitizeStatBonusInput,
   STAT_BONUSES,
-  statBonusCents,
+  statBonusTenths,
 } from './stat-bonuses'
 
 describe('STAT_BONUSES', () => {
@@ -34,8 +34,8 @@ describe('parseStatBonus', () => {
 })
 
 describe('sanitizeStatBonusInput', () => {
-  it('keeps at most two decimals', () => {
-    expect(sanitizeStatBonusInput('12.345').value).toBe('12.34')
+  it('keeps at most one decimal', () => {
+    expect(sanitizeStatBonusInput('12.345').value).toBe('12.3')
     expect(sanitizeStatBonusInput('12.3').value).toBe('12.3')
     expect(sanitizeStatBonusInput('12').value).toBe('12')
   })
@@ -46,36 +46,36 @@ describe('sanitizeStatBonusInput', () => {
   })
 
   it('keeps a leading minus and a single decimal separator', () => {
-    expect(sanitizeStatBonusInput('-5.25').value).toBe('-5.25')
-    expect(sanitizeStatBonusInput('5.2.5').value).toBe('5.25')
+    expect(sanitizeStatBonusInput('-5.25').value).toBe('-5.2')
+    expect(sanitizeStatBonusInput('5.2.5').value).toBe('5.2')
   })
 
   it('preserves the caret when invalid characters are removed', () => {
-    expect(sanitizeStatBonusInput('12.345', 4)).toEqual({ value: '12.34', caret: 4 })
+    expect(sanitizeStatBonusInput('12.345', 4)).toEqual({ value: '12.3', caret: 4 })
     expect(sanitizeStatBonusInput('1a2', 2)).toEqual({ value: '12', caret: 1 })
   })
 })
 
-describe('statBonusCents', () => {
-  it('rounds values to two decimals', () => {
-    expect(statBonusCents(12.345)).toBe(1235)
-    expect(statBonusCents(12.344)).toBe(1234)
-    expect(statBonusCents(-12.345)).toBe(-1234)
+describe('statBonusTenths', () => {
+  it('rounds values to one decimal', () => {
+    expect(statBonusTenths(12.36)).toBe(124)
+    expect(statBonusTenths(12.34)).toBe(123)
+    expect(statBonusTenths(-12.36)).toBe(-124)
   })
 })
 
 describe('formatStatBonus', () => {
-  it('always shows two decimals', () => {
-    expect(formatStatBonus(1575.2)).toBe('1575.20')
-    expect(formatStatBonus(0)).toBe('0.00')
-    expect(formatStatBonus(-42.255)).toBe('-42.25')
+  it('always shows one decimal', () => {
+    expect(formatStatBonus(1575.2)).toBe('1575.2')
+    expect(formatStatBonus(0)).toBe('0.0')
+    expect(formatStatBonus(-42.26)).toBe('-42.3')
   })
 })
 
 describe('normalizeStatBonus', () => {
   it('formats valid input and clears invalid input', () => {
-    expect(normalizeStatBonus('1575.2')).toBe('1575.20')
-    expect(normalizeStatBonus(' 7 ')).toBe('7.00')
+    expect(normalizeStatBonus('1575.2')).toBe('1575.2')
+    expect(normalizeStatBonus(' 7 ')).toBe('7.0')
     expect(normalizeStatBonus('')).toBe('')
     expect(normalizeStatBonus('abc')).toBe('')
   })
@@ -93,19 +93,19 @@ describe('compareStatBonuses', () => {
     })
   })
 
-  it('compares two-decimal values numerically', () => {
-    expect(compareStatBonuses('100.01', '100.02')).toEqual({
+  it('compares values at the displayed precision', () => {
+    expect(compareStatBonuses('100.1', '100.2')).toEqual({
       left: 'lower',
       right: 'higher',
     })
-    expect(compareStatBonuses('100.004', '100.00')).toEqual({
+    expect(compareStatBonuses('100.04', '100.00')).toEqual({
       left: 'equal',
       right: 'equal',
     })
   })
 
   it('treats equal values as neutral', () => {
-    expect(compareStatBonuses('1575.20', '1575.2')).toEqual({
+    expect(compareStatBonuses('1575.2', '1575.2')).toEqual({
       left: 'equal',
       right: 'equal',
     })
@@ -127,7 +127,7 @@ describe('compareStatBonuses', () => {
   })
 
   it('compares negative bonuses numerically', () => {
-    expect(compareStatBonuses('-5.25', '-5.20')).toEqual({
+    expect(compareStatBonuses('-5.3', '-5.2')).toEqual({
       left: 'lower',
       right: 'higher',
     })

@@ -328,8 +328,8 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   Attacker/Defender headers sit centered over their columns, not at the cell edges.
 - The twelve rows follow the game order: Infantry / Lancer / Marksman × Attack /
   Defense / Lethality / Health.
-- Values are percentage inputs with at most two decimals; extra decimals are blocked
-  while typing and values are normalized to two decimals on blur. The number and its
+- Values are percentage inputs with at most one decimal; extra decimals are blocked
+  while typing and values are normalized to one decimal on blur. The number and its
   `%` suffix stay together, centered as one unit. The field is borderless by default
   (hover/focus adds a tint and an ink ring).
 - The higher side is `--positive`, the lower side `--negative`. Equal values or rows
