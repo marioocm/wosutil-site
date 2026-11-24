@@ -19,8 +19,9 @@ Live site: [wosutil.tech](https://wosutil.tech/)
 - [Tailwind CSS](https://tailwindcss.com/) v4 — CSS-first config via `@theme`
 - [Vitest](https://vitest.dev/) 5 — unit tests
 - [pnpm](https://pnpm.io/) 10 - package manager
-- Docker + Nginx - the published static image
-- GitHub Actions + GHCR + Watchtower - CI and automatic container updates on the PC Caddy stack
+- Rust → WebAssembly - the battle engine and ratio optimiser in a Web Worker
+- Cloudflare Pages - static hosting at `wosutil.tech`
+- Cloudflare Tunnel + FastAPI/SQLite - the reports API at `api.wosutil.tech`
 
 ## Requirements
 
@@ -72,26 +73,22 @@ pnpm preview     # preview the production build
 
 ## Deployment
 
-Pushes to `main` run `.github/workflows/deploy.yml`. The workflow verifies the
-site and publishes `ghcr.io/marioocm/wosutil-site:latest`; the PC stack in
-`wosutil-sim` pulls that image with Watchtower and restarts the web container.
-Caddy serves the container through the Cloudflare Tunnel. No runner, Node
-installation or host web directory is needed on the PC.
-
-The image is built with `SITE_URL=https://wosutil.tech` and `BASE_PATH=/`.
-The domain points at the PC stack; the static site can also be served by any
-static host because the simulator no longer needs the API.
-
-The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
-override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to
-`/reports/`.
-
-Build and run the image locally:
+The site is hosted on **Cloudflare Pages** as `wosutil.tech` (and `www`):
 
 ```sh
-docker build -t ghcr.io/marioocm/wosutil-site:local .
-docker run --rm -p 8090:8080 ghcr.io/marioocm/wosutil-site:local
+pnpm dlx wrangler@latest login   # one time
+pnpm deploy:pages
 ```
+
+`deploy:pages` builds with `SITE_URL=https://wosutil.tech`,
+`BASE_PATH=/` and `PUBLIC_REPORTS_API=https://api.wosutil.tech/api`, then
+uploads `dist/` to the `wosutil-site` Pages project. The reports API stays on
+`https://api.wosutil.tech/api`; the simulator runs entirely in the browser.
+
+GitHub Actions only runs typecheck, tests and builds; it does not deploy the
+site. The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
+override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to
+`/reports/`.
 
 ## Design and contributing
 
