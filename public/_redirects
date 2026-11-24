@@ -1,1 +1,2 @@
+/reports/* /reports/ 200
 /downloads/* https://api.wosutil.tech/downloads/:splat 302
