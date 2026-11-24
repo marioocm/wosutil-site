@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "refresh:presets": "node scripts/refresh-presets.mjs"
+    "refresh:presets": "node scripts/refresh-presets.mjs",
+    "deploy:pages": "node scripts/deploy-pages.mjs"
   },
   "devDependencies": {
     "@astrojs/sitemap": "^3.7.4",

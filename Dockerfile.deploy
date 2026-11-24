@@ -1,8 +1,0 @@
-# CI deployment image: .github/workflows/deploy.yml builds dist once with the
-# production env and stages it next to this file. Local builds use Dockerfile.
-FROM nginxinc/nginx-unprivileged:alpine
-
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY dist /usr/share/nginx/html
-
-EXPOSE 8080

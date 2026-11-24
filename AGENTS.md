@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-Static website for WoS Util (Whiteout Survival utility): a rally countdown and a battle simulator. Open source (MIT), deployed as a Docker image on the PC (`wosutil-sim` stack) through Cloudflare Tunnel. Stack: Astro 7 (static output) + TypeScript 7 + Tailwind CSS v4, Vitest 5. Package manager: pnpm 10; CI uses Node 24.
+Static website for WoS Util (Whiteout Survival utility): a rally countdown and a battle simulator. Open source (MIT), hosted on **Cloudflare Pages** at `wosutil.tech`; the reports API lives at `api.wosutil.tech`. Stack: Astro 7 (static output) + TypeScript 7 + Tailwind CSS v4, Vitest 5. Package manager: pnpm 10; CI uses Node 24.
 
 ## Structure
 - `astro.config.ts` — static Astro config: `site`/`base` derived from `GITHUB_REPOSITORY` (overridable with `SITE_URL`/`BASE_PATH`), root redirect, sitemap, prefetch and the Tailwind Vite plugin.
@@ -15,10 +15,9 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - `scripts/package-ui.mjs` — copies the desktop shell build (main page and the standalone `templates/` page) into `dist/ui/` and writes its hashed `manifest.json`.
 - `astro.app.config.ts` — desktop shell build (`base: '/'`, output `dist-app/`), separate from the public site build.
 - `docs/DESIGN.md` — design system source of truth for layout, color, typography, components and motion. **Read it before touching UI.**
-- `public/.nojekyll` — legacy GitHub Pages marker, harmless in the Docker/Nginx image; `public/favicon.svg`.
-- `Dockerfile` — multi-stage Node build → `nginxinc/nginx-unprivileged` static image, exposed on container port 8080; `Dockerfile.deploy` is the CI-only wrapper that copies a prebuilt `dist/` into the same base image.
-- `nginx.conf` — static serving with the reports-page fallback for report detail URLs and `_astro/` asset 404s.
-- `.github/workflows/` — `ci.yml` (typecheck, tests and builds on pushes/PRs) and `deploy.yml` (typecheck, tests and one production `dist` build on `main`, then wrap that `dist` with `Dockerfile.deploy` and publish the GHCR image).
+- `public/favicon.svg` - site icon.
+- `scripts/deploy-pages.mjs` - production build and Cloudflare Pages direct upload.
+- `.github/workflows/ci.yml` - typecheck, tests and builds on pushes/PRs; deployment is `pnpm deploy:pages`, not GitHub Actions.
 
 ## Key quirks
 - Static output only (`output: 'static'`, no adapter/SSR). `base` is `/<repo>/` for project pages and `/` for user sites/forks; relative nav links (`../<section>/`) keep forks working. The root redirect lives in `astro.config.ts`; `src/pages/404.astro` probes candidate reports paths via `src/lib/redirect.ts`.
@@ -35,13 +34,13 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - The reports archive uses the API base (`src/lib/reports.ts`); override it with `PUBLIC_REPORTS_API` at build time. The simulator itself is client-side: `src/lib/engine/worker.ts` loads the Rust wasm built from `wosutil-sim`, and `simulate.ts` sends 4096 seeds to it; each run sends a fresh `seed_base` so repeat clicks resample the battle. Hero skill levels are fixed at 5 in `src/lib/simulation.ts`; T12 levels come from the preset/Troop Power. Battle Details uses `skills[].source_kind` to show the game dash for base/buff skills without a kill counter and a numeric `0` for a kill-counter skill that killed nothing; an older API without the field falls back to a dash for zero and shows only nonzero kills.
 - Optimise Ratio runs the same case in the wasm worker (`side: att|def`, 10% coarse grid, 512 final seeds) with a fresh `seed_base` per run. The Rust implementation (`rust/wos_sim_engine/src/api.rs` in `wosutil-sim`) screens the coarse grid at 96 seeds, refines the best centers at 1% with 16 seeds, re-ranks the shortlist at 192 seeds and only then spends the final 512; screening and final stages use disjoint seed streams so the reported win rate is not inflated by selection. Both actions use the shared `createLoadingController` (`src/lib/loading-state.ts`) for a spinner, live elapsed seconds and an indeterminate progress bar; each request is one blocking worker call, so the bar deliberately does not fake a percentage. `buildOptimizeCase` keeps zero-count classes and groups so their tier/FC can receive troops; clicking a result distributes each class total across its troop rows in proportion to their current counts (evenly when every row is empty). Its results reveal with the same 220ms height motion as the Simulation card and show seeds / elapsed_ms plus a Ratio / Win % / Margin table.
 - Generation presets are bundled from `src/data/generation-presets.json`; refresh with `pnpm refresh:presets` when a new generation is published. There is no simulator rate limit; the client computes locally.
-- Hero portraits are hotlinked from the Whiteout Survival Wiki (`src/lib/hero-images.ts`); no game art is stored in this MIT-licensed repository. `src/lib/heroes.ts` owns the combat roster. `getHeroImage()` requests the source bucket's `-150x150` rendition (24-52px avatars render at 2x) instead of the 30-210 KB originals. Nginx gzips HTML/CSS/JS/JSON/SVG/wasm and serves `/_astro/` with a one-year immutable cache; HTML revalidates on every request.
+- Hero portraits are hotlinked from the Whiteout Survival Wiki (`src/lib/hero-images.ts`); no game art is stored in this MIT-licensed repository. `src/lib/heroes.ts` owns the combat roster. `getHeroImage()` requests the source bucket's `-150x150` rendition (24-52px avatars render at 2x) instead of the 30-210 KB originals. Cloudflare Pages compresses and caches the static assets; Astro fingerprints `/_astro/`.
 - Tailwind v4 is CSS-first (`@theme` in `src/styles/theme.css`, no `tailwind.config.js`). Named spacing tokens collide with size utilities: `max-w-md` resolves to 12px, so use arbitrary values (e.g. `max-w-[34rem]`).
 - Fonts are self-hosted Fontsource files with custom `@font-face` in `BaseLayout.astro` (`font-display: swap`; both latin subsets — Instrument Sans and Geist Mono — are preloaded so dev and production render the same fonts instead of falling back to system faces with different metrics). Do not add Google Fonts, proprietary fonts or copied Suisse Int'l (commercial license).
 - `pnpm typecheck` is `tsc --noEmit`, not `astro check`: Astro 7's checker currently refuses TypeScript 7. Keep `.astro` templates thin and let `pnpm build` validate them.
 - The desktop shell (`src-app/pages/index.astro`) is built with `astro.app.config.ts` (`srcDir: 'src-app'`, base `/`, output `dist-app/`) because WosUtil serves it from its own local root, not from the public site base. `scripts/package-ui.mjs` copies it to `dist/ui/` with a hashed `manifest.json`; that folder is the versioned UI artifact consumed by the WosUtil desktop client. The Template Creator (`src-app/pages/templates.astro`) is a separate page in the same bundle, opened only by the developer tool; it is not linked from the main shell. `uiVersion` is derived from the file hashes, so it only changes when the shell changes, not on every site deploy. Bump `apiVersion` in the manifest only for breaking API changes, together with `wosutil.ui.contract.API_VERSION` in the WosUtil repo.
 - Shell development: run the WosUtil API with `WOSUTIL_UI_NO_WINDOW=1 WOSUTIL_UI_PORT=8765 WOSUTIL_UI_TOKEN=dev` (PowerShell: `$env:...`), then `pnpm dev:app` and open `http://localhost:4321/?t=dev`. The Vite proxy forwards `/api` (including SSE) to the Python server and edits hot-reload. Set `WOSUTIL_UI_URL=http://localhost:4321/?t=dev` to show that dev URL in the Edge app window instead of a normal browser tab.
-- Public deployment is image-based: `.github/workflows/deploy.yml` builds `dist` once with the production `SITE_URL`/`BASE_PATH`, wraps it with `Dockerfile.deploy`, and publishes `ghcr.io/marioocm/wosutil-site:latest` on `main`; the PC `wos-pc` Compose stack pulls it with Watchtower. The image build only wraps the artifact, so it does not repeat `pnpm install` or Astro inside Docker. There is no GitHub runner, Node install or live `deploy/web` directory on the PC. The image package must stay public so Watchtower can pull it anonymously; never add secrets to the image or workflow.
+- Public deployment is **Cloudflare Pages**: `pnpm deploy:pages` builds with `SITE_URL=https://wosutil.tech`, `BASE_PATH=/` and `PUBLIC_REPORTS_API=https://api.wosutil.tech/api`, then uploads `dist/` to the `wosutil-site` project. The API is a Cloudflare Tunnel hostname (`api.wosutil.tech`) backed by the reports stack. There is no web container, Watchtower, GHCR site image or GitHub Pages deployment.
 - SEO: per-page title/description, canonical + Open Graph in `BaseLayout.astro`, sitemap, generated `robots.txt`, and `noindex` on redirect/404 pages.
 
 ## Commands
@@ -52,6 +51,7 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - Tests: `pnpm test` (watch: `pnpm test:watch`)
 - Refresh bundled generation presets: `pnpm refresh:presets` (API at `http://localhost:8000`)
 - Build: `pnpm build` (output `dist/`; preview: `pnpm preview`)
+- Deploy: `pnpm deploy:pages` (Cloudflare Pages direct upload)
 - Desktop shell: `pnpm build:app` (output `dist-app/`) and `pnpm package:ui` (output `dist/ui/`)
 
 ## Definition of done
