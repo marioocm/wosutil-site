@@ -1,5 +1,6 @@
 import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
+import { createLoadingController } from '../lib/loading-state'
 import {
   pruneAttempts,
   rateLimitWaitMs,
@@ -78,6 +79,15 @@ export function initSimulation(): void {
   const section = document.querySelector<HTMLElement>('[data-simulation]')
   const button = section?.querySelector<HTMLButtonElement>('[data-simulate]')
   if (!section || !button) return
+
+  const loading = createLoadingController({
+    section,
+    button,
+    label: must<HTMLElement>(section, '[data-simulate-label]'),
+    spinner: must<HTMLElement>(section, '[data-simulate-spinner]'),
+    progress: must<HTMLElement>(section, '[data-simulate-progress]'),
+    busyLabel: 'Simulating',
+  })
 
   const shell = section.closest<HTMLElement>('[data-simulation-shell]')
   const resultRoot = must<HTMLElement>(section, '[data-simulation-result]')
@@ -342,10 +352,7 @@ export function initSimulation(): void {
 
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), 120_000)
-    const label = button.textContent
-    button.disabled = true
-    button.textContent = 'Simulating...'
-    section.setAttribute('aria-busy', 'true')
+    loading.set(true)
 
     try {
       const response = await fetch(`${apiBase}/v1/simulate`, {
@@ -371,9 +378,7 @@ export function initSimulation(): void {
       setStatus(failureMessage(error))
     } finally {
       window.clearTimeout(timeout)
-      section.removeAttribute('aria-busy')
-      button.disabled = false
-      button.textContent = label
+      loading.set(false)
     }
   })
 }

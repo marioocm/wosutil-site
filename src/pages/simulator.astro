@@ -1020,8 +1020,25 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
               aria-controls="simulation-result"
               class="inline-flex min-w-[8rem] cursor-pointer items-center justify-center gap-2 rounded-sm bg-invert px-5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              Simulate
+              <span
+                data-simulate-spinner
+                class="loading-spinner"
+                aria-hidden="true"
+                hidden
+              ></span>
+              <span data-simulate-label class="tabular-nums">Simulate</span>
             </button>
+          </div>
+
+          <div
+            data-simulate-progress
+            class="loading-progress mt-3"
+            role="progressbar"
+            aria-label="Simulating battle"
+            aria-valuetext="Simulating"
+            hidden
+          >
+            <span class="loading-progress-bar"></span>
           </div>
 
           <p
@@ -1265,8 +1282,25 @@ const JOINER_INDEXES = [1, 2, 3, 4] as const
               data-optimise-ratio-button
               class="inline-flex min-w-[8rem] cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-sm bg-invert px-3.5 py-2.5 text-button font-medium text-invert-fg transition-opacity hover:opacity-85 active:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              Optimise Ratio
+              <span
+                data-optimise-spinner
+                class="loading-spinner"
+                aria-hidden="true"
+                hidden
+              ></span>
+              <span data-optimise-label class="tabular-nums">Optimise Ratio</span>
             </button>
+          </div>
+
+          <div
+            data-optimise-progress
+            class="loading-progress mt-3"
+            role="progressbar"
+            aria-label="Optimising ratio"
+            aria-valuetext="Optimising"
+            hidden
+          >
+            <span class="loading-progress-bar"></span>
           </div>
 
           <div class="mt-3 flex justify-center" data-optimise-side></div>
