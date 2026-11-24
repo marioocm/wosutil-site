@@ -49,7 +49,7 @@ export function sanitizeStatBonusInput(raw: string, caret = raw.length): StatBon
     let keep = false
 
     if (char >= '0' && char <= '9') {
-      if (!hasDecimal || decimalDigits < 2) {
+      if (!hasDecimal || decimalDigits < 1) {
         value += char
         if (hasDecimal) decimalDigits += 1
         keep = true
@@ -69,12 +69,12 @@ export function sanitizeStatBonusInput(raw: string, caret = raw.length): StatBon
   return { value, caret: Math.min(keptBeforeCaret, value.length) }
 }
 
-export function statBonusCents(value: number): number {
-  return Math.round(value * 100)
+export function statBonusTenths(value: number): number {
+  return Math.round(value * 10)
 }
 
 export function formatStatBonus(value: number): string {
-  return (statBonusCents(value) / 100).toFixed(2)
+  return (statBonusTenths(value) / 10).toFixed(1)
 }
 
 export function normalizeStatBonus(raw: string): string {
@@ -90,11 +90,11 @@ export function compareStatBonuses(
   const right = parseStatBonus(rightRaw)
   if (left === null || right === null) return { left: 'empty', right: 'empty' }
 
-  const leftCents = statBonusCents(left)
-  const rightCents = statBonusCents(right)
-  if (leftCents === rightCents) return { left: 'equal', right: 'equal' }
+  const leftTenths = statBonusTenths(left)
+  const rightTenths = statBonusTenths(right)
+  if (leftTenths === rightTenths) return { left: 'equal', right: 'equal' }
 
-  return leftCents > rightCents
+  return leftTenths > rightTenths
     ? { left: 'higher', right: 'lower' }
     : { left: 'lower', right: 'higher' }
 }
