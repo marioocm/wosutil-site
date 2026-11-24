@@ -798,11 +798,13 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   .rp-joiner-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    align-items: start;
     gap: 0.6rem;
   }
 
   .rp-joiner-side {
     display: grid;
+    align-content: start;
     gap: 0.35rem;
     padding: 0.55rem;
     background: var(--background);
@@ -821,6 +823,8 @@ import SiteLayout from '../layouts/SiteLayout.astro'
   .rp-joiner-list {
     display: flex;
     flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: flex-start;
     gap: 0.3rem;
   }
 
