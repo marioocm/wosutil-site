@@ -886,6 +886,17 @@ export function initReports(): void {
   }
 
   const joinerTip = createJoinerTip()
+  let pinnedJoiner: HTMLElement | null = null
+
+  const hideJoinerTip = (): void => {
+    pinnedJoiner = null
+    joinerTip.hide()
+  }
+
+  const pinnedJoinerChip = (): HTMLElement | null => {
+    if (pinnedJoiner && !joinerTip.anchoredTo(pinnedJoiner)) pinnedJoiner = null
+    return pinnedJoiner
+  }
 
   const showJoinerTip = (chip: HTMLElement): void => {
     const packId = chip.dataset['joinerPack']
@@ -893,10 +904,19 @@ export function initReports(): void {
       ? JOINER_PACKS.find((entry) => entry.id === packId)
       : undefined
     if (!pack) {
-      joinerTip.hide()
+      hideJoinerTip()
       return
     }
     joinerTip.show(chip, pack, chip.dataset['joinerId'] ?? '')
+  }
+
+  const toggleJoinerTip = (chip: HTMLElement): void => {
+    if (pinnedJoinerChip() === chip) {
+      hideJoinerTip()
+      return
+    }
+    pinnedJoiner = chip
+    showJoinerTip(chip)
   }
 
   const openDetail = async (id: string, push = true): Promise<void> => {
@@ -906,7 +926,7 @@ export function initReports(): void {
     setStatus('Loading report…')
     try {
       const detail = await fetchJson<ReportDetail>(`/v1/reports/${id}`)
-      joinerTip.hide()
+      hideJoinerTip()
       detailRoot.innerHTML = renderDetail(detail)
       dialogMeta.textContent = detailKicker(detail)
       syncBattleDetails()
@@ -925,7 +945,7 @@ export function initReports(): void {
   const closeDetail = (push = true): void => {
     scrollAnimation += 1
     state.currentId = null
-    joinerTip.hide()
+    hideJoinerTip()
     if (dialog.open) dialog.close()
     if (push) window.history.pushState({}, '', `${BASE}reports/${filterSearch()}`)
   }
@@ -958,27 +978,57 @@ export function initReports(): void {
 
   detailRoot.addEventListener('pointerover', (event) => {
     const chip = joinerChip(event.target)
-    if (!chip) return
+    if (!chip || pinnedJoinerChip()) return
     if (event.relatedTarget instanceof Node && chip.contains(event.relatedTarget)) return
     showJoinerTip(chip)
   })
   detailRoot.addEventListener('pointerout', (event) => {
     const chip = joinerChip(event.target)
     if (!chip) return
+    if (pinnedJoinerChip() === chip) return
     if (event.relatedTarget instanceof Node && chip.contains(event.relatedTarget)) return
     if (joinerTip.anchoredTo(chip)) joinerTip.hide()
   })
   detailRoot.addEventListener('focusin', (event) => {
     const chip = joinerChip(event.target)
-    if (chip) showJoinerTip(chip)
+    if (!chip) return
+    const pinned = pinnedJoinerChip()
+    if (pinned && pinned !== chip) return
+    showJoinerTip(chip)
   })
   detailRoot.addEventListener('focusout', (event) => {
     const chip = joinerChip(event.target)
-    if (chip && joinerTip.anchoredTo(chip)) joinerTip.hide()
+    if (!chip) return
+    if (pinnedJoinerChip() === chip) {
+      hideJoinerTip()
+      return
+    }
+    if (joinerTip.anchoredTo(chip)) joinerTip.hide()
   })
+  detailRoot.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    const chip = joinerChip(event.target)
+    if (!chip) return
+    event.preventDefault()
+    toggleJoinerTip(chip)
+  })
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      const pinned = pinnedJoinerChip()
+      if (!pinned || joinerChip(event.target) === pinned) return
+      hideJoinerTip()
+    },
+    true,
+  )
 
   detailRoot.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
+    const chip = joinerChip(target)
+    if (chip) {
+      toggleJoinerTip(chip)
+      return
+    }
     const copy = target.closest<HTMLElement>('[data-copy-link]')
     if (copy && state.currentId) {
       const link = `${window.location.origin}${BASE}reports/${state.currentId}/`
