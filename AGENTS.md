@@ -15,7 +15,7 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - `scripts/package-ui.mjs` — copies the desktop shell build (main page and the standalone `templates/` page) into `dist/ui/` and writes its hashed `manifest.json`.
 - `astro.app.config.ts` — desktop shell build (`base: '/'`, output `dist-app/`), separate from the public site build.
 - `docs/DESIGN.md` — design system source of truth for layout, color, typography, components and motion. **Read it before touching UI.**
-- `public/favicon.svg` - site icon.
+- `public/favicon.svg` - site icon; `public/_redirects` sends `/downloads/*` to `api.wosutil.tech`.
 - `scripts/deploy-pages.mjs` - production build and Cloudflare Pages direct upload.
 - `.github/workflows/ci.yml` - typecheck, tests and builds on pushes/PRs; deployment is `pnpm deploy:pages`, not GitHub Actions.
 
