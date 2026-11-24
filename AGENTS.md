@@ -20,7 +20,7 @@ Static website for WoS Util (Whiteout Survival utility): a rally countdown and a
 - `.github/workflows/ci.yml` - typecheck, tests and builds on pushes/PRs; deployment is `pnpm deploy:pages`, not GitHub Actions.
 
 ## Key quirks
-- Static output only (`output: 'static'`, no adapter/SSR). `base` is `/<repo>/` for project pages and `/` for user sites/forks; relative nav links (`../<section>/`) keep forks working. The root redirect lives in `astro.config.ts`; `src/pages/404.astro` probes candidate reports paths via `src/lib/redirect.ts`.
+- Static output only (`output: 'static'`, no adapter/SSR). `base` is `/<repo>/` for project pages and `/` for user sites/forks; relative nav links (`../<section>/`) keep forks working. The root redirect lives in `astro.config.ts`; `src/pages/404.astro` probes candidate reports paths via `src/lib/redirect.ts`. On Cloudflare Pages, `public/_redirects` serves `/` as an HTTP 302 to `/reports/` before any asset, so there is no HTML redirect flash; the generated Astro redirect stub remains only as the fallback for other hosts.
 - Site chrome is static Astro markup; behavior is in `src/scripts/site-chrome.ts`. New sections: add a `NAV_ITEMS` entry in `src/lib/nav.ts`, a page using `SiteLayout` with the matching `active` value, and a page script only if interactive.
 - Navigation is full-page (no ClientRouter; `prefetch: true`). The countdown island is included only on the countdown page through `BaseLayout`'s `countdown` prop and is not shipped to the simulator.
 - The `Share config` action lives in the Rally callers card header on the countdown page (not in the header/nav); it copies the current rally/enemy configuration link.
