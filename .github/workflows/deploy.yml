@@ -35,7 +35,6 @@ jobs:
         env:
           SITE_URL: https://wosutil.tech
           BASE_PATH: /
-          PUBLIC_SIM_API: /sim
 
       # The image only wraps the prebuilt dist, so the Docker build does not
       # repeat pnpm install or the Astro build.

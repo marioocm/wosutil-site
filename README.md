@@ -36,24 +36,18 @@ pnpm dev
 
 The dev server runs at `http://localhost:4321/`.
 
-## Simulator API
+## Simulator engine
 
-The simulator page calls the `wosutil-sim` engine API. The local default is
-`http://localhost:8000`; run the API with `docker compose up -d --build` in the
-sibling `wosutil-sim` repository.
+The simulator runs the Rust engine **in the browser** (`src/lib/engine/`):
+`wosutil-sim` compiles it to wasm and the page loads it in a Web Worker. There
+is no simulator API call, no `/sim` route and no server-side simulation.
 
-- Local override without rebuilding: `?api=http://192.168.1.50:8000`.
-- Production uses the same-origin `/sim` path served by the PC Caddy stack;
-  the deploy workflow sets `PUBLIC_SIM_API=/sim`.
-- The browser ignores a baked `localhost` API on a public host, so a local
-  build cannot ask visitors for local-network access.
-- The API's origin must be allowed in `WOS_CORS_ORIGINS` when it is called
-  cross-origin. The same-origin `/sim` path needs no CORS entry.
-- The API allows 5 simulations per 10s. The site mirrors that limit client-side
-  and shows a friendly retry message when it is reached.
-- Optimise Ratio uses `POST /v1/optimize-ratio` with the same case and a
-  `side` (`att`/`def`); the response is the current split plus ranked
-  candidates. Clicking a candidate writes its counts into Troop Power.
+- Simulate sends 4096 seeds to the worker; Optimise Ratio runs the same search
+  in Rust (10% coarse grid, 512 final seeds).
+- Generation presets are bundled in `src/data/generation-presets.json`; refresh
+  them with `pnpm refresh:presets` when a new generation is published.
+- The reports archive still uses the read-only API. Its base is `/api` by
+  default and can be changed with `PUBLIC_REPORTS_API` or a cross-origin URL.
 
 ## Checks
 
@@ -70,7 +64,7 @@ pnpm preview     # preview the production build
 - `src/layouts/` — document shell (`BaseLayout`) and site chrome (`SiteLayout`).
 - `src/components/` — static header/footer, the countdown widgets and the shared hero visual helper.
 - `src/scripts/` — browser behavior: countdown island, header chrome, simulator cards, simulation results and the reports browser.
-- `src/lib/` — shared logic and types, with Vitest tests (timer, rally, heroes, generations, troop power, stats, simulation, rate limit and reports).
+- `src/lib/` — shared logic and types, with Vitest tests (timer, rally, heroes, generations, troop power, stats, simulation and reports); `src/lib/engine/` holds the wasm worker and client.
 - `src/styles/` — Tailwind entry and design tokens.
 - `public/` — favicon and static assets.
 - `docs/DESIGN.md` — design system.
@@ -84,9 +78,9 @@ site and publishes `ghcr.io/marioocm/wosutil-site:latest`; the PC stack in
 Caddy serves the container through the Cloudflare Tunnel. No runner, Node
 installation or host web directory is needed on the PC.
 
-The image is built with `SITE_URL=https://wosutil.tech`, `BASE_PATH=/`
-and `PUBLIC_SIM_API=/sim`. GitHub Pages is disabled; the domain points at the
-PC.
+The image is built with `SITE_URL=https://wosutil.tech` and `BASE_PATH=/`.
+The domain points at the PC stack; the static site can also be served by any
+static host because the simulator no longer needs the API.
 
 The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
 override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to

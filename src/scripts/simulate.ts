@@ -1,10 +1,6 @@
-import { resolveApiBase } from '../lib/api'
+import { runLocalSimulate } from '../lib/engine/client'
 import { TROOP_TYPES } from '../lib/heroes'
 import { createLoadingController } from '../lib/loading-state'
-import {
-  pruneAttempts,
-  rateLimitWaitMs,
-} from '../lib/rate-limit'
 import {
   buildBattleSkillRows,
   buildEngineCase,
@@ -24,45 +20,6 @@ import {
 } from '../lib/simulation'
 
 const NUMBER_TWEEN_MS = 260
-
-function errorMessage(payload: unknown, status: number): string {
-  if (payload && typeof payload === 'object' && 'detail' in payload) {
-    const detail = (payload as { detail: unknown }).detail
-    if (typeof detail === 'string') return detail
-    if (detail) return JSON.stringify(detail)
-  }
-  return `API error ${status}`
-}
-
-function retryAfterSeconds(response: Response): number | null {
-  const header = response.headers.get('Retry-After')?.trim()
-  if (!header) return null
-  const seconds = Number(header)
-  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds)
-  const date = Date.parse(header)
-  if (Number.isNaN(date)) return null
-  return Math.max(1, Math.ceil((date - Date.now()) / 1000))
-}
-
-function isLocalApi(base: string): boolean {
-  try {
-    const host = new URL(base).hostname
-    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
-  } catch {
-    return false
-  }
-}
-
-class SimulationRequestError extends Error {
-  constructor(
-    message: string,
-    readonly rateLimited = false,
-    readonly retryAfterSeconds: number | null = null,
-  ) {
-    super(message)
-    this.name = 'SimulationRequestError'
-  }
-}
 
 function must<T extends Element>(root: ParentNode, selector: string): T {
   const element = root.querySelector<T>(selector)
@@ -118,21 +75,10 @@ export function initSimulation(): void {
     ),
   }))
 
-  const apiBase = resolveApiBase()
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const numberFrames = new WeakMap<HTMLElement, number>()
   const numberValues = new WeakMap<HTMLElement, number>()
-  let recentAttempts: number[] = []
   let expanded = detailsContent.dataset['expanded'] === 'true'
-
-  function noteAttempt(): void {
-    const now = Date.now()
-    recentAttempts = [...pruneAttempts(recentAttempts, now), now]
-  }
-
-  function waitBeforeAttempt(): number {
-    return rateLimitWaitMs(recentAttempts, Date.now())
-  }
 
   function setNumber(
     element: HTMLElement,
@@ -211,27 +157,6 @@ export function initSimulation(): void {
   function failureMessage(error: unknown): string {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return formatSimulationFailure({ kind: 'timeout' })
-    }
-    if (error instanceof TypeError) {
-      recentAttempts = pruneAttempts(recentAttempts, Date.now())
-      const rapid = recentAttempts.length >= 3
-      const retryMs = rapid ? rateLimitWaitMs(recentAttempts, Date.now()) : 0
-      return formatSimulationFailure(
-        rapid
-          ? {
-              kind: 'rate-limit',
-              retryAfterSeconds: retryMs > 0 ? Math.ceil(retryMs / 1000) : null,
-            }
-          : { kind: 'network' },
-        { apiBase, localApi: isLocalApi(apiBase) },
-      )
-    }
-    if (error instanceof SimulationRequestError) {
-      return formatSimulationFailure(
-        error.rateLimited
-          ? { kind: 'rate-limit', retryAfterSeconds: error.retryAfterSeconds }
-          : { kind: 'api', detail: error.message },
-      )
     }
     return formatSimulationFailure({
       kind: 'api',
@@ -338,46 +263,19 @@ export function initSimulation(): void {
       return
     }
 
-    const waitMs = waitBeforeAttempt()
-    if (waitMs > 0) {
-      setStatus(
-        formatSimulationFailure({
-          kind: 'rate-limit',
-          retryAfterSeconds: Math.ceil(waitMs / 1000),
-        }),
-      )
-      return
-    }
-    noteAttempt()
-
-    const controller = new AbortController()
-    const timeout = window.setTimeout(() => controller.abort(), 120_000)
     loading.set(true)
 
     try {
-      const response = await fetch(`${apiBase}/v1/simulate`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          case: buildEngineCase(state),
-          seeds: SIMULATION_SEEDS,
-          seed_base: createSeedBase(),
-        }),
-        signal: controller.signal,
-      })
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        throw response.status === 429
-          ? new SimulationRequestError('rate limited', true, retryAfterSeconds(response))
-          : new SimulationRequestError(errorMessage(payload, response.status))
-      }
-      renderResult(payload as SimulationResult, state)
+      const result = (await runLocalSimulate({
+        case: buildEngineCase(state),
+        seeds: SIMULATION_SEEDS,
+        seed_base: createSeedBase(),
+      })) as SimulationResult
+      renderResult(result, state)
       setStatus('')
     } catch (error) {
       setStatus(failureMessage(error))
     } finally {
-      window.clearTimeout(timeout)
       loading.set(false)
     }
   })

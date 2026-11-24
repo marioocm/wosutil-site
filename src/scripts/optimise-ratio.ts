@@ -1,5 +1,5 @@
 import { createSegmentedToggle } from '../components/segmented-toggle'
-import { resolveApiBase } from '../lib/api'
+import { resetEngine, runLocalOptimizeRatio } from '../lib/engine/client'
 import { TROOP_TYPES } from '../lib/heroes'
 import { createLoadingController } from '../lib/loading-state'
 import { distributeTroopCounts, parseTroopCount } from '../lib/troop-power'
@@ -7,7 +7,6 @@ import {
   buildOptimizeCase,
   createSeedBase,
   engineSide,
-  formatSimulationFailure,
   OPTIMIZE_RATIO_SEEDS,
   OPTIMIZE_RATIO_STEP,
   readSimulatorState,
@@ -15,41 +14,6 @@ import {
   type OptimizeRatioCandidate,
   type OptimizeRatioResult,
 } from '../lib/simulation'
-
-class OptimizeRequestError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'OptimizeRequestError'
-  }
-}
-
-function isLocalApi(base: string): boolean {
-  try {
-    const host = new URL(base).hostname
-    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
-  } catch {
-    return false
-  }
-}
-
-function errorMessage(payload: unknown, status: number): string {
-  if (payload && typeof payload === 'object' && 'detail' in payload) {
-    const detail = (payload as { detail: unknown }).detail
-    if (typeof detail === 'string') return detail
-    if (detail) return JSON.stringify(detail)
-  }
-  return `API error ${status}`
-}
-
-function retryAfterSeconds(response: Response): number | null {
-  const header = response.headers.get('Retry-After')?.trim()
-  if (!header) return null
-  const seconds = Number(header)
-  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds)
-  const date = Date.parse(header)
-  if (Number.isNaN(date)) return null
-  return Math.max(1, Math.ceil((date - Date.now()) / 1000))
-}
 
 function clampRate(value: number): number {
   if (!Number.isFinite(value)) return 0
@@ -141,9 +105,7 @@ export function initOptimiseRatio(): void {
   })
   const shell = section.closest<HTMLElement>('[data-simulation-shell]')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-  const apiBase = resolveApiBase()
 
-  let activeController: AbortController | null = null
   let runId = 0
 
   const sideToggle = createSegmentedToggle<'left' | 'right'>({
@@ -156,8 +118,7 @@ export function initOptimiseRatio(): void {
     value: 'left',
     className: 'w-[10rem]',
     onChange: () => {
-      activeController?.abort()
-      activeController = null
+      resetEngine()
       runId += 1
       loading.set(false)
       hideResults()
@@ -198,20 +159,10 @@ export function initOptimiseRatio(): void {
   }
 
   function failureMessage(error: unknown): string {
-    if (error instanceof OptimizeRequestError) return error.message
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return 'The ratio optimizer timed out. Try again.'
+      return 'The ratio optimizer was stopped. Try again.'
     }
-    if (error instanceof TypeError) {
-      return formatSimulationFailure(
-        { kind: 'network' },
-        { apiBase, localApi: isLocalApi(apiBase) },
-      )
-    }
-    return formatSimulationFailure({
-      kind: 'api',
-      detail: error instanceof Error ? error.message : String(error),
-    })
+    return `Optimization failed: ${error instanceof Error ? error.message : String(error)}`
   }
 
   function renderRow(
@@ -282,50 +233,33 @@ export function initOptimiseRatio(): void {
 
     const side = selectedSide()
     const run = ++runId
-    const controller = new AbortController()
-    activeController = controller
-    const timeout = window.setTimeout(() => controller.abort(), 120_000)
+    const timeout = window.setTimeout(() => {
+      if (run !== runId) return
+      runId += 1
+      resetEngine()
+      loading.set(false)
+      setStatus('The ratio optimizer timed out. Try again.')
+    }, 120_000)
     loading.set(true)
     setStatus('')
 
     try {
-      const response = await fetch(`${apiBase}/v1/optimize-ratio`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          case: buildOptimizeCase(state),
-          side: engineSide(side),
-          seeds: OPTIMIZE_RATIO_SEEDS,
-          seed_base: createSeedBase(),
-          step: OPTIMIZE_RATIO_STEP,
-          top: 10,
-        }),
-        signal: controller.signal,
-      })
-      const payload: unknown = await response.json().catch(() => null)
-      if (!response.ok) {
-        if (response.status === 429) {
-          const seconds = retryAfterSeconds(response)
-          throw new OptimizeRequestError(
-            seconds && seconds > 0
-              ? `The ratio optimizer is busy. Try again in ${seconds} ${seconds === 1 ? 'second' : 'seconds'}.`
-              : 'The ratio optimizer is busy. Try again in a few seconds.',
-          )
-        }
-        throw new OptimizeRequestError(errorMessage(payload, response.status))
-      }
+      const result = (await runLocalOptimizeRatio({
+        case: buildOptimizeCase(state),
+        side: engineSide(side),
+        seeds: OPTIMIZE_RATIO_SEEDS,
+        seed_base: createSeedBase(),
+        step: OPTIMIZE_RATIO_STEP,
+        top: 10,
+      })) as OptimizeRatioResult
       if (run !== runId) return
-      renderResults(payload as OptimizeRatioResult, side)
+      renderResults(result, side)
       setStatus('')
     } catch (error) {
       if (run === runId) setStatus(failureMessage(error))
     } finally {
       window.clearTimeout(timeout)
-      if (activeController === controller) {
-        activeController = null
-        loading.set(false)
-      }
+      if (run === runId) loading.set(false)
     }
   })
 }
