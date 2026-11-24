@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-app/
 .astro/
+.wrangler/
 .env
 .env.*
 !.env.example

@@ -9,8 +9,6 @@ import { execFileSync } from 'node:child_process'
 
 const env = {
   ...process.env,
-  SITE_URL: 'https://wosutil.tech',
-  BASE_PATH: '/',
   PUBLIC_REPORTS_API: 'https://api.wosutil.tech/api',
 }
 

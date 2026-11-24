@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-
-const reportsUrl = new URL(`${import.meta.env.BASE_URL}reports/`, Astro.site ?? Astro.url)
 ---
 
 <BaseLayout
@@ -14,11 +12,10 @@ const reportsUrl = new URL(`${import.meta.env.BASE_URL}reports/`, Astro.site ?? 
   >
     <h1 class="text-h4 font-medium tracking-[-0.01em]">Page not found</h1>
     <p class="text-p3 text-ink-muted">
-      Taking you to the <a class="underline" href={reportsUrl}>battle reports archive</a>.
+      Taking you to the <a class="underline" href="/reports/">battle reports archive</a>.
     </p>
   </main>
-  <script>
-    import { redirectToDefault } from '../lib/redirect'
-    redirectToDefault()
+  <script is:inline>
+    window.location.replace('/reports/')
   </script>
 </BaseLayout>

@@ -6,7 +6,7 @@ Live site: [wosutil.tech](https://wosutil.tech/)
 
 ## Features
 
-- **Battle Reports:** searchable public battle archive with mode (rally / 1v1), generation, multi-hero (including no-heroes) and multi-joiner filters (with attacker/defender side), result, tier, FC and T12 filters, report details, JSON/CSV downloads and a full JSONL export.
+- **Battle Reports:** searchable public battle archive with mode (rally / 1v1), generation, multi-hero (including no-heroes) and multi-joiner filters (with attacker/defender side), result, tier, FC and T12 filters, report details, JSON report downloads and a full JSONL export.
 - **Countdown:** duration-based timer, rally and enemy callers, call queue, shareable setup and UTC clock.
 - **Simulator:** generation presets, Hero Comparison, Joiners, Troop Power and Stats Bonuses, plus Battle Overview and Battle Details from the `wosutil-sim` engine.
 - **Optimise Ratio:** sweeps one side's inf/lan/mar split on the engine and lists the best ratios; click a result to apply it to Troop Power.
@@ -48,7 +48,7 @@ is no simulator API call, no `/sim` route and no server-side simulation.
 - Generation presets are bundled in `src/data/generation-presets.json`; refresh
   them with `reports/loopcal/export_site_presets.py` in `wosutil-sim` when a
   new generation is published.
-- The reports archive still uses the read-only API. Its base is `/api` by
+- The reports archive uses the read-only API. Its base is `/api` by
   default and can be changed with `PUBLIC_REPORTS_API` or a cross-origin URL.
 
 ## Checks
@@ -68,9 +68,9 @@ pnpm preview     # preview the production build
 - `src/scripts/` — browser behavior: countdown island, header chrome, simulator cards, simulation results and the reports browser.
 - `src/lib/` — shared logic and types, with Vitest tests (timer, rally, heroes, generations, troop power, stats, simulation and reports); `src/lib/engine/` holds the wasm worker and client.
 - `src/styles/` — Tailwind entry and design tokens.
-- `public/` — favicon and static assets.
+- `public/` — favicon and the Cloudflare `_redirects` rules.
 - `docs/DESIGN.md` — design system.
-- `astro.config.ts` — static config, base/site, root redirect, sitemap and prefetch.
+- `astro.config.ts` — static config, site URL, sitemap, prefetch and the Tailwind Vite plugin.
 
 ## Deployment
 
@@ -81,15 +81,13 @@ pnpm dlx wrangler@latest login   # one time
 pnpm deploy:pages
 ```
 
-`deploy:pages` builds with `SITE_URL=https://wosutil.tech`,
-`BASE_PATH=/` and `PUBLIC_REPORTS_API=https://api.wosutil.tech/api`, then
+`deploy:pages` builds with `PUBLIC_REPORTS_API=https://api.wosutil.tech/api` and
 uploads `dist/` to the `wosutil-site` Pages project. The reports API stays on
 `https://api.wosutil.tech/api`; the simulator runs entirely in the browser.
 
-GitHub Actions only runs typecheck, tests and builds; it does not deploy the
-site. The Astro `base`/`site` still derive from `GITHUB_REPOSITORY` for forks;
-override them with `BASE_PATH`/`SITE_URL`. The root URL redirects to
-`/reports/`.
+`public/_redirects` serves `/` as a 302 to `/reports/` and rewrites
+`/reports/*` to the archive page. CI runs typecheck, tests and builds;
+deployment is manual with `pnpm deploy:pages`.
 
 ## Design and contributing
 

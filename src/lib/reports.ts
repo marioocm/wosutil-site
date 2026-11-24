@@ -505,5 +505,5 @@ export function reportDownloadPath(id: string): string {
 
 /** Simulator URL that loads one archive battle into its widgets. */
 export function simulatorBattlePath(id: string): string {
-  return `${import.meta.env.BASE_URL}simulator/?battle=${encodeURIComponent(id)}`
+  return `/simulator/?battle=${encodeURIComponent(id)}`
 }
