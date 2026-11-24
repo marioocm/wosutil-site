@@ -46,7 +46,8 @@ is no simulator API call, no `/sim` route and no server-side simulation.
 - Simulate sends 4096 seeds to the worker; Optimise Ratio runs the same search
   in Rust (10% coarse grid, 512 final seeds).
 - Generation presets are bundled in `src/data/generation-presets.json`; refresh
-  them with `pnpm refresh:presets` when a new generation is published.
+  them with `reports/loopcal/export_site_presets.py` in `wosutil-sim` when a
+  new generation is published.
 - The reports archive still uses the read-only API. Its base is `/api` by
   default and can be changed with `PUBLIC_REPORTS_API` or a cross-origin URL.
 

@@ -161,9 +161,9 @@ export function parseGenerationPresets(payload: unknown): readonly GenerationPre
 /**
  * Load the presets bundled with the site.
  *
- * The simulator is fully client-side: this snapshot replaces the old
- * `GET /v1/presets` round trip.  Refresh it with
- * `node scripts/refresh-presets.mjs` when a new generation is published.
+ * The simulator is fully client-side: this snapshot is bundled with the site.
+ * Refresh it with `reports/loopcal/export_site_presets.py` in `wosutil-sim`
+ * when a new generation is published.
  */
 export function loadBundledGenerationPresets(): readonly GenerationPreset[] {
   presets = parseGenerationPresets(bundledPresets)
