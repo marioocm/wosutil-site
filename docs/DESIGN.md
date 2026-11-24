@@ -399,7 +399,7 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
   left and the two metrics stay right-aligned; every cell keeps a small inline
   inset from the row edges. The best row is tinted and the other values stay
   muted; a short legend explains both columns and that rows are clickable. No
-  separate `Current` line. The run metadata (`256 seeds · 830 ms`) sits centered
+  separate `Current` line. The run metadata (`512 seeds · ~12 s`) sits centered
   at the bottom, like the Simulation card.
 - Rows are hairline-separated buttons; clicking one writes the three troop counts
   to that side's Troop Power inputs and confirms it in the status line. When the

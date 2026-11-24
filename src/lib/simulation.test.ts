@@ -12,6 +12,7 @@ import {
   formatSkillKills,
   formatWinRate,
   OPTIMIZE_RATIO_SEEDS,
+  OPTIMIZE_RATIO_STEP,
   SIMULATION_SEEDS,
   SKILL_LEVEL,
   validateSimulatorState,
@@ -158,7 +159,8 @@ describe('buildEngineCase', () => {
 
   it('uses the API seed count', () => {
     expect(SIMULATION_SEEDS).toBe(4096)
-    expect(OPTIMIZE_RATIO_SEEDS).toBe(256)
+    expect(OPTIMIZE_RATIO_SEEDS).toBe(512)
+    expect(OPTIMIZE_RATIO_STEP).toBe(10)
   })
 })
 

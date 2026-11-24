@@ -149,8 +149,8 @@ export interface OptimizeRatioResult {
 }
 
 export const SIMULATION_SEEDS = 4096
-export const OPTIMIZE_RATIO_SEEDS = 256
-export const OPTIMIZE_RATIO_STEP = 5
+export const OPTIMIZE_RATIO_SEEDS = 512
+export const OPTIMIZE_RATIO_STEP = 10
 export const SKILL_LEVEL = 5
 
 export function createSeedBase(prefix = 'web'): string {

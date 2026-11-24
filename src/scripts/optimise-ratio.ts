@@ -1,6 +1,7 @@
 import { createSegmentedToggle } from '../components/segmented-toggle'
 import { resolveApiBase } from '../lib/api'
 import { TROOP_TYPES } from '../lib/heroes'
+import { createLoadingController } from '../lib/loading-state'
 import { distributeTroopCounts, parseTroopCount } from '../lib/troop-power'
 import {
   buildOptimizeCase,
@@ -100,6 +101,9 @@ export function initOptimiseRatio(): void {
   const caption = resultsRoot?.querySelector<HTMLElement>('[data-optimise-caption]')
   const meta = resultsRoot?.querySelector<HTMLElement>('[data-optimise-meta]')
   const warnings = resultsRoot?.querySelector<HTMLElement>('[data-optimise-warnings]')
+  const spinner = section?.querySelector<HTMLElement>('[data-optimise-spinner]')
+  const buttonLabel = section?.querySelector<HTMLElement>('[data-optimise-label]')
+  const progress = section?.querySelector<HTMLElement>('[data-optimise-progress]')
   if (
     !section ||
     !sideRoot ||
@@ -109,10 +113,14 @@ export function initOptimiseRatio(): void {
     !rowsRoot ||
     !caption ||
     !meta ||
-    !warnings
+    !warnings ||
+    !spinner ||
+    !buttonLabel ||
+    !progress
   ) {
     return
   }
+  const sectionElement: HTMLElement = section
   const buttonElement: HTMLButtonElement = button
   const statusElement: HTMLElement = status
   const resultsElement: HTMLElement = resultsRoot
@@ -120,6 +128,17 @@ export function initOptimiseRatio(): void {
   const captionElement: HTMLElement = caption
   const metaElement: HTMLElement = meta
   const warningsElement: HTMLElement = warnings
+  const spinnerElement: HTMLElement = spinner
+  const labelElement: HTMLElement = buttonLabel
+  const progressElement: HTMLElement = progress
+  const loading = createLoadingController({
+    section: sectionElement,
+    button: buttonElement,
+    label: labelElement,
+    spinner: spinnerElement,
+    progress: progressElement,
+    busyLabel: 'Optimising',
+  })
   const shell = section.closest<HTMLElement>('[data-simulation-shell]')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const apiBase = resolveApiBase()
@@ -140,6 +159,7 @@ export function initOptimiseRatio(): void {
       activeController?.abort()
       activeController = null
       runId += 1
+      loading.set(false)
       hideResults()
       setStatus('')
     },
@@ -265,10 +285,7 @@ export function initOptimiseRatio(): void {
     const controller = new AbortController()
     activeController = controller
     const timeout = window.setTimeout(() => controller.abort(), 120_000)
-    const label = buttonElement.textContent
-    buttonElement.disabled = true
-    buttonElement.textContent = 'Optimising...'
-    section.setAttribute('aria-busy', 'true')
+    loading.set(true)
     setStatus('')
 
     try {
@@ -305,10 +322,10 @@ export function initOptimiseRatio(): void {
       if (run === runId) setStatus(failureMessage(error))
     } finally {
       window.clearTimeout(timeout)
-      if (activeController === controller) activeController = null
-      section.removeAttribute('aria-busy')
-      buttonElement.disabled = false
-      buttonElement.textContent = label
+      if (activeController === controller) {
+        activeController = null
+        loading.set(false)
+      }
     }
   })
 }
