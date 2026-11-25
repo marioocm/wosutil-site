@@ -81,9 +81,12 @@ pnpm dlx wrangler@latest login   # one time
 pnpm deploy:pages
 ```
 
-`deploy:pages` builds with `PUBLIC_REPORTS_API=https://api.wosutil.tech/api` and
-uploads `dist/` to the `wosutil-site` Pages project. The reports API stays on
+`deploy:pages` builds with `PUBLIC_REPORTS_API=https://api.wosutil.tech/api`,
+packages the desktop shell into `dist/ui/` and uploads `dist/` to the
+`wosutil-site` Pages project. The reports API stays on
 `https://api.wosutil.tech/api`; the simulator runs entirely in the browser.
+The desktop client downloads the pinned shell from
+`https://wosutil.tech/ui/manifest.json`.
 
 `public/_redirects` serves `/` as a 302 to `/reports/` and rewrites
 `/reports/*` to the archive page. CI runs typecheck, tests and builds;
