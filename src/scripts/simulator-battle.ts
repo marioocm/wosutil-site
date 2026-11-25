@@ -6,6 +6,20 @@ import { emptyBuffs } from '../lib/stat-buffs'
 
 const BATTLE_ID = /^[0-9a-f]{16,64}$/i
 const REQUEST_TIMEOUT_MS = 15_000
+const SCROLL_HEADER_OFFSET = 64
+
+function scrollSimulateIntoView(): void {
+  const button = document.querySelector<HTMLElement>('[data-simulate]')
+  if (!button) return
+  const rect = button.getBoundingClientRect()
+  if (rect.top >= SCROLL_HEADER_OFFSET && rect.bottom <= window.innerHeight) return
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  button.scrollIntoView({
+    behavior: reduceMotion ? 'auto' : 'smooth',
+    block: 'center',
+  })
+}
 
 function setStatus(
   element: HTMLElement | null,
@@ -68,6 +82,7 @@ export function initSimulatorBattle(): void {
         status,
         `Loaded report ${shortId}. Edit any value, then press Simulate.`,
       )
+      scrollSimulateIntoView()
     } catch (error) {
       const message =
         error instanceof DOMException && error.name === 'AbortError'
