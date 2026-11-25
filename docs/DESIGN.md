@@ -343,7 +343,9 @@ Weights: 400 regular, 500 medium. Display headings use tight tracking
 
 - Outlined --paper card in the right sidebar (sticky on desktop): a centered
   inverted `Simulate` button and a muted status line. Results stay hidden until
-  a run succeeds. Below `lg` the card follows Stats Bonuses.
+  a run succeeds. Below `lg` the card follows Stats Bonuses. Opening the
+  simulator from a report's `Simulate` action scrolls the button into view once
+  the report loads, so the mobile layout does not leave the user at the top.
 - The results render inside the Simulation card below the status line, with a
   smooth scroll on the first success. The first result expands from the Simulate
   button with the same 220ms height motion as Joiners; repeat runs leave the
