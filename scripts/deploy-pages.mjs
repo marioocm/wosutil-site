@@ -1,6 +1,9 @@
 /**
  * Build the static site and publish it to Cloudflare Pages.
  *
+ * Also builds the desktop shell bundle into `dist/ui/` so the published site
+ * serves it at https://wosutil.tech/ui/manifest.json.
+ *
  * Requires a one-time `pnpm dlx wrangler@latest login` and the existing
  * `wosutil-site` Pages project. The API stays at https://api.wosutil.tech/api.
  */
@@ -22,6 +25,8 @@ function run(args) {
 }
 
 run(['build'])
+run(['build:app'])
+run(['package:ui'])
 run([
   'dlx',
   'wrangler@latest',
