@@ -85,8 +85,9 @@ pnpm deploy:pages
 packages the desktop shell into `dist/ui/` and uploads `dist/` to the
 `wosutil-site` Pages project. The reports API stays on
 `https://api.wosutil.tech/api`; the simulator runs entirely in the browser.
-The desktop client downloads the pinned shell from
-`https://wosutil.tech/ui/manifest.json`.
+The desktop client pins the equivalent
+`https://wosutil-site.pages.dev/ui/manifest.json` alias, because the zone's
+bot protection challenges HTML downloads from CI.
 
 `public/_redirects` serves `/` as a 302 to `/reports/` and rewrites
 `/reports/*` to the archive page. CI runs typecheck, tests and builds;
